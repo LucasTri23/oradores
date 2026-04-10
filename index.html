@@ -216,16 +216,6 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
     <div class="brow"><button class="btn bo" onclick="closeM('mCong')">Fechar</button></div>
   </div>
 </div>
-<!-- MODAL IMPORT EMBUTIDO -->
-<div class="mbg" id="mImport">
-  <div class="modal">
-    <div class="modal-title">📥 Importar Dados da Planilha</div>
-    <p style="font-size:12px;color:var(--whi2);margin-bottom:12px;line-height:1.6">Importa <strong>241 discursos</strong>, <strong>177 oradores</strong>, <strong>27 sugestões</strong> e <strong>156 semanas</strong> de programação para o Firebase.</p>
-    <div class="imp-bar-wrap"><div class="imp-bar" id="impBar"></div></div>
-    <div class="imp-log" id="impLog">Aguardando...</div>
-    <div class="brow" id="impBtns"><button class="btn bp" onclick="startImport()">▶ Importar</button><button class="btn bo" onclick="closeM('mImport')">Cancelar</button></div>
-  </div>
-</div>
 <!-- MODAL IMPORT XLSX -->
 <div class="mbg" id="mImportXlsx">
   <div class="modal">
@@ -274,7 +264,6 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
     <button class="btn bp" onclick="openNovoAgend()">+ Inserir semana</button>
     <button class="btn bo" onclick="openM('mImportXlsx')">📂 Importar planilha</button>
-    <button class="btn bo" onclick="openM('mImport')">📥 Dados embutidos</button>
   </div>
 </div>
 <div class="page" id="page-programa">
@@ -300,7 +289,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 <div class="page" id="page-oradores">
   <div class="panel-head">
     <div class="panel-title" style="margin:0">Oradores</div>
-    <div class="brow-r"><button class="btn bo bs" onclick="openM('mImport')">📥 Importar</button><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
+    <div class="brow-r"><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
   </div>
   <input id="buscaOr" placeholder="🔍 Buscar por nome ou congregação..." oninput="renderOradores()" style="margin-bottom:10px">
   <div id="listaOr"><div class="spin"></div></div>
@@ -366,7 +355,6 @@ function checkSetup(){
   const lt=localStorage.getItem('bj_temas');
   if(lc) cfg=JSON.parse(lc);
   if(lt) Object.assign(TL,JSON.parse(lt));
-  programa=IMPORT_PROGRAMA.filter(p=>p.data&&/^\d{4}-\d{2}-\d{2}/.test(p.data));
   renderHome(); renderTemas();
   if(fb){document.getElementById('setup').style.display='none';initFB(JSON.parse(fb));}
 }
@@ -451,9 +439,23 @@ function corTempo(iso){
 }
 function ehSist(nome){if(!nome)return true;const s=['CONGRESSO','ASSEMBLEIA','CELEBRAÇÃO','VISITA','REUNIÃO','DISCURSO ESPECIAL','TRANSIÇÃO','STREAM'];return s.some(x=>nome.toUpperCase().includes(x));}
 function nextSab(){
+  // Returns the current or upcoming Saturday
   const d=new Date();d.setHours(12,0,0,0);
-  const dow=d.getDay();const diff=dow===6?0:(6-dow);
-  d.setDate(d.getDate()+diff);return d.toISOString().slice(0,10);
+  const dow=d.getDay(); // 0=Sun, 6=Sat
+  const diff=dow===6?0:(6-dow);
+  d.setDate(d.getDate()+diff);
+  return d.toISOString().slice(0,10);
+}
+function currentOrNextProg(){
+  // Returns the programa entry to highlight: exact saturday match, or closest future
+  const sab=nextSab();
+  const today=new Date().toISOString().slice(0,10);
+  // Dedup by date
+  const byDate={};
+  programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
+  const sorted=Object.values(byDate).filter(p=>p.data>=today).sort((a,b)=>a.data>b.data?1:-1);
+  // Prefer exact saturday match, fallback to first future
+  return sorted.find(p=>p.data===sab)||sorted[0]||null;
 }
 function openM(id){document.getElementById(id).classList.add('open');}
 function closeM(id){document.getElementById(id).classList.remove('open');}
@@ -493,15 +495,15 @@ function mkWeekCard(sem,isCurrent){
 
 function renderHome(){
   const hoje=new Date().toISOString().slice(0,10);
-  // Deduplicate by date (last entry per date wins)
   const byDate={};
   programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
   const sorted=Object.values(byDate).filter(p=>p.data>=hoje).sort((a,b)=>a.data>b.data?1:-1);
+  const destaque=currentOrNextProg();
   const div=document.getElementById('homeWeekCard');
   if(!sorted.length){
     div.innerHTML='<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--whi3)">Sem discursos programados. <button class=\"btn bp bs\" onclick=\"openNovoAgend()\" style=\"margin-left:8px\">+ Inserir</button></div>';
   } else {
-    div.innerHTML=sorted.map((sem,i)=>mkWeekCard(sem,i===0)).join('');
+    div.innerHTML=sorted.map(sem=>mkWeekCard(sem,destaque&&sem.data===destaque.data)).join('');
   }
   // Sentinela chip
   const sd=document.getElementById('homeSentinela');
@@ -518,7 +520,6 @@ async function loadPrograma(){
   if(!db){renderPrograma();return;}
   const s=await FF.gets(FF.col(db,'programa'));
   if(s.docs.length>0) programa=s.docs.map(d=>({id:d.id,...d.data()}));
-  else programa=IMPORT_PROGRAMA.filter(p=>p.data&&/^\d{4}-\d{2}-\d{2}/.test(p.data));
   renderPrograma();renderHome();
 }
 
@@ -846,47 +847,6 @@ async function saveSentinela(){
 async function delSent(id){if(!confirm('Remover?'))return;await FF.del(FF.doc(db,'sentinela',id));await loadSentinelas();renderHome();}
 
 // IMPORT EMBUTIDO
-async function startImport(){
-  if(!db)return toast('Firebase não conectado!');
-  const bar=document.getElementById('impBar'),log=document.getElementById('impLog'),btns=document.getElementById('impBtns');
-  btns.innerHTML='<div class="spin" style="margin:4px 0"></div>';log.innerHTML='';
-  const aL=m=>{log.innerHTML+=m+'\n';log.scrollTop=log.scrollHeight;};
-  try{
-    aL('► Oradores...');
-    for(let i=0;i<IMPORT_ORADORES.length;i++){await FF.add(FF.col(db,'oradores'),IMPORT_ORADORES[i]);bar.style.width=Math.round((i+1)/IMPORT_ORADORES.length*22)+'%';}
-    aL('✓ '+IMPORT_ORADORES.length+' oradores');
-    aL('► Discursos...');
-    for(let i=0;i<IMPORT_DISCURSOS.length;i++){await FF.add(FF.col(db,'discursos'),IMPORT_DISCURSOS[i]);bar.style.width=22+Math.round((i+1)/IMPORT_DISCURSOS.length*38)+'%';}
-    aL('✓ '+IMPORT_DISCURSOS.length+' discursos');
-    aL('► Sugestões...');
-    for(const s of IMPORT_SUGESTOES)await FF.add(FF.col(db,'sugestoes'),{...s,status:'pendente'});
-    bar.style.width='68%';aL('✓ '+IMPORT_SUGESTOES.length+' sugestões');
-    aL('► Programação...');
-    for(let i=0;i<IMPORT_PROGRAMA.length;i++){await FF.add(FF.col(db,'programa'),IMPORT_PROGRAMA[i]);bar.style.width=68+Math.round((i+1)/IMPORT_PROGRAMA.length*32)+'%';}
-    aL('✓ '+IMPORT_PROGRAMA.length+' semanas');aL('\n◈ Concluído!');
-    await loadAll();btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImport\')">Fechar</button>';toast('◈ Dados importados!');
-  }catch(e){aL('✗ ERRO: '+e.message);btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImport\')">Fechar</button>';}
-}
-
-// IMPORT XLSX
-let xlsxParsed=null;
-async function onXlsxSelect(){
-  const file=document.getElementById('xlsxFile').files[0];if(!file)return;
-  const info=document.getElementById('xlsxInfo'),btn=document.getElementById('btnImportXlsx');
-  info.textContent='Lendo...';
-  if(!window.XLSX){await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
-  try{
-    const buf=await file.arrayBuffer();
-    const wb=XLSX.read(buf,{type:'array',cellDates:true});
-    if(!wb.SheetNames.includes('Discursos')){info.textContent='Aba "Discursos" não encontrada!';return;}
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets['Discursos'],{header:1,raw:false,dateNF:'yyyy-mm-dd'});
-    xlsxParsed=[];
-    for(const row of rows){const d=String(row[0]||'').slice(0,10);if(!d.match(/^\d{4}-\d{2}-\d{2}/))continue;xlsxParsed.push({data:d,nome:String(row[2]||'').trim()||null,telefone:String(row[4]||'').trim(),congregacao:String(row[5]||'').trim(),temaNum:row[6]?parseInt(row[6])||null:null,tema:String(row[8]||'').trim()});}
-    xlsxParsed=xlsxParsed.filter(p=>p.data>='2022-01-01');
-    info.textContent='✓ '+xlsxParsed.length+' registros ('+xlsxParsed.filter(p=>p.nome).length+' com orador)';
-    btn.disabled=false;btn.style.opacity='1';
-  }catch(e){info.textContent='Erro: '+e.message;}
-}
 async function startImportXlsx(){
   if(!db||!xlsxParsed)return;
   const bar=document.getElementById('impBarXlsx'),log=document.getElementById('impLogXlsx'),btns=document.getElementById('impBtnsXlsx');
