@@ -243,6 +243,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 <header>
   <div class="logo">◈ Bom Jesus <span>Oradores</span></div>
   <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn bo bs" onclick="openM('mImportXlsx')" title="Importar planilha">📂</button>
     <button class="btn bo bs" onclick="openM('mExport')" title="Exportar Excel">📤</button>
     <div class="ai-btn" onclick="toggleAI()">◈ IA</div>
   </div>
@@ -259,17 +260,16 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 </nav>
 <main>
 <div class="page active" id="page-home">
-  <div id="homeWeekCard"></div>
   <div id="homeSentinela"></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-    <button class="btn bp" onclick="openNovoAgend()">+ Inserir semana</button>
-    <button class="btn bo" onclick="openM('mImportXlsx')">📂 Importar planilha</button>
-  </div>
+  <div id="homeWeekCard"></div>
 </div>
 <div class="page" id="page-programa">
   <div class="panel-head">
     <div class="panel-title" style="margin:0">Histórico de Discursos</div>
-    <button class="btn bp bs" onclick="exportXlsx('historico')">📤 Exportar Excel</button>
+    <div class="brow-r">
+      <button class="btn bp bs" onclick="openNovoAgend()">+ Inserir semana</button>
+      <button class="btn bo bs" onclick="exportXlsx('historico')">📤 Exportar</button>
+    </div>
   </div>
   <input id="buscaHist" placeholder="🔍 Buscar por orador, tema ou data..." oninput="renderPrograma()" style="margin-bottom:10px">
   <div id="listaPrograma"><div class="spin"></div></div>
