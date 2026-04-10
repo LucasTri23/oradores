@@ -259,7 +259,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 </header>
 <nav>
   <div class="tab active" data-p="home">🏠 Home</div>
-  <div class="tab" data-p="programa">📅 Programação</div>
+  <div class="tab" data-p="programa">📋 Histórico</div>
   <div class="tab" data-p="temas">🔍 Temas</div>
   <div class="tab" data-p="oradores">👤 Oradores</div>
   <div class="tab" data-p="sugestoes">💡 Sugestões</div>
@@ -279,9 +279,10 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 </div>
 <div class="page" id="page-programa">
   <div class="panel-head">
-    <div class="panel-title" style="margin:0">Programação</div>
-    <div class="brow-r"><button class="btn bo bs" onclick="openM('mImportXlsx')">📂 Importar</button><button class="btn bp bs" onclick="openNovoAgend()">+ Inserir</button></div>
+    <div class="panel-title" style="margin:0">Histórico de Discursos</div>
+    <button class="btn bp bs" onclick="exportXlsx('historico')">📤 Exportar Excel</button>
   </div>
+  <input id="buscaHist" placeholder="🔍 Buscar por orador, tema ou data..." oninput="renderPrograma()" style="margin-bottom:10px">
   <div id="listaPrograma"><div class="spin"></div></div>
 </div>
 <div class="page" id="page-temas">
@@ -460,45 +461,47 @@ document.querySelectorAll('.mbg').forEach(b=>b.addEventListener('click',e=>{if(e
 function toast(msg,dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
 
 // HOME
+function mkWeekCard(sem,isCurrent){
+  const nT=sem.temaNum;
+  const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'';
+  const temOr=sem.nome&&!ehSist(sem.nome);
+  const enc=encodeURIComponent(JSON.stringify(sem));
+  let h='<div style="background:'+(isCurrent?'linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.04))':'var(--surf)')+';border:1px solid '+(isCurrent?'rgba(124,58,237,.35)':'var(--border)')+';border-radius:12px;padding:16px;position:relative;margin-bottom:8px">';
+  h+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:'+(isCurrent?'var(--pur3)':'var(--whi3)')+';margin-bottom:4px">📅 '+fDSem(sem.data)+'</div>';
+  if(nT) h+='<div style="margin-bottom:4px"><span class="badge bpur">Tema nº '+nT+'</span></div>';
+  h+='<div style="font-family:\'Space Grotesk\',sans-serif;font-size:'+(isCurrent?'18px':'14px')+';font-weight:700;line-height:1.3;color:var(--whi);margin-bottom:'+(isCurrent?'12px':'8px')+';letter-spacing:-.02em">'+(nomeT||'<span style="color:var(--whi3);font-style:italic;font-weight:400">Tema não definido</span>')+'</div>';
+  if(sem.obs) h+='<div style="font-size:11px;color:var(--pur3);margin-bottom:8px">⚡ '+sem.obs+'</div>';
+  if(temOr){
+    h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:rgba(0,0,0,.22);border-radius:8px">';
+    h+='<div style="flex:1;min-width:100px"><div style="font-weight:600;font-size:'+(isCurrent?'14px':'13px')+'">'+sem.nome+'</div>';
+    h+='<div style="font-size:11px;color:var(--whi3);margin-top:1px">'+(sem.congregacao||'—')+(sem.telefone?' · '+sem.telefone:'')+'</div></div>';
+    if(sem.telefone){
+      h+='<div style="display:flex;gap:5px;flex-wrap:wrap">';
+      h+='<button class="btn bgn bs" onclick="abrirWADir(\''+sem.telefone+'\')">💬 WA</button>';
+      h+='<button class="btn bo bs" onclick="abrirMsgPadrao(\''+enc+'\')">✦ Msg</button>';
+      h+='</div>';
+    }
+    h+='</div>';
+  } else {
+    h+='<div style="padding:8px 12px;background:rgba(0,0,0,.15);border-radius:7px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">';
+    h+='<span style="font-size:11px;color:var(--whi3)">Orador não definido</span>';
+    h+='<button class="btn bp bs" onclick="editarAgend(\''+enc+'\')">+ Definir</button></div>';
+  }
+  h+='<button style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:10px;padding:3px 6px;border-radius:4px" onclick="editarAgend(\''+enc+'\')">✏️</button>';
+  return h+'</div>';
+}
+
 function renderHome(){
   const hoje=new Date().toISOString().slice(0,10);
-  const sorted=[...programa].filter(p=>p.data).sort((a,b)=>a.data>b.data?1:-1);
-  const proxSab=nextSab();
-  let sem=sorted.find(p=>p.data===proxSab)||sorted.find(p=>p.data>=hoje);
+  // Deduplicate by date (last entry per date wins)
+  const byDate={};
+  programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
+  const sorted=Object.values(byDate).filter(p=>p.data>=hoje).sort((a,b)=>a.data>b.data?1:-1);
   const div=document.getElementById('homeWeekCard');
-  if(!sem){
-    div.innerHTML='<div class="week-card"><div class="week-date">Esta semana</div><div class="week-tema" style="color:var(--whi3)">Sem discurso programado</div><button class="btn bp bs" onclick="openNovoAgend()" style="margin-top:8px">+ Inserir</button></div>';
+  if(!sorted.length){
+    div.innerHTML='<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--whi3)">Sem discursos programados. <button class=\"btn bp bs\" onclick=\"openNovoAgend()\" style=\"margin-left:8px\">+ Inserir</button></div>';
   } else {
-    const nT=sem.temaNum;
-    const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'';
-    const temOr=sem.nome&&!ehSist(sem.nome);
-    const enc=encodeURIComponent(JSON.stringify(sem));
-    let h='<div class="week-card">';
-    h+='<div class="week-date">📅 '+fDSem(sem.data)+'</div>';
-    if(nT) h+='<div style="margin-bottom:6px"><span class="badge bpur">Tema nº '+nT+'</span></div>';
-    h+='<div class="week-tema">'+(nomeT||'<span style="color:var(--whi3);font-style:italic">Tema não definido</span>')+'</div>';
-    if(sem.obs) h+='<div style="font-size:12px;color:var(--pur3);margin-bottom:10px">⚡ '+sem.obs+'</div>';
-    if(temOr){
-      h+='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;background:rgba(0,0,0,.22);border-radius:8px">';
-      h+='<div style="flex:1;min-width:100px"><div style="font-weight:600;font-size:14px">'+sem.nome+'</div>';
-      h+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+(sem.congregacao||'—')+'</div>';
-      if(sem.telefone) h+='<div style="font-size:11px;color:var(--whi3)">'+sem.telefone+'</div>';
-      h+='</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
-      if(sem.telefone){
-        h+='<button class="btn bgn bs" onclick="abrirWADir(\''+sem.telefone+'\')">💬 WhatsApp</button>';
-        h+='<button class="btn bo bs" onclick="abrirMsgPadrao(\''+enc+'\')">✦ Mensagem</button>';
-      } else {
-        h+='<span style="font-size:12px;color:var(--whi3)">Sem contato</span>';
-      }
-      h+='</div></div>';
-    } else {
-      h+='<div style="padding:10px 13px;background:rgba(0,0,0,.18);border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">';
-      h+='<span style="font-size:12px;color:var(--whi3)">Orador não definido</span>';
-      h+='<button class="btn bp bs" onclick="editarAgend(\''+enc+'\')">+ Definir orador</button></div>';
-    }
-    h+='<button style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:11px;padding:4px 7px;border-radius:5px" onclick="editarAgend(\''+enc+'\')">✏️ editar</button>';
-    h+='</div>';
-    div.innerHTML=h;
+    div.innerHTML=sorted.map((sem,i)=>mkWeekCard(sem,i===0)).join('');
   }
   // Sentinela chip
   const sd=document.getElementById('homeSentinela');
@@ -510,7 +513,7 @@ function renderHome(){
   }
 }
 
-// PROGRAMAÇÃO
+// PROGRAMAÇÃO (Histórico)
 async function loadPrograma(){
   if(!db){renderPrograma();return;}
   const s=await FF.gets(FF.col(db,'programa'));
@@ -521,47 +524,42 @@ async function loadPrograma(){
 
 function renderPrograma(){
   const hoje=new Date().toISOString().slice(0,10);
-  const sorted=[...programa].filter(p=>p.data).sort((a,b)=>a.data>b.data?1:-1);
-  const prox=sorted.filter(p=>p.data>=hoje);
+  const q=(document.getElementById('buscaHist')?.value||'').toLowerCase();
+  // Show past entries sorted by date desc
+  let hist=[...programa].filter(p=>p.data&&p.data<hoje);
+  if(q) hist=hist.filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.congregacao||'').toLowerCase().includes(q)||(p.data||'').includes(q)||String(p.temaNum||'').includes(q)||(p.tema||'').toLowerCase().includes(q));
+  hist.sort((a,b)=>b.data>a.data?1:-1);
   const div=document.getElementById('listaPrograma');
   if(!div)return;
-  if(!prox.length){div.innerHTML='<div class="empty"><div class="ico">📅</div>Sem datas futuras</div>';return;}
-  div.innerHTML=prox.map(p=>{
+  if(!hist.length){div.innerHTML='<div class="empty"><div class="ico">📋</div>'+(q?'Nenhum resultado':'Nenhum histórico')+'</div>';return;}
+  div.innerHTML=hist.map(p=>{
     const temOr=p.nome&&!ehSist(p.nome);
     const nT=p.temaNum;
     const nomeT=nT&&TL[nT]?TL[nT]:p.tema||'';
-    const semT=!nomeT||nomeT.toLowerCase().includes('falta');
-    const bc=temOr?'var(--border)':semT?'rgba(239,68,68,.2)':'rgba(124,58,237,.2)';
-    const enc=encodeURIComponent(JSON.stringify(p));
-    let h='<div class="prog-row" style="border-color:'+bc+'">';
+    let h='<div class="prog-row">';
     h+='<div style="min-width:70px;flex-shrink:0"><div style="font-size:12px;font-weight:700;color:var(--whi2)">'+fD(p.data)+'</div><div style="font-size:10px;color:var(--whi3)">'+diaSem(p.data)+'</div></div>';
     h+='<div style="flex:1;min-width:0">';
-    if(nT) h+='<span class="badge bpur" style="margin-bottom:3px;display:inline-block">Nº '+nT+'</span> ';
-    h+='<div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:'+(semT?'var(--whi3)':'var(--whi)')+'">'+( semT?'<em>Tema não definido</em>':nomeT)+'</div>';
-    h+='<div style="font-size:11px;color:'+(temOr?'var(--whi2)':'rgba(239,68,68,.8)')+';margin-top:2px">'+(temOr?p.nome+' · '+(p.congregacao||'—'):'Sem orador')+'</div>';
-    h+='</div><div style="display:flex;gap:4px;flex-shrink:0">';
-    if(temOr&&p.telefone) h+='<button class="btn bo bs" onclick="abrirWADir(\''+p.telefone+'\')" title="WhatsApp">💬</button>';
-    h+='<button class="btn bo bs" onclick="editarAgend(\''+enc+'\')" title="Editar">✏️</button>';
-    if(p.id) h+='<button class="btn bo bs" style="color:var(--red);opacity:.7" onclick="delAgend(\''+p.id+'\')">✕</button>';
+    if(nT) h+='<span class="badge bpur" style="margin-bottom:2px;display:inline-block">Nº '+nT+'</span> ';
+    h+='<div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(nomeT||'<em style="color:var(--whi3)">Tema não definido</em>')+'</div>';
+    h+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+(temOr?p.nome+' · '+(p.congregacao||'—'):'—')+'</div>';
     h+='</div></div>';
     return h;
   }).join('');
 }
 
+// AGENDAMENTO
 function openNovoAgend(){
   preencherModalAgend({});
   document.getElementById('agData').value=nextSab();
   document.getElementById('mAgendTit').textContent='Inserir na Programação';
   openM('mAgend');
 }
-
 function editarAgend(enc){
   const p=JSON.parse(decodeURIComponent(enc));
   preencherModalAgend(p);
   document.getElementById('mAgendTit').textContent='Editar — '+fD(p.data);
   openM('mAgend');
 }
-
 function preencherModalAgend(p){
   document.getElementById('agId').value=p.id||'';
   document.getElementById('agData').value=p.data||'';
@@ -569,7 +567,6 @@ function preencherModalAgend(p){
   document.getElementById('agObs').value=p.obs||'';
   document.getElementById('agCadastrar').checked=false;
   onAgTema();
-  // Populate select
   const sel=document.getElementById('agOradorSel');
   sel.innerHTML='<option value="">— Selecionar —</option><option value="__digitar__">✏️ Digitar manualmente</option>';
   [...oradores].sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(o=>{
@@ -587,34 +584,20 @@ function preencherModalAgend(p){
     document.getElementById('agTel').value=p.telefone||'';
   } else {
     document.getElementById('agManual').style.display='none';
-    if(matched){
-      document.getElementById('agNome').value=matched.nome||'';
-      document.getElementById('agCong').value=matched.cong||'';
-      document.getElementById('agTel').value=matched.tel||'';
-    }
+    if(matched){document.getElementById('agNome').value=matched.nome;document.getElementById('agCong').value=matched.cong||'';document.getElementById('agTel').value=matched.tel||'';}
   }
 }
-
 function onAgTema(){const n=parseInt(document.getElementById('agTema').value);document.getElementById('agTemaDesc').textContent=n&&TL[n]?TL[n]:'';}
-
 function onAgOradorSel(){
   const v=document.getElementById('agOradorSel').value;
   const m=document.getElementById('agManual');
-  if(v==='__digitar__'){
-    m.style.display='block';
-    ['agNome','agCong','agTel'].forEach(id=>document.getElementById(id).value='');
-  } else if(v){
-    m.style.display='none';
-    const o=oradores.find(x=>x.id===v);
-    if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}
-  } else {
-    m.style.display='none';
-  }
+  if(v==='__digitar__'){m.style.display='block';['agNome','agCong','agTel'].forEach(id=>document.getElementById(id).value='');}
+  else if(v){m.style.display='none';const o=oradores.find(x=>x.id===v);if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}}
+  else{m.style.display='none';}
 }
-
 async function saveAgend(){
   if(!db)return toast('Firebase não conectado!');
-  const id=document.getElementById('agId').value;
+  const idField=document.getElementById('agId').value.trim();
   const data_val=document.getElementById('agData').value;
   if(!data_val)return toast('Informe a data!');
   const selV=document.getElementById('agOradorSel').value;
@@ -628,28 +611,34 @@ async function saveAgend(){
     tel=document.getElementById('agTel').value.trim();
     if(nome&&document.getElementById('agCadastrar').checked){
       await FF.add(FF.col(db,'oradores'),{nome,cong,tel,ultimoDiscurso:data_val,nota:0,obs:''});
-      await loadOradores();
-      toast('Orador cadastrado!');
+      await loadOradores();toast('Orador cadastrado!');
     }
   }
   const entry={data:data_val,temaNum:parseInt(document.getElementById('agTema').value)||null,nome:nome||null,congregacao:cong,telefone:tel,obs:document.getElementById('agObs').value.trim()};
-  if(id){
-    await FF.upd(FF.doc(db,'programa',id),entry);
-    programa=programa.filter(p=>p.id!==id);
-    entry.id=id;
+  // Resolve ID: use field, or find existing Firebase doc for this date
+  let resolvedId=idField;
+  if(!resolvedId){
+    const snap=await FF.gets(FF.col(db,'programa'));
+    const match=snap.docs.find(d=>d.data().data===data_val);
+    if(match)resolvedId=match.id;
+  }
+  if(resolvedId){
+    await FF.upd(FF.doc(db,'programa',resolvedId),entry);
+    entry.id=resolvedId;
   } else {
     const ref=await FF.add(FF.col(db,'programa'),entry);
     entry.id=ref.id;
   }
+  // Replace local entry for this date
+  programa=programa.filter(p=>p.data!==data_val);
   programa.push(entry);
-  closeM('mAgend');renderPrograma();renderHome();toast('✓ Salvo!');
+  closeM('mAgend');renderHome();toast('✓ Salvo!');
 }
-
 async function delAgend(id){
-  if(!confirm('Remover este agendamento?'))return;
+  if(!confirm('Remover?'))return;
   if(db)await FF.del(FF.doc(db,'programa',id));
   programa=programa.filter(p=>p.id!==id);
-  renderPrograma();renderHome();
+  renderHome();
 }
 
 // WA
