@@ -500,7 +500,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 <!-- ══ JAVASCRIPT ════════════════════════════════════════ -->
 <script>
-'use strict';
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
@@ -591,15 +590,18 @@ function renderTemas(){
     const nao=t==='(Não use.)';
     const usos=discursos.filter(d=>d.temaNum==n).length;
     const ult=discursos.filter(d=>d.temaNum==n).sort((a,b)=>b.data>a.data?1:-1)[0]?.data;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--surf);transition:.15s;cursor:${nao?'default':'pointer'}" onclick="${nao?'':'openAgendComTema('+n+')'}" ${nao?'':'onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'"'}>
-      <div style="min-width:36px;text-align:center;font-size:12px;font-weight:700;color:${nao?'var(--txt3)':'var(--gold)'}">${n}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13.5px;${nao?'color:var(--txt3);text-decoration:line-through':''};">${t}</div>
-        ${nao?'':`<div style="font-size:11px;color:var(--txt3);margin-top:1px">${usos?`Usado ${usos}x · último: ${fD(ult)}`:'Nunca usado'}</div>`}
-      </div>
-      ${!nao&&usos===0?'<span class="badge bg-green" style="flex-shrink:0">Novo ✓</span>':''}
-      ${!nao?'<span style="font-size:18px;opacity:.3;flex-shrink:0">›</span>':''}
-    </div>`;
+    const clickAttr=nao?'':'onclick="openAgendComTema('+n+')"';
+    const cursorStyle=nao?'':'cursor:pointer;';
+    let row='<div '+clickAttr+' style="display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--surf);'+cursorStyle+'">';
+    row+='<div style="min-width:36px;text-align:center;font-size:12px;font-weight:700;color:'+(nao?'var(--txt3)':'var(--gold)')+'">'+n+'</div>';
+    row+='<div style="flex:1;min-width:0">';
+    row+='<div style="font-size:13.5px;'+(nao?'color:var(--txt3);text-decoration:line-through':'')+'">'+(nao?'<s>'+t+'</s>':t)+'</div>';
+    if(!nao) row+='<div style="font-size:11px;color:var(--txt3);margin-top:1px">'+(usos?'Usado '+usos+'x &middot; último: '+fD(ult):'Nunca usado')+'</div>';
+    row+='</div>';
+    if(!nao&&usos===0) row+='<span class="badge bg-green" style="flex-shrink:0">Novo ✓</span>';
+    if(!nao) row+='<span style="font-size:18px;opacity:.3;flex-shrink:0;margin-left:4px">›</span>';
+    row+='</div>';
+    return row;
   }).join('');
 }
 
