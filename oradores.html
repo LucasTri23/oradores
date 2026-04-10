@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oradores — Congregação Bom Jesus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0e0c;--surf:#1a1916;--surf2:#222118;--surf3:#2a2820;
+  --border:#2e2c25;--border2:#3d3b30;
+  --gold:#c9a84c;--gold2:#e8c96a;--gdim:rgba(201,168,76,.12);--gdim2:rgba(201,168,76,.05);
+  --txt:#f0ede4;--txt2:#9e9b8e;--txt3:#6b6860;
+  --red:#c0392b;--green:#219653;--r:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh}
+
+/* ── SETUP ───────────────────────────────────────────── */
+#setup{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.setup-box{background:var(--surf);border:1px solid var(--border2);border-radius:16px;padding:32px;width:100%;max-width:460px;animation:up .3s}
+.setup-logo{font-family:'Playfair Display',serif;font-size:24px;color:var(--gold);text-align:center;margin-bottom:2px}
+.setup-sub{text-align:center;color:var(--txt3);font-size:12px;margin-bottom:24px}
+.setup-step{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:5px;margin-top:16px}
+.setup-hint{font-size:12px;color:var(--txt3);line-height:1.6;margin-bottom:10px}
+.setup-hint a{color:var(--gold)}
+#setupErr{color:#e74c3c;font-size:12px;margin-top:8px;display:none}
+
+/* ── HEADER ─────────────────────────────────────────── */
+header{border-bottom:1px solid var(--border);padding:0 18px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;background:var(--bg);z-index:100;gap:10px}
+.logo{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold);white-space:nowrap}
+.logo em{color:var(--txt3);font-style:normal;font-size:11px;margin-left:7px;font-family:'DM Sans',sans-serif}
+.ai-btn{display:flex;align-items:center;gap:5px;background:var(--gdim);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--gold);cursor:pointer;transition:.2s;white-space:nowrap;font-weight:600}
+.ai-btn:hover{background:rgba(201,168,76,.2)}
+
+/* ── NAV ─────────────────────────────────────────────── */
+nav{display:flex;gap:0;padding:0 18px;border-bottom:1px solid var(--border);overflow-x:auto;background:var(--surf);scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+.tab{padding:12px 14px;color:var(--txt3);cursor:pointer;white-space:nowrap;font-size:11px;font-weight:700;border-bottom:2px solid transparent;transition:.18s;letter-spacing:.05em;text-transform:uppercase;user-select:none}
+.tab:hover{color:var(--txt2)}.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* ── MAIN ────────────────────────────────────────────── */
+main{max-width:860px;margin:0 auto;padding:22px 18px}
+.page{display:none}.page.active{display:block;animation:fadeIn .2s}
+.panel-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold);margin-bottom:16px}
+
+/* ── CARDS ────────────────────────────────────────────── */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:11px}
+.slabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--txt3);margin-bottom:7px}
+
+/* ── INPUTS ──────────────────────────────────────────── */
+.field{margin-bottom:13px}
+label{display:block;font-size:12px;color:var(--txt2);margin-bottom:4px}
+input,select,textarea{width:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:7px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;padding:9px 11px;outline:none;transition:border-color .18s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+input::placeholder,textarea::placeholder{color:var(--txt3)}
+select option{background:var(--surf2)}
+textarea{resize:vertical;min-height:68px}
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 15px;border:none;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:.02em;transition:.15s;white-space:nowrap}
+.bg{background:var(--gold);color:#1a1800}.bg:hover{background:var(--gold2)}
+.bo{background:transparent;border:1px solid var(--border2);color:var(--txt2)}.bo:hover{border-color:var(--gold);color:var(--gold)}
+.br{background:var(--red);color:#fff}.bgreen{background:var(--green);color:#fff}
+.bs{padding:5px 10px;font-size:12px}
+.brow{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
+
+/* ── GRID ─────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+@media(max-width:520px){.g2{grid-template-columns:1fr}}
+
+/* ── TEMA RESULT ─────────────────────────────────────── */
+.tema-box{background:var(--gdim2);border:1px solid rgba(201,168,76,.18);border-radius:8px;padding:15px 17px;margin-top:11px;animation:up .22s}
+.tema-n{font-size:10px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase}
+.tema-t{font-family:'Playfair Display',serif;font-size:17px;margin:3px 0 9px;line-height:1.3}
+.tema-stats{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--txt2)}
+.tema-stats strong{color:var(--txt)}
+
+/* ── WA PREVIEW ──────────────────────────────────────── */
+.wa-pre{background:var(--surf2);border:1px solid var(--border2);border-radius:8px;padding:13px;font-size:13px;line-height:1.75;color:var(--txt2);white-space:pre-wrap;margin-top:11px}
+.wa-pre strong{color:var(--txt)}
+
+/* ── ORADOR ITEM ─────────────────────────────────────── */
+.or-item{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surf);transition:.18s}
+.or-item:hover{border-color:var(--border2)}
+.or-name{font-weight:600;font-size:14px;line-height:1.3}
+.or-info{font-size:12px;color:var(--txt2);margin-top:2px;line-height:1.5}
+.or-actions{display:flex;gap:4px;flex-shrink:0}
+
+/* ── STARS ───────────────────────────────────────────── */
+.stars-el{display:flex;gap:2px}
+.star{font-size:21px;cursor:pointer;color:var(--border2);transition:.1s;line-height:1;user-select:none}
+.star.on{color:var(--gold)}
+
+/* ── BADGES ──────────────────────────────────────────── */
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.04em}
+.bg-gold{background:var(--gdim);color:var(--gold);border:1px solid rgba(201,168,76,.22)}
+.bg-green{background:rgba(33,150,83,.13);color:#2ecc71;border:1px solid rgba(33,150,83,.22)}
+.bg-red{background:rgba(192,57,43,.13);color:#e74c3c;border:1px solid rgba(192,57,43,.22)}
+.bg-gray{background:rgba(255,255,255,.05);color:var(--txt3);border:1px solid var(--border)}
+
+/* ── MODAL ────────────────────────────────────────────── */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;align-items:center;justify-content:center;padding:14px}
+.mbg.open{display:flex}
+.modal{background:var(--surf);border:1px solid var(--border2);border-radius:12px;padding:21px;width:100%;max-width:480px;animation:up .2s;max-height:92vh;overflow-y:auto}
+.modal-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--gold);margin-bottom:14px}
+
+/* ── AI PANEL ────────────────────────────────────────── */
+#aiPanel{position:fixed;right:0;top:0;bottom:0;width:320px;background:var(--surf);border-left:1px solid var(--border2);z-index:300;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 24px rgba(0,0,0,.4)}
+#aiPanel.open{transform:translateX(0)}
+.ai-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ai-title{font-family:'Playfair Display',serif;color:var(--gold);font-size:15px}
+.ai-chips{display:flex;flex-wrap:wrap;gap:5px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.chip{background:var(--surf2);border:1px solid var(--border2);border-radius:14px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--txt3);transition:.15s}
+.chip:hover{border-color:var(--gold);color:var(--gold)}
+.ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.ai-msg{padding:9px 12px;border-radius:8px;font-size:13px;line-height:1.6;max-width:94%;word-break:break-word}
+.ai-msg.u{background:var(--gdim);align-self:flex-end;color:var(--txt)}
+.ai-msg.b{background:var(--surf2);align-self:flex-start;color:var(--txt2);border:1px solid var(--border)}
+.ai-foot{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:6px;flex-shrink:0}
+.ai-foot input{flex:1}
+
+/* ── ANALYTICS ───────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin-bottom:14px}
+.stat-box{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:13px 15px}
+.stat-val{font-family:'Playfair Display',serif;font-size:27px;color:var(--gold);line-height:1}
+.stat-lbl{font-size:11px;color:var(--txt3);margin-top:3px}
+.rank-row{display:flex;align-items:center;justify-content:space-between;padding:7px 11px;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
+.rank-row:last-child{border:none}
+.rank-bar{height:3px;background:var(--gold);border-radius:2px;margin-top:3px;opacity:.6}
+
+/* ── IMPORT LOG ──────────────────────────────────────── */
+.imp-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:11px 0}
+.imp-bar{height:100%;background:var(--gold);width:0;transition:width .25s;border-radius:3px}
+.imp-log{background:var(--surf2);border:1px solid var(--border);border-radius:7px;padding:9px;height:110px;overflow-y:auto;font-size:12px;color:var(--txt3);font-family:monospace;line-height:1.5}
+
+/* ── MISC ────────────────────────────────────────────── */
+#toast{position:fixed;bottom:18px;right:18px;background:var(--surf2);border:1px solid var(--gold);border-radius:8px;padding:9px 14px;font-size:13px;z-index:999;transform:translateY(60px);opacity:0;transition:.25s;max-width:240px}
+#toast.show{transform:translateY(0);opacity:1}
+.spin{width:24px;height:24px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin:26px auto}
+.empty{text-align:center;padding:32px 18px;color:var(--txt3)}
+.empty .ico{font-size:32px;margin-bottom:7px}
+hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+.sug-item{border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin-bottom:6px;background:var(--surf)}
+
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ══ DATA ════════════════════════════════════════════ -->
+<script src="data.js"></script>
+
+<!-- ══ SETUP SCREEN ════════════════════════════════════ -->
+<div id="setup">
+  <div class="setup-box">
+    <div class="setup-logo">✦ Bom Jesus</div>
+    <div class="setup-sub">Configure o acesso antes de entrar</div>
+
+    <div class="setup-step">1 — Firebase (banco de dados)</div>
+    <div class="setup-hint">
+      Acesse <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a>
+      → seu projeto → ⚙️ Configurações do Projeto → Seus apps → Web → SDK setup.
+    </div>
+    <div class="g2">
+      <div class="field"><label>API Key</label><input id="sApiKey" placeholder="AIzaSy..."></div>
+      <div class="field"><label>Project ID</label><input id="sProjId" placeholder="meu-projeto-id"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label>Auth Domain</label><input id="sAuth" placeholder="projeto.firebaseapp.com"></div>
+      <div class="field"><label>App ID</label><input id="sAppId" placeholder="1:123:web:abc..."></div>
+    </div>
+
+    <hr>
+    <div class="setup-step">2 — Gemini AI <span style="font-size:10px;color:var(--txt3);font-weight:400">(opcional — assistente inteligente)</span></div>
+    <div class="setup-hint">
+      Chave gratuita em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>
+      — sem cartão de crédito.
+    </div>
+    <div class="field"><label>Gemini API Key</label><input id="sGemini" placeholder="AIzaSy... (pode deixar em branco)"></div>
+
+    <div id="setupErr"></div>
+    <button class="btn bg" style="width:100%;justify-content:center;margin-top:6px;padding:11px" onclick="doSetup()">
+      Entrar no sistema →
+    </button>
+  </div>
+</div>
+
+<!-- ══ TOAST ════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<!-- ══ AI PANEL ═════════════════════════════════════════ -->
+<div id="aiPanel">
+  <div class="ai-head">
+    <div class="ai-title">✦ Assistente Gemini</div>
+    <button class="btn bo bs" onclick="closeAI()">✕</button>
+  </div>
+  <div class="ai-chips">
+    <div class="chip" onclick="askAI('Quem são os oradores há mais tempo sem discursar?')">⏰ Sem discursar</div>
+    <div class="chip" onclick="askAI('Quais os temas mais usados? Liste os top 10')">📊 Top temas</div>
+    <div class="chip" onclick="askAI('Quais temas nunca foram usados ainda?')">🆕 Nunca usados</div>
+    <div class="chip" onclick="askAI('Faça uma análise geral do histórico de discursos e oradores')">📋 Análise geral</div>
+    <div class="chip" onclick="askAI('Quais congregações visitantes temos mais registro?')">🏛 Congregações</div>
+  </div>
+  <div class="ai-msgs" id="aiMsgs">
+    <div class="ai-msg b">Olá! Sou o assistente da Congregação Bom Jesus com acesso ao histórico completo de oradores. Pergunte sobre padrões, temas ou peça uma análise. O que você quer saber?</div>
+  </div>
+  <div class="ai-foot">
+    <input id="aiIn" placeholder="Digite sua pergunta..." onkeydown="if(event.key==='Enter')sendAI()">
+    <button class="btn bg bs" onclick="sendAI()">↑</button>
+  </div>
+</div>
+
+<!-- ══ MODAIS ════════════════════════════════════════════ -->
+
+<!-- Modal Orador -->
+<div class="mbg" id="mOrador">
+  <div class="modal">
+    <div class="modal-title" id="mOradorTit">Novo Orador</div>
+    <input type="hidden" id="oId">
+    <div class="g2">
+      <div class="field"><label>Nome</label><input id="oNome" placeholder="Nome completo"></div>
+      <div class="field"><label>Congregação</label><input id="oCong" placeholder="Congregação de origem"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label>WhatsApp</label><input id="oTel" type="tel" placeholder="31 9xxxx-xxxx"></div>
+      <div class="field"><label>Último discurso</label><input id="oUlt" type="date"></div>
+    </div>
+    <div class="field">
+      <label>Nota</label>
+      <div class="stars-el" id="starsEl">
+        <span class="star" data-v="1">★</span><span class="star" data-v="2">★</span>
+        <span class="star" data-v="3">★</span><span class="star" data-v="4">★</span>
+        <span class="star" data-v="5">★</span>
+      </div>
+    </div>
+    <div class="field"><label>Observação</label><textarea id="oObs" placeholder="Anotações sobre o orador..."></textarea></div>
+    <div class="brow">
+      <button class="btn bg" onclick="saveOrador()">Salvar</button>
+      <button class="btn bo" onclick="closeM('mOrador')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Sugestão -->
+<div class="mbg" id="mSug">
+  <div class="modal">
+    <div class="modal-title">Nova Sugestão de Tema</div>
+    <div class="field"><label>Quem sugeriu</label><input id="sNome" placeholder="Nome do ancião"></div>
+    <div class="field"><label>Número do Tema</label><input id="sNum" type="number" min="1" max="194" placeholder="Ex: 45" oninput="onSugNum()"></div>
+    <div id="sNumName" style="font-size:12px;color:var(--gold);margin:-7px 0 9px;min-height:15px"></div>
+    <div class="field"><label>Observação / Contexto</label><textarea id="sDesc" placeholder="Por que sugere este tema?"></textarea></div>
+    <div class="brow">
+      <button class="btn bg" onclick="saveSug()">Salvar</button>
+      <button class="btn bo" onclick="closeM('mSug')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Importar -->
+<div class="mbg" id="mImport">
+  <div class="modal">
+    <div class="modal-title">📥 Importar Planilha</div>
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:13px;line-height:1.6">
+      Carregará <strong>241 discursos</strong>, <strong>177 oradores</strong> e <strong>27 sugestões</strong>
+      extraídos da planilha <em>ORADORES_DE_2024.xlsx</em> diretamente no Firebase.
+    </p>
+    <div class="imp-bar-wrap"><div class="imp-bar" id="impBar"></div></div>
+    <div class="imp-log" id="impLog">Aguardando início...</div>
+    <div class="brow" id="impBtns">
+      <button class="btn bg" onclick="startImport()">▶ Iniciar importação</button>
+      <button class="btn bo" onclick="closeM('mImport')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP SHELL ═════════════════════════════════════════ -->
+<header>
+  <div class="logo">✦ Bom Jesus <em>Oradores</em></div>
+  <div class="ai-btn" onclick="toggleAI()" id="aiBtnHead">✦ IA Gemini</div>
+</header>
+
+<nav>
+  <div class="tab active" data-p="temas">🔍 Temas</div>
+  <div class="tab" data-p="programar">📅 Programar</div>
+  <div class="tab" data-p="oradores">👤 Oradores</div>
+  <div class="tab" data-p="sugestoes">💡 Sugestões</div>
+  <div class="tab" data-p="analytics">📊 Análise</div>
+  <div class="tab" data-p="sentinela">📖 Sentinela</div>
+  <div class="tab" data-p="config">⚙️ Config</div>
+</nav>
+
+<main>
+
+<!-- TEMAS -->
+<div class="page active" id="page-temas">
+  <div class="panel-title">Buscar Tema por Número</div>
+  <div class="card">
+    <div class="field">
+      <label>Digite o número do tema (1 a 194)</label>
+      <input type="number" id="temaIn" min="1" max="194" placeholder="Ex: 45" oninput="buscarTema()">
+    </div>
+    <div id="temaRes"></div>
+  </div>
+</div>
+
+<!-- PROGRAMAR -->
+<div class="page" id="page-programar">
+  <div class="panel-title">Programar Discurso</div>
+  <div class="card">
+    <div class="g2">
+      <div class="field">
+        <label>Orador</label>
+        <select id="pOrador" onchange="onOradorSel()"><option value="">— Selecione —</option></select>
+      </div>
+      <div class="field"><label>Congregação</label><input id="pCong" placeholder="Preenchido automaticamente"></div>
+    </div>
+    <div class="g2">
+      <div class="field">
+        <label>Número do Tema</label>
+        <input type="number" id="pTema" min="1" max="194" placeholder="Ex: 45" oninput="onTemaSel()">
+      </div>
+      <div class="field"><label>Data do Discurso</label><input type="date" id="pData"></div>
+    </div>
+    <div id="pTemaInfo" style="font-size:13px;color:var(--txt2);margin-bottom:11px;min-height:18px"></div>
+    <div class="brow">
+      <button class="btn bg" onclick="gerarMsg()">✦ Gerar mensagem</button>
+      <button class="btn bo" id="btnIA" onclick="gerarMsgIA()">✨ Personalizar com IA</button>
+    </div>
+  </div>
+  <div id="waWrap" style="display:none">
+    <div class="slabel" style="margin-top:14px">Mensagem de convite</div>
+    <div class="wa-pre" id="waText"></div>
+    <div class="brow">
+      <button class="btn bgreen" onclick="copiarWA()">📋 Copiar</button>
+      <button class="btn bo" onclick="abrirWA()">💬 Abrir WhatsApp</button>
+      <button class="btn bg" onclick="saveDiscurso()">💾 Salvar no histórico</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORADORES -->
+<div class="page" id="page-oradores">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div class="panel-title" style="margin:0">Oradores</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bo bs" onclick="openM('mImport')">📥 Importar planilha</button>
+      <button class="btn bg" onclick="novoOrador()">+ Novo orador</button>
+    </div>
+  </div>
+  <input id="buscaOr" placeholder="🔍 Buscar por nome ou congregação..." oninput="renderOradores()" style="margin-bottom:11px">
+  <div id="listaOr"><div class="spin"></div></div>
+</div>
+
+<!-- SUGESTÕES -->
+<div class="page" id="page-sugestoes">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div class="panel-title" style="margin:0">Sugestões de Temas</div>
+    <button class="btn bg" onclick="openM('mSug')">+ Nova sugestão</button>
+  </div>
+  <div id="listaSug"><div class="spin"></div></div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="page" id="page-analytics">
+  <div class="panel-title">Análise & Padrões</div>
+  <div class="stat-grid" id="statGrid"></div>
+  <div class="g2">
+    <div class="card"><div class="slabel">Temas mais usados</div><div id="rankTemas"></div></div>
+    <div class="card"><div class="slabel">Sem discursar há mais tempo</div><div id="rankSem"></div></div>
+  </div>
+  <div class="card" style="margin-top:0"><div class="slabel">Congregações visitantes</div><div id="rankCongs"></div></div>
+</div>
+
+<!-- SENTINELA -->
+<div class="page" id="page-sentinela">
+  <div class="panel-title">Tema A Sentinela</div>
+  <div class="card">
+    <div class="g2">
+      <div class="field"><label>Tema da semana</label><input id="sentTema" placeholder="Cole o tema aqui..."></div>
+      <div class="field"><label>Data da edição</label><input type="date" id="sentData"></div>
+    </div>
+    <button class="btn bg" onclick="saveSentinela()">Salvar</button>
+  </div>
+  <div class="card"><div class="slabel">Histórico</div><div id="sentLista"><div class="spin"></div></div></div>
+</div>
+
+<!-- CONFIG -->
+<div class="page" id="page-config">
+  <div class="panel-title">Configurações</div>
+  <div class="card">
+    <div class="slabel">Dados da Congregação</div>
+    <div class="g2">
+      <div class="field"><label>Nome</label><input id="cfgNome" value="Congregação Bom Jesus"></div>
+      <div class="field"><label>Horário padrão</label><input id="cfgHor" value="19:00"></div>
+    </div>
+    <div class="field"><label>Endereço</label><input id="cfgEnd" value="R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG"></div>
+    <button class="btn bg" onclick="saveConfig()">Salvar</button>
+  </div>
+  <div class="card">
+    <div class="slabel">Reconfigurar Sistema</div>
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:12px">Para alterar Firebase ou Gemini, limpe a configuração e refaça o setup.</p>
+    <button class="btn bo" onclick="if(confirm('Limpar configurações?')){localStorage.clear();location.reload()}">⚙️ Redefinir configurações</button>
+  </div>
+  <div class="card">
+    <div class="slabel">Sobre</div>
+    <p style="font-size:13px;color:var(--txt2);line-height:1.7">
+      Sistema de oradores · Congregação Bom Jesus · Matozinhos/MG<br>
+      194 temas · 177 oradores · 241 discursos importados<br>
+      Firebase Firestore + Gemini AI (google-generativelanguage)
+    </p>
+  </div>
+</div>
+
+</main>
+
+<!-- ══ JAVASCRIPT ════════════════════════════════════════ -->
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let db = null, FF = null;
+let oradores=[], discursos=[], sugestoes=[], sentinelas=[];
+let notaAtual=0;
+let cfg={cong:'Congregação Bom Jesus',end:'R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG',hor:'19:00'};
+
+// ═══════════════════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════════════════
+function checkSetup(){
+  const fb=localStorage.getItem('bj_fb');
+  const lc=localStorage.getItem('bj_cfg');
+  if(lc) cfg=JSON.parse(lc);
+  if(fb){ document.getElementById('setup').style.display='none'; initFB(JSON.parse(fb)); }
+}
+
+async function doSetup(){
+  const key=document.getElementById('sApiKey').value.trim();
+  const pid=document.getElementById('sProjId').value.trim();
+  const auth=document.getElementById('sAuth').value.trim();
+  const appid=document.getElementById('sAppId').value.trim();
+  const gem=document.getElementById('sGemini').value.trim();
+  const err=document.getElementById('setupErr');
+  if(!key||!pid){ err.textContent='Preencha pelo menos API Key e Project ID.'; err.style.display='block'; return; }
+  err.style.display='none';
+  const fbcfg={apiKey:key,authDomain:auth||pid+'.firebaseapp.com',projectId:pid,appId:appid};
+  localStorage.setItem('bj_fb',JSON.stringify(fbcfg));
+  if(gem) localStorage.setItem('bj_gem',gem);
+  document.getElementById('setup').style.display='none';
+  initFB(fbcfg);
+}
+
+async function initFB(cfg){
+  try{
+    const{initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const fbfs=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const app=initializeApp(cfg);
+    db=fbfs.getFirestore(app);
+    FF={col:fbfs.collection,doc:fbfs.doc,set:fbfs.setDoc,get:fbfs.getDoc,gets:fbfs.getDocs,
+        upd:fbfs.updateDoc,del:fbfs.deleteDoc,add:fbfs.addDoc,ts:fbfs.serverTimestamp};
+    await loadAll();
+    toast('✦ Conectado ao Firebase!');
+  }catch(e){
+    toast('Erro Firebase: '+e.message);
+    console.error(e);
+  }
+}
+
+async function loadAll(){
+  await Promise.all([loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas()]);
+  renderAnalytics();
+}
+
+// ═══════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('page-'+t.dataset.p).classList.add('active');
+    if(t.dataset.p==='analytics') renderAnalytics();
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// TEMAS
+// ═══════════════════════════════════════════════════════
+function buscarTema(){
+  const n=parseInt(document.getElementById('temaIn').value);
+  const d=document.getElementById('temaRes');
+  if(!n||n<1||n>194){d.innerHTML='';return;}
+  const t=TEMAS[n];
+  if(!t){d.innerHTML='';return;}
+  const nao=t==='(Não use.)';
+  const usos=discursos.filter(x=>x.temaNum==n);
+  const ult=usos.length?[...usos].sort((a,b)=>b.data>a.data?1:-1)[0].data:null;
+  d.innerHTML=`<div class="tema-box">
+    <div class="tema-n">Tema nº ${n}</div>
+    <div class="tema-t" style="${nao?'color:var(--txt3);text-decoration:line-through':''}">${t}</div>
+    ${nao?'<div style="font-size:13px;color:var(--txt3)">Este tema não deve ser utilizado.</div>':`
+    <div class="tema-stats">
+      <span>Usado: <strong>${usos.length}x</strong></span>
+      <span>Último: <strong>${ult?fD(ult):'Nunca'}</strong></span>
+      ${usos.length===0?'<span class="badge bg-green">Nunca usado ✓</span>':''}
+    </div>
+    <div class="brow"><button class="btn bo bs" onclick="irProg(${n})">Usar para programar →</button></div>`}
+  </div>`;
+}
+
+function irProg(n){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelector('[data-p="programar"]').classList.add('active');
+  document.getElementById('page-programar').classList.add('active');
+  document.getElementById('pTema').value=n;
+  onTemaSel();
+}
+
+// ═══════════════════════════════════════════════════════
+// PROGRAMAR
+// ═══════════════════════════════════════════════════════
+function onOradorSel(){
+  const id=document.getElementById('pOrador').value;
+  const o=oradores.find(x=>x.id===id);
+  document.getElementById('pCong').value=o?o.cong:'';
+}
+
+function onTemaSel(){
+  const n=parseInt(document.getElementById('pTema').value);
+  const d=document.getElementById('pTemaInfo');
+  if(!n||!TEMAS[n]){d.innerHTML='';return;}
+  const u=discursos.filter(x=>x.temaNum==n).length;
+  d.innerHTML=`<span class="badge bg-gold">Nº ${n}</span> <strong style="margin-left:7px">${TEMAS[n]}</strong> <span style="margin-left:10px;font-size:12px;color:var(--txt3)">Usado ${u}x</span>`;
+}
+
+function buildRaw(o,tema,data){
+  return `Orador: ${o.nome}\nCongregação: ${o.cong||'—'}\nTema: ${tema}\nData: ${fDL(data)}\nLocal: ${cfg.cong}\nEndereço: ${cfg.end}`;
+}
+
+function gerarMsg(){
+  const oid=document.getElementById('pOrador').value;
+  const o=oradores.find(x=>x.id===oid);
+  const n=parseInt(document.getElementById('pTema').value);
+  const data=document.getElementById('pData').value;
+  if(!o) return toast('Selecione um orador!');
+  if(!n||!TEMAS[n]) return toast('Informe um número de tema válido!');
+  if(!data) return toast('Informe a data!');
+  if(TEMAS[n]==='(Não use.)') return toast('Este tema não pode ser utilizado!');
+  showMsg(buildRaw(o,TEMAS[n],data),oid,n,data);
+}
+
+async function gerarMsgIA(){
+  const oid=document.getElementById('pOrador').value;
+  const o=oradores.find(x=>x.id===oid);
+  const n=parseInt(document.getElementById('pTema').value);
+  const data=document.getElementById('pData').value;
+  if(!o) return toast('Selecione um orador!');
+  if(!n||!TEMAS[n]) return toast('Informe um tema!');
+  if(!data) return toast('Informe a data!');
+  const gk=localStorage.getItem('bj_gem');
+  if(!gk) return toast('Configure a chave Gemini em ⚙️ Config');
+  toast('✨ Personalizando com IA...');
+  const base=buildRaw(o,TEMAS[n],data);
+  try{
+    const r=await gemini(`Você é assistente da Congregação das Testemunhas de Jeová "Bom Jesus" em Matozinhos/MG.
+Reescreva esta mensagem de convite de forma mais acolhedora, calorosa e personalizada para o orador, mantendo TODOS os dados (nome, congregação, tema, data, local, endereço) inalterados:
+
+${base}
+
+RESPONDA APENAS com a mensagem final. Sem preamble, sem explicações.`,gk);
+    showMsg(r,oid,n,data);
+  }catch(e){ toast('Erro IA: '+e.message); }
+}
+
+function showMsg(raw,oid,n,data){
+  document.getElementById('waText').innerHTML=raw.replace(/\n/g,'<br>').replace(/(Orador:|Congregação:|Tema:|Data:|Local:|Endereço:)/g,'<strong>$1</strong>');
+  const ds=document.getElementById('waWrap').dataset;
+  ds.raw=raw; ds.oid=oid; ds.n=n; ds.d=data;
+  document.getElementById('waWrap').style.display='block';
+}
+
+function copiarWA(){ navigator.clipboard.writeText(document.getElementById('waWrap').dataset.raw).then(()=>toast('Copiado!')); }
+
+function abrirWA(){
+  const txt=encodeURIComponent(document.getElementById('waWrap').dataset.raw);
+  const o=oradores.find(x=>x.id===document.getElementById('waWrap').dataset.oid);
+  const tel=o?.tel?o.tel.replace(/\D/g,''):'';
+  window.open(tel?`https://wa.me/55${tel}?text=${txt}`:`https://wa.me/?text=${txt}`,'_blank');
+}
+
+async function saveDiscurso(){
+  if(!db) return toast('Firebase não conectado!');
+  const ds=document.getElementById('waWrap').dataset;
+  await FF.add(FF.col(db,'discursos'),{oradorId:ds.oid,temaNum:+ds.n,data:ds.d,criadoEm:FF.ts()});
+  await FF.upd(FF.doc(db,'oradores',ds.oid),{ultimoDiscurso:ds.d});
+  await Promise.all([loadDiscursos(),loadOradores()]);
+  toast('Discurso salvo!');
+}
+
+// ═══════════════════════════════════════════════════════
+// ORADORES
+// ═══════════════════════════════════════════════════════
+async function loadOradores(){
+  if(!db) return;
+  const s=await FF.gets(FF.col(db,'oradores'));
+  oradores=s.docs.map(d=>({id:d.id,...d.data()}));
+  renderOradores(); renderSelOrador();
+}
+
+function renderOradores(){
+  const q=(document.getElementById('buscaOr')?.value||'').toLowerCase();
+  const list=oradores.filter(o=>o.nome?.toLowerCase().includes(q)||o.cong?.toLowerCase().includes(q));
+  const div=document.getElementById('listaOr');
+  if(!list.length){div.innerHTML='<div class="empty"><div class="ico">👤</div>Nenhum orador</div>';return;}
+  const hoje=new Date().toISOString().slice(0,10);
+  div.innerHTML=list.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(o=>{
+    const mapU={};
+    discursos.forEach(d=>{if(d.oradorId===o.id&&(!mapU[o.id]||d.data>mapU[o.id]))mapU[o.id]=d.data;});
+    const ult=mapU[o.id]||o.ultimoDiscurso;
+    const dias=ult?Math.floor((new Date(hoje)-new Date(ult))/864e5):9999;
+    const bc=dias>365?'bg-red':dias>180?'bg-gold':'bg-green';
+    const bt=dias>9e3?'Sem registro':dias>180?dias+'d':null;
+    return `<div class="or-item">
+      <div style="min-width:0">
+        <div class="or-name">${o.nome}${o.nota?` <span style="color:var(--gold);font-size:12px">${'★'.repeat(o.nota)}</span>`:''}
+          ${bt?`<span class="badge ${bc}" style="margin-left:5px">${bt}</span>`:''}
+        </div>
+        <div class="or-info">${o.cong||'—'} · ${o.tel||'sem contato'} · Último: ${ult?fD(ult):'—'}</div>
+        ${o.obs?`<div class="or-info" style="font-style:italic">"${o.obs}"</div>`:''}
+      </div>
+      <div class="or-actions">
+        <button class="btn bo bs" onclick="editOrador('${o.id}')">✏️</button>
+        <button class="btn br bs" onclick="delOrador('${o.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSelOrador(){
+  const s=document.getElementById('pOrador'),v=s.value;
+  s.innerHTML='<option value="">— Selecione —</option>'+
+    [...oradores].sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(o=>`<option value="${o.id}">${o.nome} (${o.cong||'?'})</option>`).join('');
+  if(v) s.value=v;
+}
+
+function novoOrador(){
+  ['oId','oNome','oCong','oTel','oUlt','oObs'].forEach(id=>document.getElementById(id).value='');
+  notaAtual=0; rStars(0);
+  document.getElementById('mOradorTit').textContent='Novo Orador';
+  openM('mOrador');
+}
+
+function editOrador(id){
+  const o=oradores.find(x=>x.id===id); if(!o) return;
+  document.getElementById('oId').value=id;
+  document.getElementById('oNome').value=o.nome||'';
+  document.getElementById('oCong').value=o.cong||'';
+  document.getElementById('oTel').value=o.tel||'';
+  document.getElementById('oUlt').value=o.ultimoDiscurso||'';
+  document.getElementById('oObs').value=o.obs||'';
+  notaAtual=o.nota||0; rStars(notaAtual);
+  document.getElementById('mOradorTit').textContent='Editar Orador';
+  openM('mOrador');
+}
+
+async function saveOrador(){
+  if(!db) return toast('Firebase não conectado!');
+  const id=document.getElementById('oId').value;
+  const data={nome:document.getElementById('oNome').value.trim(),cong:document.getElementById('oCong').value.trim(),
+    tel:document.getElementById('oTel').value.trim(),ultimoDiscurso:document.getElementById('oUlt').value,
+    obs:document.getElementById('oObs').value.trim(),nota:notaAtual};
+  if(!data.nome) return toast('Informe o nome!');
+  if(id) await FF.upd(FF.doc(db,'oradores',id),data);
+  else await FF.add(FF.col(db,'oradores'),data);
+  closeM('mOrador'); await loadOradores(); toast('Salvo!');
+}
+
+async function delOrador(id){
+  if(!confirm('Excluir este orador?')) return;
+  await FF.del(FF.doc(db,'oradores',id));
+  await loadOradores(); toast('Excluído.');
+}
+
+// Stars
+document.querySelectorAll('#starsEl .star').forEach(s=>{
+  s.addEventListener('click',()=>{notaAtual=+s.dataset.v;rStars(notaAtual);});
+  s.addEventListener('mouseover',()=>rStars(+s.dataset.v));
+  s.addEventListener('mouseout',()=>rStars(notaAtual));
+});
+function rStars(v){ document.querySelectorAll('#starsEl .star').forEach(s=>s.classList.toggle('on',+s.dataset.v<=v)); }
+
+// ═══════════════════════════════════════════════════════
+// DISCURSOS
+// ═══════════════════════════════════════════════════════
+async function loadDiscursos(){
+  if(!db) return;
+  const s=await FF.gets(FF.col(db,'discursos'));
+  discursos=s.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+// ═══════════════════════════════════════════════════════
+// SUGESTÕES
+// ═══════════════════════════════════════════════════════
+async function loadSugestoes(){
+  if(!db) return;
+  const s=await FF.gets(FF.col(db,'sugestoes'));
+  sugestoes=s.docs.map(d=>({id:d.id,...d.data()}));
+  renderSugestoes();
+}
+
+function renderSugestoes(){
+  const d=document.getElementById('listaSug');
+  if(!sugestoes.length){d.innerHTML='<div class="empty"><div class="ico">💡</div>Nenhuma sugestão ainda</div>';return;}
+  d.innerHTML=[...sugestoes].reverse().map(s=>`
+    <div class="sug-item">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+        <div>
+          ${s.temaNum?`<div style="margin-bottom:4px"><span class="badge bg-gold">Nº ${s.temaNum}</span> <span style="font-size:13px">${TEMAS[s.temaNum]||''}</span></div>`:''}
+          ${s.descricao?`<div style="font-size:13px;color:var(--txt2)">${s.descricao}</div>`:''}
+          <div style="font-size:11px;color:var(--txt3);margin-top:4px">Por: <strong style="color:var(--txt2)">${s.nome}</strong></div>
+        </div>
+        <button class="btn bo bs" onclick="delSug('${s.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function onSugNum(){
+  const n=parseInt(document.getElementById('sNum').value);
+  document.getElementById('sNumName').textContent=n&&TEMAS[n]?TEMAS[n]:'';
+}
+
+async function saveSug(){
+  if(!db) return toast('Firebase não conectado!');
+  const nome=document.getElementById('sNome').value.trim();
+  const num=parseInt(document.getElementById('sNum').value)||null;
+  const desc=document.getElementById('sDesc').value.trim();
+  if(!nome) return toast('Informe quem sugeriu!');
+  await FF.add(FF.col(db,'sugestoes'),{nome,temaNum:num,descricao:desc,criadoEm:FF.ts()});
+  closeM('mSug'); await loadSugestoes(); toast('Sugestão salva!');
+}
+
+async function delSug(id){
+  if(!confirm('Remover sugestão?')) return;
+  await FF.del(FF.doc(db,'sugestoes',id));
+  await loadSugestoes();
+}
+
+// ═══════════════════════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════════════════════
+function renderAnalytics(){
+  const hoje=new Date().toISOString().slice(0,10);
+  const ano=new Date().getFullYear();
+  const nunca=Object.keys(TEMAS).filter(n=>TEMAS[n]!=='(Não use.)'&&!discursos.find(d=>d.temaNum==n)).length;
+
+  document.getElementById('statGrid').innerHTML=`
+    <div class="stat-box"><div class="stat-val">${oradores.length}</div><div class="stat-lbl">Oradores cadastrados</div></div>
+    <div class="stat-box"><div class="stat-val">${discursos.length}</div><div class="stat-lbl">Discursos no histórico</div></div>
+    <div class="stat-box"><div class="stat-val">${discursos.filter(d=>d.data?.startsWith(ano)).length}</div><div class="stat-lbl">Discursos em ${ano}</div></div>
+    <div class="stat-box"><div class="stat-val">${nunca}</div><div class="stat-lbl">Temas nunca usados</div></div>
+    <div class="stat-box"><div class="stat-val">${sugestoes.length}</div><div class="stat-lbl">Sugestões pendentes</div></div>`;
+
+  // Top temas
+  const ct={};
+  discursos.forEach(d=>{if(d.temaNum) ct[d.temaNum]=(ct[d.temaNum]||0)+1;});
+  const topT=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const mx=topT[0]?.[1]||1;
+  document.getElementById('rankTemas').innerHTML=topT.map(([n,c])=>`
+    <div class="rank-row">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:12px">Nº${n} — ${(TEMAS[n]||'?').slice(0,38)}${TEMAS[n]?.length>38?'…':''}</div>
+        <div class="rank-bar" style="width:${Math.round(c/mx*100)}%"></div>
+      </div>
+      <strong style="font-size:13px;flex-shrink:0;margin-left:8px">${c}x</strong>
+    </div>`).join('');
+
+  // Sem discursar
+  const mapU={};
+  discursos.forEach(d=>{if(d.oradorId&&(!mapU[d.oradorId]||d.data>mapU[d.oradorId]))mapU[d.oradorId]=d.data;});
+  const rank=oradores.map(o=>{
+    const u=mapU[o.id]||o.ultimoDiscurso;
+    const dias=u?Math.floor((new Date(hoje)-new Date(u))/864e5):9999;
+    return{o,u,dias};
+  }).sort((a,b)=>b.dias-a.dias).slice(0,8);
+  document.getElementById('rankSem').innerHTML=rank.map(({o,dias})=>`
+    <div class="rank-row">
+      <div><div style="font-size:13px">${o.nome}</div><div style="font-size:11px;color:var(--txt3)">${o.cong||'—'}</div></div>
+      <span class="badge ${dias>365?'bg-red':dias>180?'bg-gold':'bg-green'}">${dias>9e3?'Nunca':dias+'d'}</span>
+    </div>`).join('');
+
+  // Top congregações
+  const cc={};
+  oradores.forEach(o=>{if(o.cong) cc[o.cong]=(cc[o.cong]||0)+1;});
+  const topC=Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  document.getElementById('rankCongs').innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:5px">
+    ${topC.map(([c,n])=>`<span class="badge bg-gold">${c} (${n})</span>`).join('')}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// SENTINELA
+// ═══════════════════════════════════════════════════════
+async function loadSentinelas(){
+  if(!db) return;
+  const s=await FF.gets(FF.col(db,'sentinela'));
+  sentinelas=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.data>a.data?1:-1);
+  renderSentinelas();
+}
+
+function renderSentinelas(){
+  const d=document.getElementById('sentLista');
+  if(!sentinelas.length){d.innerHTML='<div style="color:var(--txt3);font-size:13px">Nenhum tema salvo ainda.</div>';return;}
+  d.innerHTML=sentinelas.map(s=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div><div style="font-size:14px">${s.tema}</div><div style="font-size:11px;color:var(--txt3);margin-top:1px">${s.data?fD(s.data):'—'}</div></div>
+      <button class="btn bo bs" onclick="delSent('${s.id}')">🗑</button>
+    </div>`).join('');
+}
+
+async function saveSentinela(){
+  if(!db) return toast('Firebase não conectado!');
+  const tema=document.getElementById('sentTema').value.trim();
+  const data=document.getElementById('sentData').value;
+  if(!tema) return toast('Informe o tema!');
+  await FF.add(FF.col(db,'sentinela'),{tema,data,criadoEm:FF.ts()});
+  document.getElementById('sentTema').value='';
+  await loadSentinelas(); toast('Tema da Sentinela salvo!');
+}
+
+async function delSent(id){
+  if(!confirm('Remover?')) return;
+  await FF.del(FF.doc(db,'sentinela',id));
+  await loadSentinelas();
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORTAR PLANILHA
+// ═══════════════════════════════════════════════════════
+async function startImport(){
+  if(!db) return toast('Firebase não conectado!');
+  const bar=document.getElementById('impBar');
+  const log=document.getElementById('impLog');
+  const btns=document.getElementById('impBtns');
+  btns.innerHTML='<div class="spin" style="margin:4px 0"></div>';
+  const addLog=m=>{log.innerHTML+=m+'\n';log.scrollTop=log.scrollHeight;};
+  log.innerHTML='';
+
+  try{
+    // ORADORES
+    addLog('► Importando oradores...');
+    for(let i=0;i<IMPORT_ORADORES.length;i++){
+      await FF.add(FF.col(db,'oradores'),IMPORT_ORADORES[i]);
+      bar.style.width=Math.round((i+1)/IMPORT_ORADORES.length*35)+'%';
+      if((i+1)%25===0) addLog(`  ${i+1}/${IMPORT_ORADORES.length}...`);
+    }
+    addLog(`✓ ${IMPORT_ORADORES.length} oradores`);
+
+    // DISCURSOS
+    addLog('► Importando discursos...');
+    for(let i=0;i<IMPORT_DISCURSOS.length;i++){
+      await FF.add(FF.col(db,'discursos'),IMPORT_DISCURSOS[i]);
+      bar.style.width=35+Math.round((i+1)/IMPORT_DISCURSOS.length*50)+'%';
+      if((i+1)%50===0) addLog(`  ${i+1}/${IMPORT_DISCURSOS.length}...`);
+    }
+    addLog(`✓ ${IMPORT_DISCURSOS.length} discursos`);
+
+    // SUGESTÕES
+    addLog('► Importando sugestões...');
+    for(const s of IMPORT_SUGESTOES) await FF.add(FF.col(db,'sugestoes'),s);
+    bar.style.width='100%';
+    addLog(`✓ ${IMPORT_SUGESTOES.length} sugestões`);
+    addLog('\n✦ Importação concluída com sucesso!');
+
+    await loadAll();
+    btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImport\')">Fechar</button>';
+    toast('✦ Planilha importada!');
+  }catch(e){
+    addLog('✗ ERRO: '+e.message);
+    btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImport\')">Fechar</button>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// GEMINI AI
+// ═══════════════════════════════════════════════════════
+async function gemini(prompt,key){
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const data=await r.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text||'Sem resposta.';
+}
+
+function buildCtx(){
+  const hoje=new Date().toISOString().slice(0,10);
+  const ct={};
+  discursos.forEach(d=>{if(d.temaNum) ct[d.temaNum]=(ct[d.temaNum]||0)+1;});
+  const topT=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c])=>`T${n}(${TEMAS[n]}):${c}x`).join(', ');
+  const mapU={};
+  discursos.forEach(d=>{if(d.oradorId&&(!mapU[d.oradorId]||d.data>mapU[d.oradorId]))mapU[d.oradorId]=d.data;});
+  const semDis=oradores.map(o=>{const u=mapU[o.id]||o.ultimoDiscurso;const d=u?Math.floor((new Date(hoje)-new Date(u))/864e5):9999;return{n:o.nome,c:o.cong,d};})
+    .sort((a,b)=>b.d-a.d).slice(0,10).map(x=>`${x.n}(${x.c||'—'}): ${x.d>9e3?'nunca':x.d+'d'}`).join(', ');
+  const nunca=Object.keys(TEMAS).filter(n=>TEMAS[n]!=='(Não use.)'&&!discursos.find(d=>d.temaNum==n)).map(n=>`T${n}`).join(', ');
+  return `CONTEXTO CONGREGAÇÃO BOM JESUS (Matozinhos/MG):
+Total oradores: ${oradores.length} | Total discursos: ${discursos.length} | Sugestões: ${sugestoes.length}
+Temas mais usados: ${topT}
+Oradores há mais tempo sem discursar: ${semDis}
+Temas nunca usados: ${nunca.slice(0,300)}...`;
+}
+
+function toggleAI(){ document.getElementById('aiPanel').classList.toggle('open'); }
+function closeAI(){ document.getElementById('aiPanel').classList.remove('open'); }
+
+async function sendAI(){
+  const inp=document.getElementById('aiIn');
+  const msg=inp.value.trim(); if(!msg) return;
+  inp.value=''; await askAI(msg);
+}
+
+async function askAI(msg){
+  const gk=localStorage.getItem('bj_gem');
+  document.getElementById('aiPanel').classList.add('open');
+  addAIMsg('u',msg);
+  if(!gk){ addAIMsg('b','⚠️ Configure a chave Gemini em ⚙️ Config → Reconfigurar.'); return; }
+  const bot=addAIMsg('b','⏳ Pensando...');
+  try{
+    const r=await gemini(`${buildCtx()}\n\nVocê é assistente da Congregação Bom Jesus. Responda em português, de forma clara e útil.\n\nPergunta: ${msg}`,gk);
+    bot.textContent=r;
+  }catch(e){ bot.textContent='✗ Erro: '+e.message; }
+}
+
+function addAIMsg(tipo,txt){
+  const d=document.createElement('div');
+  d.className='ai-msg '+tipo; d.textContent=txt;
+  document.getElementById('aiMsgs').appendChild(d);
+  d.scrollIntoView({behavior:'smooth',block:'nearest'});
+  return d;
+}
+
+// ═══════════════════════════════════════════════════════
+// CONFIG LOCAL
+// ═══════════════════════════════════════════════════════
+function saveConfig(){
+  cfg.cong=document.getElementById('cfgNome').value;
+  cfg.end=document.getElementById('cfgEnd').value;
+  cfg.hor=document.getElementById('cfgHor').value;
+  localStorage.setItem('bj_cfg',JSON.stringify(cfg));
+  toast('Configurações salvas!');
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function fD(iso){
+  if(!iso) return '—';
+  const[y,m,d]=iso.slice(0,10).split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function fDL(iso){
+  if(!iso) return '—';
+  const dt=new Date(iso+'T12:00:00');
+  const dias=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const mes=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  return `${dias[dt.getDay()]}, ${dt.getDate()} de ${mes[dt.getMonth()]} de ${dt.getFullYear()} — ${cfg.hor}`;
+}
+
+function openM(id){ document.getElementById(id).classList.add('open'); }
+function closeM(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.mbg').forEach(b=>b.addEventListener('click',e=>{if(e.target===b) b.classList.remove('open');}));
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// INIT
+checkSetup();
+</script>
+</body>
+</html>
