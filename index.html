@@ -261,7 +261,47 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
   </div>
 </div>
 
-<!-- Modal Importar -->
+<!-- Modal Importar Planilha (xlsx) -->
+<div class="mbg" id="mImportXlsx">
+  <div class="modal">
+    <div class="modal-title">📂 Importar Planilha de Oradores</div>
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:14px;line-height:1.6">
+      Selecione o arquivo <strong>ORADORES_DE_2024.xlsx</strong> (ou versão atualizada). O sistema vai ler e importar automaticamente para o Firebase.
+    </p>
+    <div class="field">
+      <label>Arquivo Excel (.xlsx)</label>
+      <input type="file" id="xlsxFile" accept=".xlsx,.xls" onchange="onXlsxSelect()" style="padding:7px">
+    </div>
+    <div id="xlsxInfo" style="font-size:13px;color:var(--txt2);margin-bottom:10px;min-height:16px"></div>
+    <div class="imp-bar-wrap"><div class="imp-bar" id="impBarXlsx"></div></div>
+    <div class="imp-log" id="impLogXlsx">Selecione um arquivo para começar...</div>
+    <div class="brow" id="impBtnsXlsx">
+      <button class="btn bg" id="btnImportXlsx" onclick="startImportXlsx()" disabled style="opacity:.4">▶ Importar</button>
+      <button class="btn bo" onclick="closeM('mImportXlsx')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Importar Temas -->
+<div class="mbg" id="mImportTemas">
+  <div class="modal">
+    <div class="modal-title">📋 Importar Lista de Temas</div>
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:10px;line-height:1.6">
+      Cole abaixo a lista de temas no formato <code style="background:var(--surf3);padding:1px 5px;border-radius:4px;font-size:12px">NÚM - Título do tema</code>, um por linha.
+    </p>
+    <div class="field">
+      <label>Lista de temas</label>
+      <textarea id="temasImportTxt" rows="10" placeholder="1 - Você conhece bem a Deus?&#10;2 - Você vai sobreviver aos últimos dias?&#10;..."></textarea>
+    </div>
+    <div id="temasImportInfo" style="font-size:12px;color:var(--txt2);margin-bottom:8px"></div>
+    <div class="brow">
+      <button class="btn bg" onclick="importarTemas()">Importar temas</button>
+      <button class="btn bo" onclick="closeM('mImportTemas')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Importar (dados da planilha embutidos) -->
 <div class="mbg" id="mImport">
   <div class="modal">
     <div class="modal-title">📥 Importar Planilha</div>
@@ -285,8 +325,9 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 </header>
 
 <nav>
-  <div class="tab active" data-p="temas">🔍 Temas</div>
-  <div class="tab" data-p="programar">📅 Programar</div>
+  <div class="tab active" data-p="programa">📆 Programação</div>
+  <div class="tab" data-p="temas">🔍 Temas</div>
+  <div class="tab" data-p="programar">✏️ Novo</div>
   <div class="tab" data-p="oradores">👤 Oradores</div>
   <div class="tab" data-p="sugestoes">💡 Sugestões</div>
   <div class="tab" data-p="analytics">📊 Análise</div>
@@ -296,8 +337,26 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 <main>
 
+<!-- PROGRAMAÇÃO -->
+<div class="page active" id="page-programa">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div class="panel-title" style="margin:0">Programação</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bo bs" onclick="openM('mImportXlsx')">📂 Importar planilha</button>
+      <button class="btn bg" onclick="irTab('programar')">+ Agendar discurso</button>
+    </div>
+  </div>
+
+  <!-- SEMANA ATUAL em destaque -->
+  <div id="semanaAtual" style="margin-bottom:14px"></div>
+
+  <!-- PRÓXIMAS SEMANAS -->
+  <div class="slabel" style="margin-bottom:8px">Próximas semanas</div>
+  <div id="listaPrograma"><div class="spin"></div></div>
+</div>
+
 <!-- TEMAS -->
-<div class="page active" id="page-temas">
+<div class="page" id="page-temas">
   <div class="panel-title">Buscar Tema por Número</div>
   <div class="card">
     <div class="field">
@@ -348,7 +407,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
     <div class="panel-title" style="margin:0">Oradores</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
-      <button class="btn bo bs" onclick="openM('mImport')">📥 Importar planilha</button>
+      <button class="btn bo bs" onclick="openM('mImportXlsx')">📂 Importar planilha</button>
+      <button class="btn bo bs" onclick="openM('mImport')">📥 Dados embutidos</button>
       <button class="btn bg" onclick="novoOrador()">+ Novo orador</button>
     </div>
   </div>
@@ -402,6 +462,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <button class="btn bg" onclick="saveConfig()">Salvar</button>
   </div>
   <div class="card">
+    <div class="slabel">Importar Lista de Temas</div>
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:12px">Atualize os 194 temas oficiais colando a lista no formato padrão.</p>
+    <button class="btn bo" onclick="openM('mImportTemas')">📋 Importar temas</button>
+  </div>
+  <div class="card">
     <div class="slabel">Reconfigurar Sistema</div>
     <p style="font-size:13px;color:var(--txt2);margin-bottom:12px">Para alterar Firebase ou Gemini, limpe a configuração e refaça o setup.</p>
     <button class="btn bo" onclick="if(confirm('Limpar configurações?')){localStorage.clear();location.reload()}">⚙️ Redefinir configurações</button>
@@ -425,9 +490,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 // STATE
 // ═══════════════════════════════════════════════════════
 let db = null, FF = null;
-let oradores=[], discursos=[], sugestoes=[], sentinelas=[];
+let oradores=[], discursos=[], sugestoes=[], sentinelas=[], programa=[];
 let notaAtual=0;
 let cfg={cong:'Congregação Bom Jesus',end:'R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG',hor:'19:00'};
+let temasLocal = {...TEMAS}; // cópia local que pode ser atualizada
 
 // ═══════════════════════════════════════════════════════
 // SETUP
@@ -435,7 +501,12 @@ let cfg={cong:'Congregação Bom Jesus',end:'R. Amazonas, nº 121 — Bom Jesus 
 function checkSetup(){
   const fb=localStorage.getItem('bj_fb');
   const lc=localStorage.getItem('bj_cfg');
+  const lt=localStorage.getItem('bj_temas');
   if(lc) cfg=JSON.parse(lc);
+  if(lt) Object.assign(temasLocal, JSON.parse(lt));
+  // Pre-load programa from embedded data so it shows even before Firebase
+  programa=IMPORT_PROGRAMA.filter(p=>p.data&&p.data>='2024-01-01');
+  renderPrograma();
   if(fb){ document.getElementById('setup').style.display='none'; initFB(JSON.parse(fb)); }
 }
 
@@ -472,21 +543,260 @@ async function initFB(cfg){
 }
 
 async function loadAll(){
-  await Promise.all([loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas()]);
+  await Promise.all([loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas(),loadPrograma()]);
   renderAnalytics();
 }
 
 // ═══════════════════════════════════════════════════════
-// NAV
+// PROGRAMAÇÃO
 // ═══════════════════════════════════════════════════════
-document.querySelectorAll('.tab').forEach(t=>{
-  t.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    document.getElementById('page-'+t.dataset.p).classList.add('active');
-    if(t.dataset.p==='analytics') renderAnalytics();
+async function loadPrograma(){
+  if(!db){ renderPrograma(); return; }
+  const s=await FF.gets(FF.col(db,'programa'));
+  if(s.docs.length>0){
+    programa=s.docs.map(d=>({id:d.id,...d.data()}));
+  } else {
+    // Populate from embedded data if firebase empty
+    programa=IMPORT_PROGRAMA.filter(p=>p.data&&p.data>='2024-01-01');
+  }
+  renderPrograma();
+}
+
+function renderPrograma(){
+  const hoje=new Date().toISOString().slice(0,10);
+  // Domingo atual ou próximo domingo
+  const dt=new Date();
+  const diaSem=dt.getDay(); // 0=dom
+  const diffDom=diaSem===0?0:(7-diaSem); // dias até próximo domingo
+  const proxDom=new Date(dt); proxDom.setDate(dt.getDate()+diffDom);
+  const domAtual=proxDom.toISOString().slice(0,10);
+  const domAnterior=new Date(proxDom); domAnterior.setDate(proxDom.getDate()-7);
+  const domAntStr=domAnterior.toISOString().slice(0,10);
+
+  // Sort programa by date
+  const sorted=[...programa].sort((a,b)=>a.data>b.data?1:-1);
+
+  // Semana atual = domingo mais próximo ao hoje (±3 dias)
+  const semAtual=sorted.find(p=>{
+    if(!p.data) return false;
+    const diff=Math.abs(new Date(p.data)-new Date(hoje));
+    return diff<=7*86400000; // dentro de 7 dias
   });
+
+  // Render semana atual card
+  const div=document.getElementById('semanaAtual');
+  if(semAtual){
+    const temOrador=semAtual.nome&&semAtual.nome.trim()&&!ehSistema(semAtual.nome);
+    const numT=semAtual.temaNum;
+    const nomeT=numT&&temasLocal[numT]?temasLocal[numT]:semAtual.tema||'—';
+    div.innerHTML=`
+      <div style="background:var(--gdim);border:1px solid rgba(201,168,76,.3);border-radius:12px;padding:18px 20px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:6px">Esta semana — ${fDSem(semAtual.data)}</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;margin-bottom:10px;line-height:1.3">${nomeT!='—'?nomeT:'<span style="color:var(--txt3)">Tema não definido</span>'}</div>
+        ${numT?`<div style="margin-bottom:10px"><span class="badge bg-gold">Tema nº ${numT}</span></div>`:''}
+        ${temOrador?`
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:13px;font-weight:600">${semAtual.nome}</div>
+              <div style="font-size:12px;color:var(--txt2)">${semAtual.congregacao||'—'} · ${semAtual.telefone||'sem contato'}</div>
+            </div>
+            ${semAtual.telefone?`<button class="btn bgreen bs" onclick="abrirWADir('${semAtual.telefone}')">💬 WhatsApp</button>`:''}
+          </div>`
+        :`<div style="font-size:13px;color:var(--txt3);font-style:italic">Orador não definido — <button class="btn bo bs" onclick="irTab('programar')" style="display:inline-flex;margin-left:4px">Agendar</button></div>`}
+      </div>`;
+  } else {
+    div.innerHTML=`<div style="background:var(--surf2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;color:var(--txt3);font-size:14px">Nenhum discurso programado para esta semana.</div>`;
+  }
+
+  // Próximas semanas (próximas 12 entradas a partir de hoje)
+  const proximas=sorted.filter(p=>p.data&&p.data>hoje).slice(0,12);
+  const listDiv=document.getElementById('listaPrograma');
+  if(!proximas.length){listDiv.innerHTML='<div class="empty"><div class="ico">📅</div>Sem datas futuras programadas</div>';return;}
+  listDiv.innerHTML=proximas.map(p=>{
+    const temOrador=p.nome&&p.nome.trim()&&!ehSistema(p.nome);
+    const numT=p.temaNum;
+    const nomeT=numT&&temasLocal[numT]?temasLocal[numT]:p.tema||'';
+    const alertaT=nomeT&&nomeT.toLowerCase().includes('falta')||!nomeT;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid ${temOrador?'var(--border)':'rgba(192,57,43,.2)'};border-radius:8px;margin-bottom:6px;background:var(--surf);transition:.18s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='${temOrador?'var(--border)':'rgba(192,57,43,.2)'}'">
+      <div style="min-width:80px;font-size:12px;color:var(--txt3);font-weight:600">${fD(p.data)}<br><span style="font-size:11px;font-weight:400">${diaSemana(p.data)}</span></div>
+      <div style="flex:1;min-width:0">
+        ${numT?`<span class="badge bg-gold" style="margin-bottom:3px;display:inline-block">Nº ${numT}</span> `:''}
+        <div style="font-size:13px;font-weight:${temOrador?'600':'400'};color:${temOrador?'var(--txt)':'var(--txt3)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomeT&&!alertaT?nomeT:'<em>Tema não definido</em>'}</div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:2px">${temOrador?p.nome+' · '+(p.congregacao||'—'):'<span style="color:var(--red);opacity:.7">Sem orador</span>'}</div>
+      </div>
+      ${temOrador&&p.telefone?`<button class="btn bo bs" onclick="abrirWADir('${p.telefone}')">💬</button>`:''}
+      <button class="btn bo bs" onclick="editarProg('${p.data}')">✏️</button>
+    </div>`;
+  }).join('');
+}
+
+function ehSistema(nome){
+  const s=['CONGRESSO','ASSEMBLEIA','CELEBRAÇÃO','VISITA','REUNIÃO','DISCURSO ESPECIAL','TRANSIÇÃO','MUDANÇA'];
+  return s.some(x=>nome.toUpperCase().includes(x));
+}
+function diaSemana(iso){
+  if(!iso||!iso.includes('-')) return '';
+  const dt=new Date(iso+'T12:00:00');
+  return ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][dt.getDay()];
+}
+function fDSem(iso){
+  if(!iso) return '—';
+  const[y,m,d]=iso.slice(0,10).split('-');
+  const dias=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const meses=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const dt=new Date(iso+'T12:00:00');
+  return `${dias[dt.getDay()]}, ${d} de ${meses[+m-1]}`;
+}
+function abrirWADir(tel){
+  const t=tel.replace(/\D/g,'');
+  window.open(`https://wa.me/55${t}`,'_blank');
+}
+function editarProg(data){
+  // Switch to programar tab with date pre-filled
+  irTab('programar');
+  setTimeout(()=>{document.getElementById('pData').value=data;},100);
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORTAR PLANILHA (xlsx via browser — SheetJS)
+// ═══════════════════════════════════════════════════════
+let xlsxParsed=null;
+
+async function onXlsxSelect(){
+  const file=document.getElementById('xlsxFile').files[0];
+  if(!file) return;
+  const info=document.getElementById('xlsxInfo');
+  const btn=document.getElementById('btnImportXlsx');
+  info.textContent='Lendo arquivo...';
+  try{
+    const buf=await file.arrayBuffer();
+    // Load SheetJS
+    if(!window.XLSX){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+    const wb=XLSX.read(buf,{type:'array',cellDates:true});
+    const sheetName='Discursos';
+    if(!wb.SheetNames.includes(sheetName)){
+      info.textContent='Aba "Discursos" não encontrada!'; return;
+    }
+    const ws=wb.Sheets[sheetName];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'yyyy-mm-dd'});
+
+    // Parse rows: col0=data, col2=nome, col4=tel, col5=cong, col6=num, col8=tema
+    const parsed=[];
+    for(const row of rows){
+      const dataRaw=row[0];
+      if(!dataRaw) continue;
+      let data=String(dataRaw).slice(0,10);
+      if(!data.match(/^\d{4}-\d{2}-\d{2}/)) continue;
+      const num=row[6]?parseInt(row[6])||null:null;
+      parsed.push({
+        data,
+        nome: String(row[2]||'').trim()||null,
+        telefone: String(row[4]||'').trim(),
+        congregacao: String(row[5]||'').trim(),
+        temaNum: num,
+        tema: String(row[8]||'').trim()
+      });
+    }
+    xlsxParsed=parsed.filter(p=>p.data>='2022-01-01');
+    info.textContent=`✓ ${xlsxParsed.length} registros encontrados (${xlsxParsed.filter(p=>p.nome).length} com orador)`;
+    btn.disabled=false; btn.style.opacity='1';
+  }catch(e){
+    info.textContent='Erro ao ler: '+e.message;
+  }
+}
+
+async function startImportXlsx(){
+  if(!db) return toast('Firebase não conectado!');
+  if(!xlsxParsed) return;
+  const bar=document.getElementById('impBarXlsx');
+  const log=document.getElementById('impLogXlsx');
+  const btns=document.getElementById('impBtnsXlsx');
+  btns.innerHTML='<div class="spin" style="margin:4px 0"></div>';
+  log.innerHTML='';
+  const addLog=m=>{log.innerHTML+=m+'\n';log.scrollTop=log.scrollHeight;};
+
+  try{
+    // Separate: discursos (with nome) and programa (all with dates)
+    const comOrador=xlsxParsed.filter(p=>p.nome&&!ehSistema(p.nome||''));
+    const semOrador=xlsxParsed.filter(p=>!p.nome||ehSistema(p.nome||''));
+
+    addLog('► Importando discursos históricos...');
+    for(let i=0;i<comOrador.length;i++){
+      await FF.add(FF.col(db,'discursos'),comOrador[i]);
+      bar.style.width=Math.round((i+1)/comOrador.length*50)+'%';
+      if((i+1)%30===0) addLog(`  ${i+1}/${comOrador.length}...`);
+    }
+    addLog(`✓ ${comOrador.length} discursos`);
+
+    addLog('► Importando programação (datas futuras)...');
+    // Save all as programa entries
+    const futuras=xlsxParsed.filter(p=>p.data>=new Date().toISOString().slice(0,10));
+    for(let i=0;i<futuras.length;i++){
+      await FF.add(FF.col(db,'programa'),futuras[i]);
+      bar.style.width=50+Math.round((i+1)/futuras.length*50)+'%';
+    }
+    bar.style.width='100%';
+    addLog(`✓ ${futuras.length} datas futuras na programação`);
+    addLog('\n✦ Importação concluída!');
+    await loadAll();
+    btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';
+    toast('✦ Planilha importada com sucesso!');
+  }catch(e){
+    addLog('✗ ERRO: '+e.message);
+    btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORTAR TEMAS (texto colado)
+// ═══════════════════════════════════════════════════════
+function importarTemas(){
+  const txt=document.getElementById('temasImportTxt').value.trim();
+  if(!txt) return toast('Cole a lista de temas!');
+  const linhas=txt.split('\n').filter(l=>l.trim());
+  let count=0;
+  for(const l of linhas){
+    // Aceita: "1 - Título", "1. Título", "1: Título", "1 Título"
+    const m=l.match(/^(\d+)\s*[-\.:\s]\s*(.+)/);
+    if(m){
+      const n=parseInt(m[1]);
+      const titulo=m[2].trim();
+      if(n>=1&&n<=300&&titulo){
+        temasLocal[n]=titulo;
+        count++;
+      }
+    }
+  }
+  document.getElementById('temasImportInfo').textContent=`${count} temas reconhecidos`;
+  if(count>0){
+    // Persist to localStorage
+    localStorage.setItem('bj_temas',JSON.stringify(temasLocal));
+    closeM('mImportTemas');
+    toast(`✦ ${count} temas importados!`);
+    renderPrograma();
+  } else {
+    document.getElementById('temasImportInfo').textContent='Nenhum tema reconhecido — verifique o formato.';
+  }
+}
+function irTab(p){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  const tab=document.querySelector(`[data-p="${p}"]`);
+  if(tab) tab.classList.add('active');
+  const page=document.getElementById('page-'+p);
+  if(page) page.classList.add('active');
+  if(p==='analytics') renderAnalytics();
+}
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>irTab(t.dataset.p));
 });
 
 // ═══════════════════════════════════════════════════════
@@ -496,7 +806,7 @@ function buscarTema(){
   const n=parseInt(document.getElementById('temaIn').value);
   const d=document.getElementById('temaRes');
   if(!n||n<1||n>194){d.innerHTML='';return;}
-  const t=TEMAS[n];
+  const t=temasLocal[n];
   if(!t){d.innerHTML='';return;}
   const nao=t==='(Não use.)';
   const usos=discursos.filter(x=>x.temaNum==n);
@@ -535,9 +845,9 @@ function onOradorSel(){
 function onTemaSel(){
   const n=parseInt(document.getElementById('pTema').value);
   const d=document.getElementById('pTemaInfo');
-  if(!n||!TEMAS[n]){d.innerHTML='';return;}
+  if(!n||!temasLocal[n]){d.innerHTML='';return;}
   const u=discursos.filter(x=>x.temaNum==n).length;
-  d.innerHTML=`<span class="badge bg-gold">Nº ${n}</span> <strong style="margin-left:7px">${TEMAS[n]}</strong> <span style="margin-left:10px;font-size:12px;color:var(--txt3)">Usado ${u}x</span>`;
+  d.innerHTML=`<span class="badge bg-gold">Nº ${n}</span> <strong style="margin-left:7px">${temasLocal[n]}</strong> <span style="margin-left:10px;font-size:12px;color:var(--txt3)">Usado ${u}x</span>`;
 }
 
 function buildRaw(o,tema,data){
@@ -550,10 +860,10 @@ function gerarMsg(){
   const n=parseInt(document.getElementById('pTema').value);
   const data=document.getElementById('pData').value;
   if(!o) return toast('Selecione um orador!');
-  if(!n||!TEMAS[n]) return toast('Informe um número de tema válido!');
+  if(!n||!temasLocal[n]) return toast('Informe um número de tema válido!');
   if(!data) return toast('Informe a data!');
-  if(TEMAS[n]==='(Não use.)') return toast('Este tema não pode ser utilizado!');
-  showMsg(buildRaw(o,TEMAS[n],data),oid,n,data);
+  if(temasLocal[n]==='(Não use.)') return toast('Este tema não pode ser utilizado!');
+  showMsg(buildRaw(o,temasLocal[n],data),oid,n,data);
 }
 
 async function gerarMsgIA(){
@@ -562,12 +872,12 @@ async function gerarMsgIA(){
   const n=parseInt(document.getElementById('pTema').value);
   const data=document.getElementById('pData').value;
   if(!o) return toast('Selecione um orador!');
-  if(!n||!TEMAS[n]) return toast('Informe um tema!');
+  if(!n||!temasLocal[n]) return toast('Informe um tema!');
   if(!data) return toast('Informe a data!');
   const gk=localStorage.getItem('bj_gem');
   if(!gk) return toast('Configure a chave Gemini em ⚙️ Config');
   toast('✨ Personalizando com IA...');
-  const base=buildRaw(o,TEMAS[n],data);
+  const base=buildRaw(o,temasLocal[n],data);
   try{
     const r=await gemini(`Você é assistente da Congregação das Testemunhas de Jeová "Bom Jesus" em Matozinhos/MG.
 Reescreva esta mensagem de convite de forma mais acolhedora, calorosa e personalizada para o orador, mantendo TODOS os dados (nome, congregação, tema, data, local, endereço) inalterados:
@@ -722,7 +1032,7 @@ function renderSugestoes(){
     <div class="sug-item">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
         <div>
-          ${s.temaNum?`<div style="margin-bottom:4px"><span class="badge bg-gold">Nº ${s.temaNum}</span> <span style="font-size:13px">${TEMAS[s.temaNum]||''}</span></div>`:''}
+          ${s.temaNum?`<div style="margin-bottom:4px"><span class="badge bg-gold">Nº ${s.temaNum}</span> <span style="font-size:13px">${temasLocal[s.temaNum]||''}</span></div>`:''}
           ${s.descricao?`<div style="font-size:13px;color:var(--txt2)">${s.descricao}</div>`:''}
           <div style="font-size:11px;color:var(--txt3);margin-top:4px">Por: <strong style="color:var(--txt2)">${s.nome}</strong></div>
         </div>
@@ -733,7 +1043,7 @@ function renderSugestoes(){
 
 function onSugNum(){
   const n=parseInt(document.getElementById('sNum').value);
-  document.getElementById('sNumName').textContent=n&&TEMAS[n]?TEMAS[n]:'';
+  document.getElementById('sNumName').textContent=n&&temasLocal[n]?temasLocal[n]:'';
 }
 
 async function saveSug(){
@@ -758,7 +1068,7 @@ async function delSug(id){
 function renderAnalytics(){
   const hoje=new Date().toISOString().slice(0,10);
   const ano=new Date().getFullYear();
-  const nunca=Object.keys(TEMAS).filter(n=>TEMAS[n]!=='(Não use.)'&&!discursos.find(d=>d.temaNum==n)).length;
+  const nunca=Object.keys(temasLocal).filter(n=>temasLocal[n]!=='(Não use.)'&&!discursos.find(d=>d.temaNum==n)).length;
 
   document.getElementById('statGrid').innerHTML=`
     <div class="stat-box"><div class="stat-val">${oradores.length}</div><div class="stat-lbl">Oradores cadastrados</div></div>
@@ -775,7 +1085,7 @@ function renderAnalytics(){
   document.getElementById('rankTemas').innerHTML=topT.map(([n,c])=>`
     <div class="rank-row">
       <div style="min-width:0;flex:1">
-        <div style="font-size:12px">Nº${n} — ${(TEMAS[n]||'?').slice(0,38)}${TEMAS[n]?.length>38?'…':''}</div>
+        <div style="font-size:12px">Nº${n} — ${(temasLocal[n]||'?').slice(0,38)}${temasLocal[n]?.length>38?'…':''}</div>
         <div class="rank-bar" style="width:${Math.round(c/mx*100)}%"></div>
       </div>
       <strong style="font-size:13px;flex-shrink:0;margin-left:8px">${c}x</strong>
@@ -902,12 +1212,12 @@ function buildCtx(){
   const hoje=new Date().toISOString().slice(0,10);
   const ct={};
   discursos.forEach(d=>{if(d.temaNum) ct[d.temaNum]=(ct[d.temaNum]||0)+1;});
-  const topT=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c])=>`T${n}(${TEMAS[n]}):${c}x`).join(', ');
+  const topT=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c])=>`T${n}(${temasLocal[n]}):${c}x`).join(', ');
   const mapU={};
   discursos.forEach(d=>{if(d.oradorId&&(!mapU[d.oradorId]||d.data>mapU[d.oradorId]))mapU[d.oradorId]=d.data;});
   const semDis=oradores.map(o=>{const u=mapU[o.id]||o.ultimoDiscurso;const d=u?Math.floor((new Date(hoje)-new Date(u))/864e5):9999;return{n:o.nome,c:o.cong,d};})
     .sort((a,b)=>b.d-a.d).slice(0,10).map(x=>`${x.n}(${x.c||'—'}): ${x.d>9e3?'nunca':x.d+'d'}`).join(', ');
-  const nunca=Object.keys(TEMAS).filter(n=>TEMAS[n]!=='(Não use.)'&&!discursos.find(d=>d.temaNum==n)).map(n=>`T${n}`).join(', ');
+  const nunca=Object.keys(temasLocal).filter(n=>temasLocal[n]!=='(Não use.)'&&!discursos.find(d=>d.temaNum==n)).map(n=>`T${n}`).join(', ');
   return `CONTEXTO CONGREGAÇÃO BOM JESUS (Matozinhos/MG):
 Total oradores: ${oradores.length} | Total discursos: ${discursos.length} | Sugestões: ${sugestoes.length}
 Temas mais usados: ${topT}
