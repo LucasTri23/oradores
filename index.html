@@ -453,7 +453,7 @@ function currentOrNextProg(){
   // Dedup by date
   const byDate={};
   programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
-  const sorted=Object.values(byDate).filter(p=>p.data>=today).sort((a,b)=>a.data>b.data?1:-1);
+  const sorted=Object.values(byDate).filter(p=>p.data>=today).sort((a,b)=>a.data<b.data?-1:1);
   // Prefer exact saturday match, fallback to first future
   return sorted.find(p=>p.data===sab)||sorted[0]||null;
 }
@@ -497,7 +497,7 @@ function renderHome(){
   const hoje=new Date().toISOString().slice(0,10);
   const byDate={};
   programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
-  const sorted=Object.values(byDate).filter(p=>p.data>=hoje).sort((a,b)=>a.data>b.data?1:-1);
+  const sorted=Object.values(byDate).filter(p=>p.data>=hoje).sort((a,b)=>a.data<b.data?-1:1);
   const destaque=currentOrNextProg();
   const div=document.getElementById('homeWeekCard');
   if(!sorted.length){
