@@ -161,19 +161,25 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
       <div class="field"><label>Nº do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema()"></div>
     </div>
     <div id="agTemaDesc" style="font-size:11px;color:var(--pur3);margin:-6px 0 10px;min-height:13px"></div>
-    <div class="field"><label>Orador (cadastrado)</label>
-      <select id="agOradorSel" onchange="onAgOradorSel()">
-        <option value="">— Selecionar —</option>
-        <option value="__digitar__">✏️ Digitar manualmente</option>
-      </select>
-    </div>
-    <div id="agManual" style="display:none">
-      <div class="g2">
-        <div class="field"><label>Nome</label><input id="agNome" placeholder="Nome completo"></div>
-        <div class="field"><label>Congregação</label><input id="agCong" placeholder="Congregação"></div>
+    <div class="field">
+      <label>Orador</label>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <div class="fchip on" id="tabCadastrado" onclick="switchOradorTab('cadastrado')" style="flex:1;text-align:center">📋 Cadastrado</div>
+        <div class="fchip" id="tabNovo" onclick="switchOradorTab('novo')" style="flex:1;text-align:center">➕ Novo / Manual</div>
       </div>
-      <div class="field"><label>WhatsApp</label><input id="agTel" type="tel" placeholder="31 9xxxx-xxxx"></div>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--whi2);margin-bottom:10px"><input type="checkbox" id="agCadastrar" style="width:auto"> Cadastrar como novo orador</label>
+      <div id="agTabCadastrado">
+        <select id="agOradorSel" onchange="onAgOradorSel()">
+          <option value="">— Selecionar orador —</option>
+        </select>
+      </div>
+      <div id="agTabNovo" style="display:none">
+        <div class="g2">
+          <div class="field"><label>Nome *</label><input id="agNome" placeholder="Nome completo"></div>
+          <div class="field"><label>Congregação</label><input id="agCong" placeholder="Congregação"></div>
+        </div>
+        <div class="field"><label>WhatsApp</label><input id="agTel" type="tel" placeholder="31 9xxxx-xxxx"></div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--whi2);margin-bottom:10px"><input type="checkbox" id="agCadastrar" style="width:auto;margin:0"> Salvar como novo orador no banco</label>
+      </div>
     </div>
     <div class="field"><label>Observação</label><input id="agObs" placeholder="Ex: Discurso especial..."></div>
     <div class="brow"><button class="btn bp" onclick="saveAgend()">Salvar</button><button class="btn bo" onclick="closeM('mAgend')">Cancelar</button></div>
@@ -261,6 +267,10 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 <main>
 <div class="page active" id="page-home">
   <div id="homeSentinela"></div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:11px;color:var(--whi3);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Ano:</span>
+    <div id="anoFilterBar" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
   <div id="homeWeekCard"></div>
 </div>
 <div class="page" id="page-programa">
@@ -463,48 +473,109 @@ document.querySelectorAll('.mbg').forEach(b=>b.addEventListener('click',e=>{if(e
 function toast(msg,dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
 
 // HOME
-function mkWeekCard(sem,isCurrent){
+function mkWeekCard(sem,isCurrent,isPast){
   const nT=sem.temaNum;
   const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'';
   const temOr=sem.nome&&!ehSist(sem.nome);
   const enc=encodeURIComponent(JSON.stringify(sem));
-  let h='<div style="background:'+(isCurrent?'linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.04))':'var(--surf)')+';border:1px solid '+(isCurrent?'rgba(124,58,237,.35)':'var(--border)')+';border-radius:12px;padding:16px;position:relative;margin-bottom:8px">';
-  h+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:'+(isCurrent?'var(--pur3)':'var(--whi3)')+';margin-bottom:4px">📅 '+fDSem(sem.data)+'</div>';
-  if(nT) h+='<div style="margin-bottom:4px"><span class="badge bpur">Tema nº '+nT+'</span></div>';
-  h+='<div style="font-family:\'Space Grotesk\',sans-serif;font-size:'+(isCurrent?'18px':'14px')+';font-weight:700;line-height:1.3;color:var(--whi);margin-bottom:'+(isCurrent?'12px':'8px')+';letter-spacing:-.02em">'+(nomeT||'<span style="color:var(--whi3);font-style:italic;font-weight:400">Tema não definido</span>')+'</div>';
-  if(sem.obs) h+='<div style="font-size:11px;color:var(--pur3);margin-bottom:8px">⚡ '+sem.obs+'</div>';
-  if(temOr){
-    h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:rgba(0,0,0,.22);border-radius:8px">';
-    h+='<div style="flex:1;min-width:100px"><div style="font-weight:600;font-size:'+(isCurrent?'14px':'13px')+'">'+sem.nome+'</div>';
-    h+='<div style="font-size:11px;color:var(--whi3);margin-top:1px">'+(sem.congregacao||'—')+(sem.telefone?' · '+sem.telefone:'')+'</div></div>';
-    if(sem.telefone){
-      h+='<div style="display:flex;gap:5px;flex-wrap:wrap">';
-      h+='<button class="btn bgn bs" onclick="abrirWADir(\''+sem.telefone+'\')">💬 WA</button>';
-      h+='<button class="btn bo bs" onclick="abrirMsgPadrao(\''+enc+'\')">✦ Msg</button>';
-      h+='</div>';
-    }
+  const temDados=!!(sem.nome||sem.temaNum||sem.tema);
+  // Colors
+  let bg,border;
+  if(isCurrent){bg='linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.04))';border='rgba(124,58,237,.45)';}
+  else if(isPast&&temDados){bg='var(--surf)';border='var(--border)';}
+  else if(isPast){bg='rgba(255,255,255,.01)';border='var(--border)';}
+  else if(temDados){bg='var(--surf)';border='var(--border)';}
+  else{bg='rgba(255,255,255,.02)';border='rgba(255,255,255,.06)';}
+  let h='<div style="background:'+bg+';border:1px solid '+border+';border-radius:10px;padding:'+(isCurrent?'16px':'11px 14px')+';position:relative;margin-bottom:6px;opacity:'+(isPast?.65:1)+'">';
+  h+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isCurrent?'var(--pur3)':isPast?'var(--whi3)':'var(--whi2)')+';margin-bottom:'+(isCurrent?'5px':'3px')+'">📅 '+fDSem(sem.data)+'</div>';
+  if(!temDados&&!isPast){
+    // Future empty saturday
+    h+='<div style="display:flex;align-items:center;justify-content:space-between">';
+    h+='<span style="font-size:12px;color:var(--whi3);font-style:italic">Sem orador definido</span>';
+    h+='<button class="btn bp bs" onclick="editarAgend(''+enc+'')">+ Definir</button>';
     h+='</div>';
+  } else if(!temDados&&isPast){
+    h+='<span style="font-size:12px;color:var(--whi3);font-style:italic">Sem registro</span>';
   } else {
-    h+='<div style="padding:8px 12px;background:rgba(0,0,0,.15);border-radius:7px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">';
-    h+='<span style="font-size:11px;color:var(--whi3)">Orador não definido</span>';
-    h+='<button class="btn bp bs" onclick="editarAgend(\''+enc+'\')">+ Definir</button></div>';
+    if(nT) h+='<span class="badge bpur" style="margin-bottom:4px;display:inline-block">Tema nº '+nT+'</span> ';
+    h+='<div style="font-size:'+(isCurrent?'17px':'13px')+';font-weight:700;line-height:1.3;color:var(--whi);margin-bottom:'+(isCurrent?'10px':'6px')+'">'+(nomeT||'<em style="color:var(--whi3);font-weight:400;font-size:12px">Tema não definido</em>')+'</div>';
+    if(sem.obs) h+='<div style="font-size:11px;color:var(--pur3);margin-bottom:6px">⚡ '+sem.obs+'</div>';
+    if(temOr){
+      h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;background:rgba(0,0,0,.2);border-radius:7px">';
+      h+='<div style="flex:1;min-width:90px"><div style="font-weight:600;font-size:'+(isCurrent?'14px':'12px')+'">'+sem.nome+'</div>';
+      h+='<div style="font-size:11px;color:var(--whi3)">'+(sem.congregacao||'—')+(sem.telefone?' · '+sem.telefone:'')+'</div></div>';
+      if(!isPast&&sem.telefone){
+        h+='<div style="display:flex;gap:5px">';
+        h+='<button class="btn bgn bs" onclick="abrirWADir(''+sem.telefone+'')">💬</button>';
+        h+='<button class="btn bo bs" onclick="abrirMsgPadrao(''+enc+'')">✦</button>';
+        h+='</div>';
+      }
+      h+='</div>';
+    } else if(!isPast){
+      h+='<div style="padding:7px 10px;background:rgba(0,0,0,.12);border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:6px">';
+      h+='<span style="font-size:11px;color:var(--whi3)">Orador não definido</span>';
+      h+='<button class="btn bp bs" onclick="editarAgend(''+enc+'')">+ Definir</button></div>';
+    }
   }
-  h+='<button style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:10px;padding:3px 6px;border-radius:4px" onclick="editarAgend(\''+enc+'\')">✏️</button>';
+  if(!isPast){
+    h+='<button style="position:absolute;top:7px;right:7px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:10px;padding:3px 6px;border-radius:4px" onclick="editarAgend(''+enc+'')">✏️</button>';
+  }
   return h+'</div>';
+}
+
+let anoAtivo=new Date().getFullYear();
+
+function initAnoFilter(){
+  const anos=new Set();
+  const hoje=new Date().getFullYear();
+  // Always include current year + next 2
+  [hoje,hoje+1,hoje+2].forEach(a=>anos.add(a));
+  // Also include years from programa
+  programa.forEach(p=>{if(p.data)anos.add(parseInt(p.data.slice(0,4)));});
+  const sorted=[...anos].sort();
+  const bar=document.getElementById('anoFilterBar');
+  if(!bar)return;
+  bar.innerHTML=sorted.map(a=>
+    '<div class="fchip'+(a===anoAtivo?' on':'')+'" onclick="setAno(''+a+'')" style="font-size:12px;padding:5px 13px">'
+    +a+'</div>'
+  ).join('');
+}
+
+function setAno(a){
+  anoAtivo=+a;
+  document.querySelectorAll('#anoFilterBar .fchip').forEach(el=>el.classList.toggle('on',+el.textContent===anoAtivo));
+  renderHome();
+}
+
+function allSaturdays(year){
+  const sats=[];
+  let d=new Date(year,0,1);
+  // find first saturday
+  while(d.getDay()!==6)d.setDate(d.getDate()+1);
+  while(d.getFullYear()===year){
+    sats.push(d.toISOString().slice(0,10));
+    d.setDate(d.getDate()+7);
+  }
+  return sats;
 }
 
 function renderHome(){
   const hoje=new Date().toISOString().slice(0,10);
+  // Build map from programa
   const byDate={};
   programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
-  const sorted=Object.values(byDate).filter(p=>p.data>=hoje).sort((a,b)=>a.data<b.data?-1:1);
+  // Get all saturdays of selected year
+  const sats=allSaturdays(anoAtivo);
   const destaque=currentOrNextProg();
   const div=document.getElementById('homeWeekCard');
-  if(!sorted.length){
-    div.innerHTML='<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--whi3)">Sem discursos programados. <button class=\"btn bp bs\" onclick=\"openNovoAgend()\" style=\"margin-left:8px\">+ Inserir</button></div>';
-  } else {
-    div.innerHTML=sorted.map(sem=>mkWeekCard(sem,destaque&&sem.data===destaque.data)).join('');
-  }
+  div.innerHTML=sats.map(data=>{
+    const sem=byDate[data]||{data};
+    const isDestaque=destaque&&data===destaque.data;
+    const isPast=data<hoje;
+    return mkWeekCard(sem,isDestaque,isPast);
+  }).join('');
+  initAnoFilter();
+}
   // Sentinela chip
   const sd=document.getElementById('homeSentinela');
   const us=sentinelas.length?sentinelas[0]:null;
@@ -561,6 +632,13 @@ function editarAgend(enc){
   document.getElementById('mAgendTit').textContent='Editar — '+fD(p.data);
   openM('mAgend');
 }
+function switchOradorTab(tab){
+  const isCad=tab==='cadastrado';
+  document.getElementById('agTabCadastrado').style.display=isCad?'block':'none';
+  document.getElementById('agTabNovo').style.display=isCad?'none':'block';
+  document.getElementById('tabCadastrado').classList.toggle('on',isCad);
+  document.getElementById('tabNovo').classList.toggle('on',!isCad);
+}
 function preencherModalAgend(p){
   document.getElementById('agId').value=p.id||'';
   document.getElementById('agData').value=p.data||'';
@@ -568,8 +646,9 @@ function preencherModalAgend(p){
   document.getElementById('agObs').value=p.obs||'';
   document.getElementById('agCadastrar').checked=false;
   onAgTema();
+  // Populate select
   const sel=document.getElementById('agOradorSel');
-  sel.innerHTML='<option value="">— Selecionar —</option><option value="__digitar__">✏️ Digitar manualmente</option>';
+  sel.innerHTML='<option value="">— Selecionar orador —</option>';
   [...oradores].sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(o=>{
     const opt=document.createElement('option');
     opt.value=o.id;opt.textContent=o.nome+' ('+(o.cong||'?')+')';
@@ -578,32 +657,32 @@ function preencherModalAgend(p){
   });
   const matched=p.nome&&oradores.find(o=>o.nome===p.nome);
   if(p.nome&&!matched){
-    sel.value='__digitar__';
-    document.getElementById('agManual').style.display='block';
+    // Has name but not in database — show "Novo" tab with data
+    switchOradorTab('novo');
     document.getElementById('agNome').value=p.nome||'';
     document.getElementById('agCong').value=p.congregacao||'';
     document.getElementById('agTel').value=p.telefone||'';
   } else {
-    document.getElementById('agManual').style.display='none';
-    if(matched){document.getElementById('agNome').value=matched.nome;document.getElementById('agCong').value=matched.cong||'';document.getElementById('agTel').value=matched.tel||'';}
+    switchOradorTab('cadastrado');
+    document.getElementById('agNome').value='';
+    document.getElementById('agCong').value='';
+    document.getElementById('agTel').value='';
   }
 }
 function onAgTema(){const n=parseInt(document.getElementById('agTema').value);document.getElementById('agTemaDesc').textContent=n&&TL[n]?TL[n]:'';}
 function onAgOradorSel(){
   const v=document.getElementById('agOradorSel').value;
-  const m=document.getElementById('agManual');
-  if(v==='__digitar__'){m.style.display='block';['agNome','agCong','agTel'].forEach(id=>document.getElementById(id).value='');}
-  else if(v){m.style.display='none';const o=oradores.find(x=>x.id===v);if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}}
-  else{m.style.display='none';}
+  if(v){const o=oradores.find(x=>x.id===v);if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}}
 }
 async function saveAgend(){
   if(!db)return toast('Firebase não conectado!');
   const idField=document.getElementById('agId').value.trim();
   const data_val=document.getElementById('agData').value;
   if(!data_val)return toast('Informe a data!');
+  const isCadTab=document.getElementById('agTabCadastrado').style.display!=='none';
   const selV=document.getElementById('agOradorSel').value;
   let nome='',cong='',tel='';
-  if(selV&&selV!=='__digitar__'){
+  if(isCadTab&&selV){
     const o=oradores.find(x=>x.id===selV);
     if(o){nome=o.nome;cong=o.cong||'';tel=o.tel||'';}
   } else {
