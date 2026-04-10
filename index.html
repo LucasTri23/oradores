@@ -261,6 +261,29 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
   </div>
 </div>
 
+<!-- Modal Novo Agendamento -->
+<div class="mbg" id="mNovoAgend">
+  <div class="modal">
+    <div class="modal-title" id="mNovoAgendTit">Inserir na Programação</div>
+    <input type="hidden" id="agId">
+    <div class="g2">
+      <div class="field"><label>Data (domingo)</label><input type="date" id="agData"></div>
+      <div class="field"><label>Número do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema()"></div>
+    </div>
+    <div id="agTemaDesc" style="font-size:12px;color:var(--gold);margin:-6px 0 10px;min-height:14px"></div>
+    <div class="g2">
+      <div class="field"><label>Nome do Orador</label><input id="agNome" placeholder="ou deixe em branco se não definido"></div>
+      <div class="field"><label>Congregação</label><input id="agCong" placeholder="Congregação de origem"></div>
+    </div>
+    <div class="field"><label>Telefone WhatsApp</label><input id="agTel" type="tel" placeholder="31 9xxxx-xxxx"></div>
+    <div class="field"><label>Observação</label><input id="agObs" placeholder="Ex: Discurso especial, Assembleia..."></div>
+    <div class="brow">
+      <button class="btn bg" onclick="saveAgend()">Salvar</button>
+      <button class="btn bo" onclick="closeM('mNovoAgend')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Importar Planilha (xlsx) -->
 <div class="mbg" id="mImportXlsx">
   <div class="modal">
@@ -339,32 +362,24 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 <!-- PROGRAMAÇÃO -->
 <div class="page active" id="page-programa">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-    <div class="panel-title" style="margin:0">Programação</div>
+  <!-- SEMANA ATUAL — card grande -->
+  <div id="semanaAtual" style="margin-bottom:18px"></div>
+  <!-- PRÓXIMAS SEMANAS + botão inserir -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div class="slabel" style="margin:0">Próximas semanas</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
       <button class="btn bo bs" onclick="openM('mImportXlsx')">📂 Importar planilha</button>
-      <button class="btn bg" onclick="irTab('programar')">+ Agendar discurso</button>
+      <button class="btn bg" onclick="openM('mNovoAgend')">+ Inserir semana</button>
     </div>
   </div>
-
-  <!-- SEMANA ATUAL em destaque -->
-  <div id="semanaAtual" style="margin-bottom:14px"></div>
-
-  <!-- PRÓXIMAS SEMANAS -->
-  <div class="slabel" style="margin-bottom:8px">Próximas semanas</div>
   <div id="listaPrograma"><div class="spin"></div></div>
 </div>
 
 <!-- TEMAS -->
 <div class="page" id="page-temas">
-  <div class="panel-title">Buscar Tema por Número</div>
-  <div class="card">
-    <div class="field">
-      <label>Digite o número do tema (1 a 194)</label>
-      <input type="number" id="temaIn" min="1" max="194" placeholder="Ex: 45" oninput="buscarTema()">
-    </div>
-    <div id="temaRes"></div>
-  </div>
+  <div class="panel-title">Temas dos Discursos</div>
+  <input id="temaSearch" placeholder="🔍 Buscar por número ou palavra..." oninput="renderTemas()" style="margin-bottom:14px">
+  <div id="temasLista"></div>
 </div>
 
 <!-- PROGRAMAR -->
@@ -507,6 +522,7 @@ function checkSetup(){
   // Pre-load programa from embedded data so it shows even before Firebase
   programa=IMPORT_PROGRAMA.filter(p=>p.data&&p.data>='2024-01-01');
   renderPrograma();
+  setTimeout(renderTemas, 0);
   if(fb){ document.getElementById('setup').style.display='none'; initFB(JSON.parse(fb)); }
 }
 
@@ -562,73 +578,191 @@ async function loadPrograma(){
   renderPrograma();
 }
 
-function renderPrograma(){
-  const hoje=new Date().toISOString().slice(0,10);
-  // Domingo atual ou próximo domingo
-  const dt=new Date();
-  const diaSem=dt.getDay(); // 0=dom
-  const diffDom=diaSem===0?0:(7-diaSem); // dias até próximo domingo
-  const proxDom=new Date(dt); proxDom.setDate(dt.getDate()+diffDom);
-  const domAtual=proxDom.toISOString().slice(0,10);
-  const domAnterior=new Date(proxDom); domAnterior.setDate(proxDom.getDate()-7);
-  const domAntStr=domAnterior.toISOString().slice(0,10);
-
-  // Sort programa by date
-  const sorted=[...programa].sort((a,b)=>a.data>b.data?1:-1);
-
-  // Semana atual = domingo mais próximo ao hoje (±3 dias)
-  const semAtual=sorted.find(p=>{
-    if(!p.data) return false;
-    const diff=Math.abs(new Date(p.data)-new Date(hoje));
-    return diff<=7*86400000; // dentro de 7 dias
-  });
-
-  // Render semana atual card
-  const div=document.getElementById('semanaAtual');
-  if(semAtual){
-    const temOrador=semAtual.nome&&semAtual.nome.trim()&&!ehSistema(semAtual.nome);
-    const numT=semAtual.temaNum;
-    const nomeT=numT&&temasLocal[numT]?temasLocal[numT]:semAtual.tema||'—';
-    div.innerHTML=`
-      <div style="background:var(--gdim);border:1px solid rgba(201,168,76,.3);border-radius:12px;padding:18px 20px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:6px">Esta semana — ${fDSem(semAtual.data)}</div>
-        <div style="font-family:'Playfair Display',serif;font-size:20px;margin-bottom:10px;line-height:1.3">${nomeT!='—'?nomeT:'<span style="color:var(--txt3)">Tema não definido</span>'}</div>
-        ${numT?`<div style="margin-bottom:10px"><span class="badge bg-gold">Tema nº ${numT}</span></div>`:''}
-        ${temOrador?`
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <div>
-              <div style="font-size:13px;font-weight:600">${semAtual.nome}</div>
-              <div style="font-size:12px;color:var(--txt2)">${semAtual.congregacao||'—'} · ${semAtual.telefone||'sem contato'}</div>
-            </div>
-            ${semAtual.telefone?`<button class="btn bgreen bs" onclick="abrirWADir('${semAtual.telefone}')">💬 WhatsApp</button>`:''}
-          </div>`
-        :`<div style="font-size:13px;color:var(--txt3);font-style:italic">Orador não definido — <button class="btn bo bs" onclick="irTab('programar')" style="display:inline-flex;margin-left:4px">Agendar</button></div>`}
-      </div>`;
-  } else {
-    div.innerHTML=`<div style="background:var(--surf2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;color:var(--txt3);font-size:14px">Nenhum discurso programado para esta semana.</div>`;
-  }
-
-  // Próximas semanas (próximas 12 entradas a partir de hoje)
-  const proximas=sorted.filter(p=>p.data&&p.data>hoje).slice(0,12);
-  const listDiv=document.getElementById('listaPrograma');
-  if(!proximas.length){listDiv.innerHTML='<div class="empty"><div class="ico">📅</div>Sem datas futuras programadas</div>';return;}
-  listDiv.innerHTML=proximas.map(p=>{
-    const temOrador=p.nome&&p.nome.trim()&&!ehSistema(p.nome);
-    const numT=p.temaNum;
-    const nomeT=numT&&temasLocal[numT]?temasLocal[numT]:p.tema||'';
-    const alertaT=nomeT&&nomeT.toLowerCase().includes('falta')||!nomeT;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid ${temOrador?'var(--border)':'rgba(192,57,43,.2)'};border-radius:8px;margin-bottom:6px;background:var(--surf);transition:.18s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='${temOrador?'var(--border)':'rgba(192,57,43,.2)'}'">
-      <div style="min-width:80px;font-size:12px;color:var(--txt3);font-weight:600">${fD(p.data)}<br><span style="font-size:11px;font-weight:400">${diaSemana(p.data)}</span></div>
+// ═══════════════════════════════════════════════════════
+// TEMAS — lista completa com busca
+// ═══════════════════════════════════════════════════════
+function renderTemas(){
+  const q=(document.getElementById('temaSearch')?.value||'').toLowerCase().trim();
+  const div=document.getElementById('temasLista');
+  const entries=Object.entries(temasLocal).map(([n,t])=>({n:+n,t})).sort((a,b)=>a.n-b.n);
+  const filtrados=q?entries.filter(({n,t})=>String(n).includes(q)||t.toLowerCase().includes(q)):entries;
+  if(!filtrados.length){div.innerHTML='<div class="empty"><div class="ico">🔍</div>Nenhum tema encontrado</div>';return;}
+  div.innerHTML=filtrados.map(({n,t})=>{
+    const nao=t==='(Não use.)';
+    const usos=discursos.filter(d=>d.temaNum==n).length;
+    const ult=discursos.filter(d=>d.temaNum==n).sort((a,b)=>b.data>a.data?1:-1)[0]?.data;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--surf);transition:.15s;cursor:${nao?'default':'pointer'}" onclick="${nao?'':'openAgendComTema('+n+')'}" ${nao?'':'onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'"'}>
+      <div style="min-width:36px;text-align:center;font-size:12px;font-weight:700;color:${nao?'var(--txt3)':'var(--gold)'}">${n}</div>
       <div style="flex:1;min-width:0">
-        ${numT?`<span class="badge bg-gold" style="margin-bottom:3px;display:inline-block">Nº ${numT}</span> `:''}
-        <div style="font-size:13px;font-weight:${temOrador?'600':'400'};color:${temOrador?'var(--txt)':'var(--txt3)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomeT&&!alertaT?nomeT:'<em>Tema não definido</em>'}</div>
-        <div style="font-size:12px;color:var(--txt2);margin-top:2px">${temOrador?p.nome+' · '+(p.congregacao||'—'):'<span style="color:var(--red);opacity:.7">Sem orador</span>'}</div>
+        <div style="font-size:13.5px;${nao?'color:var(--txt3);text-decoration:line-through':''};">${t}</div>
+        ${nao?'':`<div style="font-size:11px;color:var(--txt3);margin-top:1px">${usos?`Usado ${usos}x · último: ${fD(ult)}`:'Nunca usado'}</div>`}
       </div>
-      ${temOrador&&p.telefone?`<button class="btn bo bs" onclick="abrirWADir('${p.telefone}')">💬</button>`:''}
-      <button class="btn bo bs" onclick="editarProg('${p.data}')">✏️</button>
+      ${!nao&&usos===0?'<span class="badge bg-green" style="flex-shrink:0">Novo ✓</span>':''}
+      ${!nao?'<span style="font-size:18px;opacity:.3;flex-shrink:0">›</span>':''}
     </div>`;
   }).join('');
 }
+
+function openAgendComTema(n){
+  // Pré-preenche o modal de agendamento com o tema
+  document.getElementById('agTema').value=n;
+  document.getElementById('agId').value='';
+  document.getElementById('agNome').value='';
+  document.getElementById('agCong').value='';
+  document.getElementById('agTel').value='';
+  document.getElementById('agObs').value='';
+  document.getElementById('agData').value='';
+  onAgTema();
+  document.getElementById('mNovoAgendTit').textContent='Agendar Tema Nº '+n;
+  openM('mNovoAgend');
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL AGENDAMENTO — salvar / editar
+// ═══════════════════════════════════════════════════════
+function onAgTema(){
+  const n=parseInt(document.getElementById('agTema').value);
+  document.getElementById('agTemaDesc').textContent=n&&temasLocal[n]?temasLocal[n]:'';
+}
+
+async function saveAgend(){
+  if(!db) return toast('Firebase não conectado!');
+  const id=document.getElementById('agId').value;
+  const data={
+    data:document.getElementById('agData').value,
+    temaNum:parseInt(document.getElementById('agTema').value)||null,
+    nome:document.getElementById('agNome').value.trim()||null,
+    congregacao:document.getElementById('agCong').value.trim(),
+    telefone:document.getElementById('agTel').value.trim(),
+    obs:document.getElementById('agObs').value.trim()
+  };
+  if(!data.data) return toast('Informe a data!');
+  if(id) await FF.upd(FF.doc(db,'programa',id),data);
+  else await FF.add(FF.col(db,'programa'),data);
+  // Update local programa array
+  if(id){
+    const idx=programa.findIndex(p=>p.id===id);
+    if(idx>=0) programa[idx]={...programa[idx],...data};
+  } else {
+    programa.push(data);
+  }
+  closeM('mNovoAgend'); renderPrograma(); toast('Salvo!');
+}
+
+async function delAgend(id){
+  if(!confirm('Remover este agendamento?')) return;
+  if(db) await FF.del(FF.doc(db,'programa',id));
+  programa=programa.filter(p=>p.id!==id);
+  renderPrograma(); toast('Removido.');
+}
+
+function renderPrograma(){
+  const hoje=new Date().toISOString().slice(0,10);
+  const sorted=[...programa].filter(p=>p.data&&p.data.match(/^\d{4}-\d{2}-\d{2}/)).sort((a,b)=>a.data>b.data?1:-1);
+
+  const dt=new Date(); dt.setHours(12,0,0,0);
+  const diaSem=dt.getDay();
+  const iniciSem=new Date(dt); iniciSem.setDate(dt.getDate()-diaSem);
+  const fimSem=new Date(iniciSem); fimSem.setDate(iniciSem.getDate()+6);
+  const iniciStr=iniciSem.toISOString().slice(0,10);
+  const fimStr=fimSem.toISOString().slice(0,10);
+
+  let semAtual=sorted.find(p=>p.data>=iniciStr&&p.data<=fimStr);
+  if(!semAtual) semAtual=sorted.find(p=>p.data>hoje);
+
+  const div=document.getElementById('semanaAtual');
+  if(semAtual){
+    const temOrador=semAtual.nome&&semAtual.nome.trim()&&!ehSistema(semAtual.nome);
+    const nT=semAtual.temaNum;
+    const nomeT=nT&&temasLocal[nT]?temasLocal[nT]:semAtual.tema||'';
+    const especial=semAtual.obs&&semAtual.obs.trim();
+    const eId=semAtual.id||'';
+    const eNome=encodeURIComponent(semAtual.nome||'');
+    const eCong=encodeURIComponent(semAtual.congregacao||'');
+    const eTel=encodeURIComponent(semAtual.telefone||'');
+    div.innerHTML=
+      '<div style="background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.05));border:1px solid rgba(201,168,76,.35);border-radius:14px;padding:20px 22px;position:relative">'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);margin-bottom:8px">📅 '+fDSem(semAtual.data)+'</div>'
+      +(nT?'<div style="margin-bottom:6px"><span class="badge bg-gold">Tema nº '+nT+'</span></div>':'')
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:21px;line-height:1.3;margin-bottom:12px;color:var(--txt)">'
+      +(nomeT||'<span style="color:var(--txt3);font-style:italic">Tema não definido</span>')+'</div>'
+      +(especial?'<div style="font-size:13px;color:var(--gold);margin-bottom:10px;opacity:.8">⚡ '+semAtual.obs+'</div>':'')
+      +(temOrador
+        ?'<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 14px;background:rgba(0,0,0,.2);border-radius:8px">'
+          +'<div style="flex:1;min-width:120px">'
+          +'<div style="font-weight:600;font-size:15px">'+semAtual.nome+'</div>'
+          +'<div style="font-size:12px;color:var(--txt2);margin-top:2px">'+(semAtual.congregacao||'—')+'</div>'
+          +(semAtual.telefone?'<div style="font-size:12px;color:var(--txt3);margin-top:1px">'+semAtual.telefone+'</div>':'')
+          +'</div>'
+          +'<div style="display:flex;gap:7px;flex-wrap:wrap">'
+          +(semAtual.telefone
+            ?'<button class="btn bgreen" onclick="abrirWADir(\''+semAtual.telefone+'\')">💬 WhatsApp</button>'
+            +'<button class="btn bo bs" onclick="abrirWAMsgPadrao(\''+eId+'\',\''+semAtual.data+'\')">✦ Mensagem</button>'
+            :'<span style="font-size:12px;color:var(--txt3)">Sem contato</span>')
+          +'</div></div>'
+        :'<div style="padding:12px 14px;background:rgba(0,0,0,.15);border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+          +'<span style="font-size:13px;color:var(--txt3)">Orador não definido</span>'
+          +'<button class="btn bg bs" onclick="editarAgend(\''+eId+'\',\''+semAtual.data+'\',\''+(nT||'')+'\',\'\',\'\',\'\')">+ Definir orador</button>'
+          +'</div>')
+      +'<button style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:var(--txt3);font-size:12px;padding:4px 7px;border-radius:5px" onclick="editarAgend(\''+eId+'\',\''+semAtual.data+'\',\''+(nT||'')+'\',\''+eNome+'\',\''+eCong+'\',\''+eTel+'\')">✏️ editar</button>'
+      +'</div>';
+  } else {
+    div.innerHTML='<div style="background:var(--surf2);border:1px solid var(--border2);border-radius:12px;padding:16px 18px">'
+      +'<div style="font-size:14px;color:var(--txt3);margin-bottom:10px">Nenhum discurso programado para esta semana.</div>'
+      +'<button class="btn bg bs" onclick="openM(\'mNovoAgend\')">+ Inserir discurso</button></div>';
+  }
+
+  const proximas=sorted.filter(p=>p.data>hoje).slice(0,16);
+  const listDiv=document.getElementById('listaPrograma');
+  if(!proximas.length){listDiv.innerHTML='<div class="empty"><div class="ico">📅</div>Sem datas futuras</div>';return;}
+  listDiv.innerHTML=proximas.map(p=>{
+    const temOrador=p.nome&&p.nome.trim()&&!ehSistema(p.nome);
+    const nT=p.temaNum;
+    const nomeT=nT&&temasLocal[nT]?temasLocal[nT]:p.tema||'';
+    const semTema=!nomeT||nomeT.toLowerCase().includes('falta');
+    const bordaCor=temOrador?'var(--border)':semTema?'rgba(192,57,43,.2)':'rgba(201,168,76,.18)';
+    const eId=p.id||'';
+    const eNome=encodeURIComponent(p.nome||'');
+    const eCong=encodeURIComponent(p.congregacao||'');
+    const eTel=encodeURIComponent(p.telefone||'');
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid '+bordaCor+';border-radius:8px;margin-bottom:5px;background:var(--surf)">'
+      +'<div style="min-width:70px;font-size:12px;color:var(--txt3);line-height:1.4"><div style="font-weight:700;color:var(--txt2)">'+fD(p.data)+'</div><div style="font-size:11px">'+diaSemana(p.data)+'</div></div>'
+      +'<div style="flex:1;min-width:0">'
+      +(nT?'<span class="badge bg-gold" style="margin-bottom:3px;display:inline-block">Nº '+nT+'</span> ':'')
+      +'<div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:'+(semTema?'var(--txt3)':'var(--txt)')+'">'+( semTema?'<em>Tema não definido</em>':nomeT)+'</div>'
+      +'<div style="font-size:11px;color:'+(temOrador?'var(--txt2)':'var(--red);opacity:.7')+';margin-top:2px">'+(temOrador?p.nome+' · '+(p.congregacao||'—'):'Sem orador definido')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:4px;flex-shrink:0">'
+      +(temOrador&&p.telefone?'<button class="btn bo bs" onclick="abrirWADir(\''+p.telefone+'\')" title="WhatsApp">💬</button>':'')
+      +'<button class="btn bo bs" onclick="editarAgend(\''+eId+'\',\''+p.data+'\',\''+(nT||'')+'\',\''+eNome+'\',\''+eCong+'\',\''+eTel+'\')" title="Editar">✏️</button>'
+      +(p.id?'<button class="btn bo bs" style="color:var(--red);opacity:.7" onclick="delAgend(\''+p.id+'\')" title="Remover">✕</button>':'')
+      +'</div></div>';
+  }).join('');
+}
+
+function editarAgend(id,data,temaNum,nome,cong,tel){
+  document.getElementById('agId').value=id||'';
+  document.getElementById('agData').value=data||'';
+  document.getElementById('agTema').value=temaNum||'';
+  document.getElementById('agNome').value=decodeURIComponent(nome||'');
+  document.getElementById('agCong').value=decodeURIComponent(cong||'');
+  document.getElementById('agTel').value=decodeURIComponent(tel||'');
+  document.getElementById('agObs').value='';
+  onAgTema();
+  document.getElementById('mNovoAgendTit').textContent=data?'Editar — '+fD(data):'Inserir na Programação';
+  openM('mNovoAgend');
+}
+
+function abrirWAMsgPadrao(id,data){
+  const p=programa.find(x=>x.id===id||x.data===data);
+  if(!p) return;
+  const nT=p.temaNum; const nomeT=nT&&temasLocal[nT]?temasLocal[nT]:p.tema||'—';
+  const msg='Orador: '+(p.nome||'—')+'\nCongregação: '+(p.congregacao||'—')+'\nTema: '+nomeT+'\nData: '+fDL(p.data)+'\nLocal: '+cfg.cong+'\nEndereço: '+cfg.end;
+  const tel=p.telefone?p.telefone.replace(/\D/g,''):'';
+  window.open(tel?'https://wa.me/55'+tel+'?text='+encodeURIComponent(msg):'https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+
 
 function ehSistema(nome){
   const s=['CONGRESSO','ASSEMBLEIA','CELEBRAÇÃO','VISITA','REUNIÃO','DISCURSO ESPECIAL','TRANSIÇÃO','MUDANÇA'];
