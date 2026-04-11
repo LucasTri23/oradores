@@ -607,14 +607,17 @@ function renderHome(){
     div.appendChild(mkWeekCard(sem,isDestaque,isPast));
   });
   initAnoFilter();
-}
   // Sentinela chip
   const sd=document.getElementById('homeSentinela');
   const us=sentinelas.length?sentinelas[0]:null;
   if(us){
-    sd.innerHTML='<div class="sentchip">📖 <strong>Sentinela:</strong> '+us.tema+(us.data?' <span style="opacity:.6;margin-left:6px">'+fD(us.data)+'</span>':'')+'</div>';
+    const sc=document.createElement('div');sc.className='sentchip';
+    sc.innerHTML='📖 <strong>Sentinela:</strong> '+us.tema+(us.data?' <span style="opacity:.6;margin-left:6px">'+fD(us.data)+'</span>':'');
+    sd.innerHTML='';sd.appendChild(sc);
   } else {
-    sd.innerHTML='<div class="sentchip" style="opacity:.4;cursor:pointer" onclick="irTab(\'sentinela\')">📖 Nenhum tema da Sentinela registrado</div>';
+    const sc2=document.createElement('div');sc2.className='sentchip';sc2.style.cssText='opacity:.4;cursor:pointer';
+    sc2.textContent='📖 Nenhum tema da Sentinela registrado';sc2.onclick=function(){irTab('sentinela');};
+    sd.innerHTML='';sd.appendChild(sc2);
   }
 }
 
