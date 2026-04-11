@@ -556,17 +556,20 @@ let anoAtivo=new Date().getFullYear();
 function initAnoFilter(){
   const anos=new Set();
   const hoje=new Date().getFullYear();
-  // Always include current year + next 2
   [hoje,hoje+1,hoje+2].forEach(a=>anos.add(a));
-  // Also include years from programa
   programa.forEach(p=>{if(p.data)anos.add(parseInt(p.data.slice(0,4)));});
   const sorted=[...anos].sort();
   const bar=document.getElementById('anoFilterBar');
   if(!bar)return;
-  bar.innerHTML=sorted.map(a=>
-    '<div class="fchip'+(a===anoAtivo?' on':'')+'" onclick="setAno(''+a+'')" style="font-size:12px;padding:5px 13px">'
-    +a+'</div>'
-  ).join('');
+  bar.innerHTML='';
+  sorted.forEach(a=>{
+    const chip=document.createElement('div');
+    chip.className='fchip'+(a===anoAtivo?' on':'');
+    chip.style.cssText='font-size:12px;padding:5px 13px';
+    chip.textContent=a;
+    chip.onclick=function(){setAno(a);};
+    bar.appendChild(chip);
+  });
 }
 
 function setAno(a){
@@ -805,26 +808,29 @@ function renderOradores(){
     if(!p.nome||ehSist(p.nome))return;
     if(p.data>=hoje){const o=oradores.find(x=>x.nome===p.nome);if(o&&!agMap[o.id])agMap[o.id]=p.data;}
   });
-  div.innerHTML=list.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(o=>{
+  div.innerHTML='';
+  list.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(o=>{
     const cor=corTempo(o.ultimoDiscurso);
     const tempo=mesesAno(o.ultimoDiscurso);
     const ag=agMap[o.id];
-    return '<div class="or-item">'
-      +'<div style="min-width:0;flex:1">'
-      +'<div style="font-weight:600;font-size:13px">'+o.nome
-      +(o.nota?'  <span style="color:var(--amber);font-size:11px">'+'★'.repeat(o.nota)+'</span>':'')
-      +(ag?'  <span class="badge bblu">AGENDADO '+fD(ag)+'</span>':'')
-      +'</div>'
-      +'<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+(o.cong||'—')+' · '+(o.tel||'sem contato')+'</div>'
-      +(tempo?'<div style="font-size:11px;margin-top:3px"><span class="badge '+cor+'">'+tempo+' sem discursar</span></div>':'')
-      +(o.obs?'<div style="font-size:11px;color:var(--whi3);margin-top:2px;font-style:italic">"'+o.obs+'"</div>':'')
-      +'</div>'
-      +'<div style="display:flex;gap:4px;flex-shrink:0">'
-      +(o.tel?'<button class="btn bo bs" onclick="abrirWADir(\''+o.tel+'\')" title="WhatsApp">💬</button>':'')
-      +'<button class="btn bo bs" onclick="editOrador(\''+o.id+'\')" title="Editar">✏️</button>'
-      +'<button class="btn bo bs" style="color:var(--red);opacity:.7" onclick="delOrador(\''+o.id+'\')" title="Excluir">🗑</button>'
-      +'</div></div>';
-  }).join('');
+    const row=document.createElement('div');
+    row.className='or-item';
+    let ih='<div style="min-width:0;flex:1"><div style="font-weight:600;font-size:13px">'+o.nome;
+    if(o.nota)ih+='&nbsp;<span style="color:var(--amber);font-size:11px">'+'★'.repeat(o.nota)+'</span>';
+    if(ag)ih+='&nbsp;<span class="badge bblu">AGENDADO '+fD(ag)+'</span>';
+    ih+='</div><div style="font-size:11px;color:var(--whi3);margin-top:2px">'+(o.cong||'—')+' · '+(o.tel||'sem contato')+'</div>';
+    if(tempo)ih+='<div style="font-size:11px;margin-top:3px"><span class="badge '+cor+'">'+tempo+' sem discursar</span></div>';
+    if(o.obs)ih+='<div style="font-size:11px;color:var(--whi3);margin-top:2px;font-style:italic">"'+o.obs+'"</div>';
+    ih+='</div>';
+    row.innerHTML=ih;
+    const btns=document.createElement('div');
+    btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
+    if(o.tel){const b=document.createElement('button');b.className='btn bo bs';b.title='WhatsApp';b.textContent='💬';b.onclick=()=>abrirWADir(o.tel);btns.appendChild(b);}
+    const be=document.createElement('button');be.className='btn bo bs';be.title='Editar';be.textContent='✏️';be.onclick=()=>editOrador(o.id);btns.appendChild(be);
+    const bd=document.createElement('button');bd.className='btn bo bs';bd.style.cssText='color:var(--red);opacity:.7';bd.title='Excluir';bd.textContent='🗑';bd.onclick=()=>delOrador(o.id);btns.appendChild(bd);
+    row.appendChild(btns);
+    div.appendChild(row);
+  });
 }
 function novoOrador(){['oId','oNome','oCong','oTel','oUlt','oObs'].forEach(id=>document.getElementById(id).value='');notaAtual=0;rStars(0);document.getElementById('mOradorTit').textContent='Novo Orador';openM('mOrador');}
 function editOrador(id){
@@ -855,29 +861,49 @@ function renderSugestoes(){
   if(!sugestoes.length){div.innerHTML='<div class="empty"><div class="ico">💡</div>Nenhuma sugestão</div>';return;}
   const pp={};
   sugestoes.forEach(s=>{if(!pp[s.nome])pp[s.nome]=[];pp[s.nome].push(s);});
-  div.innerHTML=Object.entries(pp).map(([nome,itens])=>{
-    const ih=itens.map(s=>{
-      const nT=s.temaNum&&TL[s.temaNum]?TL[s.temaNum]:s.descricao||'—';
+  div.innerHTML='';
+  Object.entries(pp).forEach(([nome,itens])=>{
+    const box=document.createElement('div');
+    box.className='sug-item';
+    let hd='<div style="display:flex;align-items:center;justify-content:space-between">';
+    hd+='<div style="font-weight:600;font-size:13px">'+nome+'</div>';
+    hd+='<span class="badge bgry">'+itens.length+' sugestão'+(itens.length>1?'ões':'')+'</span></div>';
+    box.innerHTML=hd;
+    itens.forEach(s=>{
       const st=s.status||'pendente';
+      const nomeT=s.temaNum&&TL[s.temaNum]?TL[s.temaNum]:s.descricao||'—';
       const stCor={pendente:'bamb',agendado:'bblu',realizado:'bgrn'}[st]||'bamb';
-      return '<div style="padding:8px 10px;background:var(--surf3);border-radius:7px;margin-top:6px;display:flex;align-items:flex-start;gap:10px">'
-        +(s.temaNum?'<span class="badge bpur" style="flex-shrink:0;margin-top:1px">Nº '+s.temaNum+'</span>':'')
-        +'<div style="flex:1;min-width:0"><div style="font-size:13px">'+nT+'</div>'
-        +(s.descricao&&s.descricao!==nT?'<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+s.descricao+'</div>':'')
-        +'</div><div style="display:flex;gap:4px;align-items:center;flex-shrink:0">'
-        +'<select class="badge '+stCor+'" onchange="setSugSt(\''+s.id+'\',this.value)" style="border:none;cursor:pointer;font-size:10px;font-weight:700;padding:3px 6px;background:transparent">'
-        +'<option value="pendente"'+(st==='pendente'?' selected':'')+'>⏳ Pendente</option>'
-        +'<option value="agendado"'+(st==='agendado'?' selected':'')+'>📅 Agendado</option>'
-        +'<option value="realizado"'+(st==='realizado'?' selected':'')+'>✅ Realizado</option>'
-        +'</select>'
-        +'<button class="btn bo bs" style="color:var(--red);opacity:.7" onclick="delSug(\''+s.id+'\')">✕</button>'
-        +'</div></div>';
-    }).join('');
-    return '<div class="sug-item"><div style="display:flex;align-items:center;justify-content:space-between">'
-      +'<div style="font-weight:600;font-size:13px">'+nome+'</div>'
-      +'<span class="badge bgry">'+itens.length+' sugestão'+(itens.length>1?'ões':'')+'</span>'
-      +'</div>'+ih+'</div>';
-  }).join('');
+      const item=document.createElement('div');
+      item.style.cssText='padding:8px 10px;background:var(--surf3);border-radius:7px;margin-top:6px;display:flex;align-items:flex-start;gap:10px';
+      let ih='';
+      if(s.temaNum) ih+='<span class="badge bpur" style="flex-shrink:0;margin-top:1px">Nº '+s.temaNum+'</span>';
+      ih+='<div style="flex:1;min-width:0"><div style="font-size:13px">'+nomeT+'</div>';
+      if(s.descricao&&s.descricao!==nomeT) ih+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+s.descricao+'</div>';
+      ih+='</div>';
+      item.innerHTML=ih;
+      // Status select via DOM
+      const sel=document.createElement('select');
+      sel.className='badge '+stCor;
+      sel.style.cssText='border:none;cursor:pointer;font-size:10px;font-weight:700;padding:3px 6px;background:transparent';
+      ['pendente','agendado','realizado'].forEach(v=>{
+        const opt=document.createElement('option');
+        opt.value=v;opt.textContent={pendente:'⏳ Pendente',agendado:'📅 Agendado',realizado:'✅ Realizado'}[v];
+        if(v===st)opt.selected=true;
+        sel.appendChild(opt);
+      });
+      sel.onchange=function(){setSugSt(s.id,this.value);};
+      // Delete button via DOM
+      const bd=document.createElement('button');
+      bd.className='btn bo bs';bd.style.cssText='color:var(--red);opacity:.7';bd.textContent='✕';
+      bd.onclick=function(){delSug(s.id);};
+      const acts=document.createElement('div');
+      acts.style.cssText='display:flex;gap:4px;align-items:center;flex-shrink:0';
+      acts.appendChild(sel);acts.appendChild(bd);
+      item.appendChild(acts);
+      box.appendChild(item);
+    });
+    div.appendChild(box);
+  });
 }
 async function setSugSt(id,status){if(!db)return toast('Firebase não conectado!');await FF.upd(FF.doc(db,'sugestoes',id),{status});sugestoes=sugestoes.map(s=>s.id===id?{...s,status}:s);toast('Status atualizado!');}
 function onSugNum(){const n=parseInt(document.getElementById('sNum').value);document.getElementById('sNumName').textContent=n&&TL[n]?TL[n]:'';}
@@ -940,9 +966,18 @@ async function loadSentinelas(){if(!db)return;const s=await FF.gets(FF.col(db,'s
 function renderSentinelas(){
   const div=document.getElementById('sentLista');if(!div)return;
   if(!sentinelas.length){div.innerHTML='<div style="color:var(--whi3);font-size:13px">Nenhum tema salvo.</div>';return;}
-  div.innerHTML=sentinelas.map(s=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
-    +'<div><div style="font-size:13px">'+s.tema+'</div><div style="font-size:11px;color:var(--whi3);margin-top:1px">'+(s.data?fD(s.data):'—')+'</div></div>'
-    +'<button class="btn bo bs" onclick="delSent(\''+s.id+'\')" style="color:var(--red);opacity:.7">✕</button></div>').join('');
+  div.innerHTML='';
+  sentinelas.forEach(s=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)';
+    const info=document.createElement('div');
+    info.innerHTML='<div style="font-size:13px">'+s.tema+'</div><div style="font-size:11px;color:var(--whi3);margin-top:1px">'+(s.data?fD(s.data):'—')+'</div>';
+    const btn=document.createElement('button');
+    btn.className='btn bo bs';btn.style.cssText='color:var(--red);opacity:.7';btn.textContent='✕';
+    btn.onclick=function(){delSent(s.id);};
+    row.appendChild(info);row.appendChild(btn);
+    div.appendChild(row);
+  });
 }
 async function saveSentinela(){
   if(!db)return toast('Firebase não conectado!');
