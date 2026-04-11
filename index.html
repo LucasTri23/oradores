@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Oradores — Bom Jesus</title>
+<title>Oradores</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -343,6 +343,14 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
     <button class="btn bp" onclick="saveConfig()">Salvar</button>
   </div>
   <div class="card">
+    <div class="slabel" style="margin-bottom:10px">Mensagens pré-prontas (WhatsApp)</div>
+    <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6">Use as variáveis: <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{tema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{data}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code></p>
+    <div id="msgsList"></div>
+    <div style="margin-top:10px;display:flex;gap:7px">
+      <button class="btn bp bs" onclick="addMsg()">+ Nova mensagem</button>
+    </div>
+  </div>
+  <div class="card">
     <div class="slabel">Sistema</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn bo" onclick="openM('mExport')">📤 Exportar Excel</button>
@@ -356,6 +364,10 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 let db=null,FF=null,oradores=[],discursos=[],sugestoes=[],sentinelas=[],programa=[];
 let notaAtual=0,temaFiltro='todos';
 let cfg={cong:'Congregação Bom Jesus',end:'R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG',hor:'19:00'};
+let mensagens=[
+  {id:1,titulo:'Convite padrão',texto:'Olá {orador}, tudo bem?\n\nGostaríamos de convidá-lo para proferir o discurso público na nossa congregação:\n\n📖 Tema: {tema}\n📅 Data: {data}\n🏠 Congregação: {cong}\n📍 Endereço: {end}\n\nAguardamos sua confirmação. 🙏'},
+  {id:2,titulo:'Lembrete',texto:'Olá {orador}! Passando para lembrar do discurso público:\n\n📖 {tema}\n📅 {data}\n📍 {cong}\n\nObrigado! 🙏'},
+];
 let TL={...TEMAS}; // temasLocal — updatable copy
 
 // SETUP
@@ -363,9 +375,12 @@ function checkSetup(){
   const fb=localStorage.getItem('bj_fb');
   const lc=localStorage.getItem('bj_cfg');
   const lt=localStorage.getItem('bj_temas');
+  const lm=localStorage.getItem('bj_msgs');
+  if(lm)mensagens=JSON.parse(lm);
   if(lc) cfg=JSON.parse(lc);
   if(lt) Object.assign(TL,JSON.parse(lt));
   renderHome(); renderTemas();
+  renderMensagens();
   if(fb){document.getElementById('setup').style.display='none';initFB(JSON.parse(fb));}
 }
 
@@ -473,7 +488,7 @@ document.querySelectorAll('.mbg').forEach(b=>b.addEventListener('click',e=>{if(e
 function toast(msg,dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
 
 // HOME
-function mkWeekCard(sem,isCurrent,isPast){
+function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const nT=sem.temaNum;
   const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'';
   const temOr=sem.nome&&!ehSist(sem.nome);
@@ -485,7 +500,8 @@ function mkWeekCard(sem,isCurrent,isPast){
   else if(isPast){bg='rgba(255,255,255,.01)';brd='var(--border)';}
   else if(temDados){bg='var(--surf)';brd='var(--border)';}
   else{bg='rgba(255,255,255,.02)';brd='rgba(255,255,255,.06)';}
-  const pad=isCurrent?'16px':'11px 14px';
+  const isLarge=isCurrent||isFirst;
+  const pad=isLarge?'16px':'11px 14px';
   const op=isPast?'0.65':'1';
   const el=document.createElement('div');
   el.style.cssText='background:'+bg+';border:1px solid '+brd+';border-radius:10px;padding:'+pad+';position:relative;margin-bottom:6px;opacity:'+op;
@@ -515,7 +531,7 @@ function mkWeekCard(sem,isCurrent,isPast){
   } else {
     if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:4px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);el.appendChild(document.createTextNode(' '));}
     const tEl=document.createElement('div');
-    tEl.style.cssText='font-size:'+(isCurrent?'17px':'13px')+';font-weight:700;line-height:1.3;color:var(--whi);margin-bottom:'+(isCurrent?'10px':'6px');
+    tEl.style.cssText='font-size:'+(isLarge?'17px':'13px')+';font-weight:700;line-height:1.3;color:var(--whi);margin-bottom:'+(isLarge?'10px':'6px');
     tEl.textContent=nomeT||'Tema não definido';
     if(!nomeT)tEl.style.color='var(--whi3)';
     el.appendChild(tEl);
@@ -525,7 +541,7 @@ function mkWeekCard(sem,isCurrent,isPast){
       row.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;background:rgba(0,0,0,.2);border-radius:7px';
       const info=document.createElement('div');
       info.style.cssText='flex:1;min-width:90px';
-      const n=document.createElement('div');n.style.cssText='font-weight:600;font-size:'+(isCurrent?'14px':'12px');n.textContent=sem.nome;
+      const n=document.createElement('div');n.style.cssText='font-weight:600;font-size:'+(isLarge?'14px':'12px');n.textContent=sem.nome;
       const c=document.createElement('div');c.style.cssText='font-size:11px;color:var(--whi3)';c.textContent=(sem.congregacao||'—')+(sem.telefone?' · '+sem.telefone:'');
       info.appendChild(n);info.appendChild(c);row.appendChild(info);
       if(!isPast&&sem.telefone){
@@ -592,20 +608,26 @@ function allSaturdays(year){
 
 function renderHome(){
   const hoje=new Date().toISOString().slice(0,10);
-  // Build map from programa
   const byDate={};
   programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
-  // Get all saturdays of selected year
   const sats=allSaturdays(anoAtivo);
   const destaque=currentOrNextProg();
   const div=document.getElementById('homeWeekCard');
   div.innerHTML='';
-  sats.forEach(data=>{
-    const sem=byDate[data]||{data};
-    const isDestaque=destaque&&data===destaque.data;
-    const isPast=data<hoje;
-    div.appendChild(mkWeekCard(sem,isDestaque,isPast));
-  });
+  // Only show future saturdays (today and forward)
+  const futures=sats.filter(d=>d>=hoje);
+  if(!futures.length){
+    const emp=document.createElement('div');
+    emp.style.cssText='text-align:center;padding:28px;color:var(--whi3)';
+    emp.textContent='Sem sábados futuros neste ano.';
+    div.appendChild(emp);
+  } else {
+    futures.forEach((data,i)=>{
+      const sem=byDate[data]||{data};
+      const isDestaque=destaque&&data===destaque.data;
+      div.appendChild(mkWeekCard(sem,isDestaque,false,i===0&&!isDestaque));
+    });
+  }
   initAnoFilter();
   // Sentinela chip
   const sd=document.getElementById('homeSentinela');
@@ -759,13 +781,7 @@ async function delAgend(id){
 
 // WA
 function abrirWADir(tel){window.open('https://wa.me/55'+tel.replace(/\D/g,''),'_blank');}
-function abrirMsgPadrao(jsonOrEnc){
-  let p;try{p=JSON.parse(jsonOrEnc);}catch(e){p=JSON.parse(decodeURIComponent(jsonOrEnc));}
-  const nT=p.temaNum;const nomeT=nT&&TL[nT]?TL[nT]:p.tema||'—';
-  const msg='Orador: '+(p.nome||'—')+'\nCongregação: '+(p.congregacao||'—')+'\nTema: '+nomeT+'\nData: '+fDL(p.data)+'\nLocal: '+cfg.cong+'\nEndereço: '+cfg.end;
-  const tel=p.telefone?p.telefone.replace(/\D/g,''):'';
-  window.open(tel?'https://wa.me/55'+tel+'?text='+encodeURIComponent(msg):'https://wa.me/?text='+encodeURIComponent(msg),'_blank');
-}
+
 
 // TEMAS
 function setTF(el){document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on'));el.classList.add('on');temaFiltro=el.dataset.f;renderTemas();}
@@ -1053,7 +1069,99 @@ async function askAI(msg){
 function addAIMsg(tipo,txt){const d=document.createElement('div');d.className='ai-msg '+tipo;d.textContent=txt;const c=document.getElementById('aiMsgs');c.appendChild(d);d.scrollIntoView({behavior:'smooth',block:'nearest'});return d;}
 
 // CONFIG
-function saveConfig(){cfg.cong=document.getElementById('cfgNome').value;cfg.end=document.getElementById('cfgEnd').value;cfg.hor=document.getElementById('cfgHor').value;localStorage.setItem('bj_cfg',JSON.stringify(cfg));toast('✓ Salvo!');}
+function saveConfig(){cfg.cong=document.getElementById('cfgNome').value;cfg.end=document.getElementById('cfgEnd').value;cfg.hor=document.getElementById('cfgHor').value;localStorage.setItem('bj_cfg',JSON.stringify(cfg));renderMensagens();toast('✓ Salvo!');}
+
+// MENSAGENS
+function saveMensagens(){localStorage.setItem('bj_msgs',JSON.stringify(mensagens));}
+
+function renderMensagens(){
+  const div=document.getElementById('msgsList');if(!div)return;
+  div.innerHTML='';
+  mensagens.forEach((m,i)=>{
+    const box=document.createElement('div');
+    box.style.cssText='background:var(--surf2);border:1px solid var(--border2);border-radius:8px;padding:12px;margin-bottom:8px';
+    const head=document.createElement('div');
+    head.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+    const inp=document.createElement('input');
+    inp.value=m.titulo;inp.placeholder='Nome da mensagem';
+    inp.style.cssText='flex:1;font-size:12px;font-weight:600';
+    inp.oninput=function(){mensagens[i].titulo=this.value;saveMensagens();};
+    const del=document.createElement('button');
+    del.className='btn bo bs';del.style.cssText='color:var(--red);opacity:.7;flex-shrink:0';del.textContent='✕';
+    del.onclick=function(){if(confirm('Remover esta mensagem?')){mensagens.splice(i,1);saveMensagens();renderMensagens();}};
+    head.appendChild(inp);head.appendChild(del);
+    const ta=document.createElement('textarea');
+    ta.value=m.texto;ta.rows=4;ta.placeholder='Texto da mensagem...';ta.style.cssText='font-size:12px;line-height:1.6';
+    ta.oninput=function(){mensagens[i].texto=this.value;saveMensagens();};
+    box.appendChild(head);box.appendChild(ta);
+    div.appendChild(box);
+  });
+}
+
+function addMsg(){
+  mensagens.push({id:Date.now(),titulo:'Nova mensagem',texto:'Olá {orador}!\n\n📖 Tema: {tema}\n📅 Data: {data}\n📍 {cong}\n\n🙏'});
+  saveMensagens();renderMensagens();
+}
+
+function buildMsg(template,sem){
+  const nT=sem.temaNum;
+  const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'—';
+  return template
+    .replace(/{orador}/g,sem.nome||'—')
+    .replace(/{tema}/g,nomeT)
+    .replace(/{data}/g,fDL(sem.data))
+    .replace(/{cong}/g,cfg.cong)
+    .replace(/{end}/g,cfg.end);
+}
+
+function abrirMsgPadrao(jsonOrEnc){
+  let sem;try{sem=JSON.parse(jsonOrEnc);}catch(e){sem=JSON.parse(decodeURIComponent(jsonOrEnc));}
+  if(mensagens.length===0){toast('Nenhuma mensagem configurada. Configure em ⚙️ Config.');return;}
+  if(mensagens.length===1){
+    const txt=buildMsg(mensagens[0].texto,sem);
+    const tel=sem.telefone?sem.telefone.replace(/\D/g,''):'';
+    window.open(tel?'https://wa.me/55'+tel+'?text='+encodeURIComponent(txt):'https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+    return;
+  }
+  // Multiple messages — show picker modal
+  mostrarPickerMsg(sem);
+}
+
+function mostrarPickerMsg(sem){
+  const existing=document.getElementById('mMsgPicker');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='mMsgPicker';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  const modal=document.createElement('div');
+  modal.style.cssText='background:var(--surf);border:1px solid var(--border2);border-radius:12px;padding:20px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto';
+  const title=document.createElement('div');
+  title.style.cssText='font-family:Space Grotesk,sans-serif;font-size:16px;font-weight:700;color:var(--whi);margin-bottom:14px';
+  title.textContent='Escolha a mensagem';
+  modal.appendChild(title);
+  mensagens.forEach(m=>{
+    const btn=document.createElement('button');
+    btn.style.cssText='display:block;width:100%;text-align:left;padding:12px 14px;background:var(--surf2);border:1px solid var(--border2);border-radius:8px;color:var(--whi2);font-size:13px;cursor:pointer;margin-bottom:8px;transition:.15s';
+    btn.onmouseover=function(){this.style.borderColor='var(--pur)';};
+    btn.onmouseout=function(){this.style.borderColor='var(--border2)';};
+    const preview=buildMsg(m.texto,sem).slice(0,80)+'...';
+    btn.innerHTML='<strong style="color:var(--whi);display:block;margin-bottom:3px">'+m.titulo+'</strong><span style="font-size:11px;color:var(--whi3)">'+preview+'</span>';
+    btn.onclick=function(){
+      const txt=buildMsg(m.texto,sem);
+      const tel=sem.telefone?sem.telefone.replace(/\D/g,''):'';
+      window.open(tel?'https://wa.me/55'+tel+'?text='+encodeURIComponent(txt):'https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+      overlay.remove();
+    };
+    modal.appendChild(btn);
+  });
+  const close=document.createElement('button');
+  close.className='btn bo';close.style.cssText='width:100%;justify-content:center;margin-top:4px';close.textContent='Cancelar';
+  close.onclick=function(){overlay.remove();};
+  modal.appendChild(close);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
 
 // INIT
 checkSetup();
