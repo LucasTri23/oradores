@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Oradores</title>
+<title>Oradores — Bom Jesus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -181,7 +181,18 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--whi2);margin-bottom:10px"><input type="checkbox" id="agCadastrar" style="width:auto;margin:0"> Salvar como novo orador no banco</label>
       </div>
     </div>
-    <div class="field"><label>Observação</label><input id="agObs" placeholder="Ex: Discurso especial..."></div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="agSemDiscurso" style="width:auto;margin:0" onchange="onAgSemDiscurso()">
+        <span>Sem discurso nesta data (assembleia, congresso, etc.)</span>
+      </label>
+    </div>
+    <div id="agCamposNormais">
+      <div class="field"><label>Observação</label><input id="agObs" placeholder="Ex: Discurso especial..."></div>
+    </div>
+    <div id="agCamposSemDisc" style="display:none">
+      <div class="field"><label>Motivo</label><input id="agMotivo" placeholder="Ex: Assembleia Regional, Congresso..."></div>
+    </div>
     <div class="brow"><button class="btn bp" onclick="saveAgend()">Salvar</button><button class="btn bo" onclick="closeM('mAgend')">Cancelar</button></div>
   </div>
 </div>
@@ -301,7 +312,13 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
     <div class="panel-title" style="margin:0">Oradores</div>
     <div class="brow-r"><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
   </div>
-  <input id="buscaOr" placeholder="🔍 Buscar por nome ou congregação..." oninput="renderOradores()" style="margin-bottom:10px">
+  <input id="buscaOr" placeholder="🔍 Buscar por nome ou congregação..." oninput="renderOradores()" style="margin-bottom:8px">
+  <div class="filter-bar" style="margin-bottom:10px">
+    <div class="fchip on" data-or="az" onclick="setOrSort(this)">A–Z</div>
+    <div class="fchip" data-or="mais" onclick="setOrSort(this)">⏰ Mais tempo</div>
+    <div class="fchip" data-or="menos" onclick="setOrSort(this)">🟢 Menos tempo</div>
+    <div class="fchip" data-or="agendado" onclick="setOrSort(this)">📅 Agendados</div>
+  </div>
   <div id="listaOr"><div class="spin"></div></div>
 </div>
 <div class="page" id="page-sugestoes">
@@ -362,7 +379,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 <script>
 // STATE
 let db=null,FF=null,oradores=[],discursos=[],sugestoes=[],sentinelas=[],programa=[];
-let notaAtual=0,temaFiltro='todos';
+let notaAtual=0,temaFiltro='todos',orSort='az';
 let cfg={cong:'Congregação Bom Jesus',end:'R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG',hor:'19:00'};
 let mensagens=[
   {id:1,titulo:'Convite padrão',texto:'Olá {orador}, tudo bem?\n\nGostaríamos de convidá-lo para proferir o discurso público na nossa congregação:\n\n📖 Tema: {tema}\n📅 Data: {data}\n🏠 Congregação: {cong}\n📍 Endereço: {end}\n\nAguardamos sua confirmação. 🙏'},
@@ -494,12 +511,14 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const temOr=sem.nome&&!ehSist(sem.nome);
   const semJson=JSON.stringify(sem);
   const temDados=!!(sem.nome||sem.temaNum||sem.tema);
+  const isSemDisc=!!(sem.semDiscurso);
   let bg,brd;
-  if(isCurrent){bg='linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.04))';brd='rgba(124,58,237,.45)';}
-  else if(isPast&&temDados){bg='var(--surf)';brd='var(--border)';}
-  else if(isPast){bg='rgba(255,255,255,.01)';brd='var(--border)';}
+  if(isSemDisc){bg='rgba(255,255,255,.02)';brd='var(--border)';}
+  else if(isCurrent){bg='linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.04))';brd='rgba(124,58,237,.45)';}
+  else if(!temOr&&!isCurrent&&temDados&&!sem.temaNum&&!sem.tema){bg='var(--surf)';brd='rgba(239,68,68,.35)';}
+  else if(!temOr&&temDados){bg='var(--surf)';brd='rgba(239,68,68,.35)';}
   else if(temDados){bg='var(--surf)';brd='var(--border)';}
-  else{bg='rgba(255,255,255,.02)';brd='rgba(255,255,255,.06)';}
+  else{bg='rgba(255,255,255,.02)';brd='rgba(239,68,68,.25)';}
   const isLarge=isCurrent||isFirst;
   const pad=isLarge?'16px':'11px 14px';
   const op=isPast?'0.65':'1';
@@ -510,13 +529,18 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isCurrent?'var(--pur3)':isPast?'var(--whi3)':'var(--whi2)')+';margin-bottom:'+(isCurrent?'5px':'3px');
   dateEl.textContent='📅 '+fDSem(sem.data);
   el.appendChild(dateEl);
-  if(!temDados&&!isPast){
+  if(isSemDisc){
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:12px;color:var(--whi3);font-style:italic;padding:4px 0';
+    lbl.textContent='🚫 Sem discurso'+(sem.motivo?' — '+sem.motivo:'');
+    el.appendChild(lbl);
+  } else if(!temDados&&!isPast){
     // Empty future saturday
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;justify-content:space-between';
     const lbl=document.createElement('span');
     lbl.style.cssText='font-size:12px;color:var(--whi3);font-style:italic';
-    lbl.textContent='Sem orador definido';
+    lbl.style.color='var(--red)';lbl.textContent='⚠ Sem orador definido';
     const btn=document.createElement('button');
     btn.className='btn bp bs';
     btn.textContent='+ Definir';
@@ -554,7 +578,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
     } else if(!isPast){
       const row=document.createElement('div');
       row.style.cssText='padding:7px 10px;background:rgba(0,0,0,.12);border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:6px';
-      const lbl=document.createElement('span');lbl.style.cssText='font-size:11px;color:var(--whi3)';lbl.textContent='Orador não definido';
+      const lbl=document.createElement('span');lbl.style.cssText='font-size:11px;color:var(--red)';lbl.textContent='⚠ Orador não definido';
       const btn=document.createElement('button');btn.className='btn bp bs';btn.textContent='+ Definir';btn.onclick=function(){editarAgend(semJson);};
       row.appendChild(lbl);row.appendChild(btn);el.appendChild(row);
     }
@@ -702,7 +726,10 @@ function preencherModalAgend(p){
   document.getElementById('agData').value=p.data||'';
   document.getElementById('agTema').value=p.temaNum||'';
   document.getElementById('agObs').value=p.obs||'';
+  document.getElementById('agMotivo').value=p.motivo||'';
   document.getElementById('agCadastrar').checked=false;
+  document.getElementById('agSemDiscurso').checked=!!(p.semDiscurso);
+  onAgSemDiscurso();
   onAgTema();
   // Populate select
   const sel=document.getElementById('agOradorSel');
@@ -727,7 +754,18 @@ function preencherModalAgend(p){
     document.getElementById('agTel').value='';
   }
 }
+function onAgSemDiscurso(){
+  const chk=document.getElementById('agSemDiscurso').checked;
+  document.getElementById('agCamposNormais').style.display=chk?'none':'block';
+  document.getElementById('agCamposSemDisc').style.display=chk?'block':'none';
+  document.getElementById('agTabCadastrado').style.display=chk?'none':'block';
+  document.getElementById('agTabNovo').style.display='none';
+  document.getElementById('tabCadastrado').style.display=chk?'none':'flex';
+  document.getElementById('tabNovo').style.display=chk?'none':'flex';
+}
 function onAgTema(){const n=parseInt(document.getElementById('agTema').value);document.getElementById('agTemaDesc').textContent=n&&TL[n]?TL[n]:'';}
+// removed
+function _NOOP(){}
 function onAgOradorSel(){
   const v=document.getElementById('agOradorSel').value;
   if(v){const o=oradores.find(x=>x.id===v);if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}}
@@ -748,11 +786,24 @@ async function saveAgend(){
     cong=document.getElementById('agCong').value.trim();
     tel=document.getElementById('agTel').value.trim();
     if(nome&&document.getElementById('agCadastrar').checked){
-      await FF.add(FF.col(db,'oradores'),{nome,cong,tel,ultimoDiscurso:data_val,nota:0,obs:''});
-      await loadOradores();toast('Orador cadastrado!');
+      try{
+        await FF.add(FF.col(db,'oradores'),{nome,cong,tel,ultimoDiscurso:data_val,nota:0,obs:''});
+        await loadOradores();
+        toast('✓ Orador "'+nome+'" cadastrado!');
+      }catch(e){toast('Erro ao cadastrar orador: '+e.message);}
     }
   }
-  const entry={data:data_val,temaNum:parseInt(document.getElementById('agTema').value)||null,nome:nome||null,congregacao:cong,telefone:tel,obs:document.getElementById('agObs').value.trim()};
+  const isSemDisc=document.getElementById('agSemDiscurso').checked;
+  const entry={
+    data:data_val,
+    semDiscurso:isSemDisc||false,
+    temaNum:isSemDisc?null:(parseInt(document.getElementById('agTema').value)||null),
+    nome:isSemDisc?null:(nome||null),
+    congregacao:isSemDisc?'':cong,
+    telefone:isSemDisc?'':tel,
+    obs:isSemDisc?'':document.getElementById('agObs').value.trim(),
+    motivo:isSemDisc?document.getElementById('agMotivo').value.trim():''
+  };
   // Resolve ID: use field, or find existing Firebase doc for this date
   let resolvedId=idField;
   if(!resolvedId){
@@ -815,6 +866,11 @@ function openAgendComTema(n){
 }
 
 // ORADORES
+function setOrSort(el){
+  document.querySelectorAll('[data-or]').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');orSort=el.dataset.or;renderOradores();
+}
+
 async function loadOradores(){if(!db)return;const s=await FF.gets(FF.col(db,'oradores'));oradores=s.docs.map(d=>({id:d.id,...d.data()}));renderOradores();}
 function renderOradores(){
   const q=(document.getElementById('buscaOr')?.value||'').toLowerCase();
@@ -828,7 +884,23 @@ function renderOradores(){
     if(p.data>=hoje){const o=oradores.find(x=>x.nome===p.nome);if(o&&!agMap[o.id])agMap[o.id]=p.data;}
   });
   div.innerHTML='';
-  list.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(o=>{
+  const hoje2=new Date().toISOString().slice(0,10);
+  // Sort
+  if(orSort==='mais') list.sort((a,b)=>{
+    const ma=a.ultimoDiscurso?new Date(a.ultimoDiscurso):new Date(0);
+    const mb=b.ultimoDiscurso?new Date(b.ultimoDiscurso):new Date(0);
+    return ma-mb; // oldest first
+  });
+  else if(orSort==='menos') list.sort((a,b)=>{
+    const ma=a.ultimoDiscurso?new Date(a.ultimoDiscurso):new Date(0);
+    const mb=b.ultimoDiscurso?new Date(b.ultimoDiscurso):new Date(0);
+    return mb-ma; // newest first
+  });
+  else if(orSort==='agendado') list.sort((a,b)=>{
+    const aa=agMap[a.id]?0:1;const ab=agMap[b.id]?0:1;return aa-ab;
+  });
+  else list.sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  list.forEach(o=>{
     const cor=corTempo(o.ultimoDiscurso);
     const tempo=mesesAno(o.ultimoDiscurso);
     const ag=agMap[o.id];
