@@ -600,44 +600,50 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
     row.appendChild(lbl);row.appendChild(btn);
     el.appendChild(row);
   } else {
-    // TEMA é sempre o principal — orador é destaque no card grande
-    // Badge do tema
-    if(nT){
-      const b=document.createElement('span');b.className='badge bpur';
-      b.style.cssText='margin-bottom:'+(isLarge?'8px':'4px')+';display:inline-block';
-      b.textContent='Tema nº '+nT;el.appendChild(b);
-      if(isLarge)el.appendChild(document.createElement('br'));
-    }
-    // TEMA — sempre grande e principal
-    if(nomeT){
-      const tEl=document.createElement('div');
-      tEl.style.cssText='font-family:Space Grotesk,sans-serif;font-size:'+(isLarge?'19px':'14px')+';font-weight:700;line-height:1.3;color:var(--whi);margin-bottom:'+(isLarge?'12px':'7px')+';letter-spacing:-.01em';
-      tEl.textContent=nomeT;
-      el.appendChild(tEl);
-    } else if(!nomeT&&!nT){
-      const tEl=document.createElement('div');
-      tEl.style.cssText='font-size:'+(isLarge?'15px':'12px')+';color:var(--whi3);font-style:italic;margin-bottom:'+(isLarge?'10px':'6px');
-      tEl.textContent='Tema não definido';
-      el.appendChild(tEl);
-    }
-    // ORADOR — com foco no nome, abaixo do tema
+    // ORADOR é o foco principal — tema vem abaixo com destaque
     if(temOr){
-      const oRow=document.createElement('div');
-      oRow.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:'+(isLarge?'11px 13px':'7px 10px')+';background:rgba(0,0,0,.2);border-radius:8px';
-      const info=document.createElement('div');info.style.cssText='flex:1;min-width:80px';
+      // Nome do orador — GRANDE em todos os cards
       const nEl=document.createElement('div');
-      nEl.style.cssText='font-weight:700;font-size:'+(isLarge?'15px':'12px')+';color:var(--whi)';
+      nEl.style.cssText='font-family:Space Grotesk,sans-serif;font-weight:700;letter-spacing:-.02em;color:var(--whi);line-height:1.15;margin-bottom:2px;font-size:'+(isLarge?'22px':'16px');
       nEl.textContent=sem.nome;
+      el.appendChild(nEl);
+      // Congregação
       const cEl=document.createElement('div');
-      cEl.style.cssText='font-size:11px;color:var(--whi3);margin-top:1px';
+      cEl.style.cssText='font-size:'+(isLarge?'13px':'11px')+';color:var(--whi3);margin-bottom:'+(isLarge?'12px':'8px');
       cEl.textContent=(sem.congregacao||'—')+(tel?' · '+tel:'');
-      info.appendChild(nEl);info.appendChild(cEl);oRow.appendChild(info);
-      const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:5px;flex-shrink:0';
-      if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬'+(isLarge?' WhatsApp':'');wa.onclick=function(){abrirWADir(tel);};btnWrap.appendChild(wa);}
-      const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦'+(isLarge?' Mensagem':'');msgb.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(msgb);
-      oRow.appendChild(btnWrap);
-      el.appendChild(oRow);
+      el.appendChild(cEl);
+      // Tema — destaque mas menor que o nome
+      if(nT||nomeT){
+        const tWrap=document.createElement('div');
+        tWrap.style.cssText='padding:'+(isLarge?'10px 12px':'7px 10px')+';background:rgba(0,0,0,.2);border-radius:8px;margin-bottom:'+(isLarge?'12px':'0');
+        if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:5px;display:inline-block;font-size:10px';b.textContent='Tema nº '+nT;tWrap.appendChild(b);}
+        if(nomeT){
+          const tEl=document.createElement('div');
+          tEl.style.cssText='font-size:'+(isLarge?'14px':'12px')+';font-weight:600;color:var(--whi2);line-height:1.4';
+          tEl.textContent=nomeT;
+          tWrap.appendChild(tEl);
+        }
+        el.appendChild(tWrap);
+      }
+      // Botões WA
+      if(isLarge){
+        const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+        if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirWADir(tel);};btnWrap.appendChild(wa);}
+        const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦ Mensagem';msgb.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(msgb);
+        el.appendChild(btnWrap);
+      } else {
+        // Small card: botões compactos ao lado do tema já renderizado acima
+        const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:4px;margin-top:6px';
+        if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.onclick=function(){abrirWADir(tel);};btnWrap.appendChild(wa);}
+        const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦';msgb.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(msgb);
+        el.appendChild(btnWrap);
+      }
     } else {
+      // Sem orador — tema em destaque e botão definir
+      if(nT||nomeT){
+        if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:4px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);}
+        if(nomeT){const tEl=document.createElement('div');tEl.style.cssText='font-size:'+(isLarge?'15px':'13px')+';font-weight:600;color:var(--whi2);margin-bottom:8px;line-height:1.4';tEl.textContent=nomeT;el.appendChild(tEl);}
+      }
       const row=document.createElement('div');
       row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 0';
       const lbl=document.createElement('span');lbl.style.cssText='font-size:11px;color:var(--red)';lbl.textContent='⚠ Orador não definido';
