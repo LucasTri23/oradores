@@ -907,29 +907,52 @@ function renderTemas(){
   const q=(document.getElementById('temaSearch')?.value||'').toLowerCase().trim();
   const div=document.getElementById('temasLista');if(!div)return;
   const entries=Object.entries(TL).map(([n,t])=>({n:+n,t})).sort((a,b)=>a.n-b.n);
-  div.innerHTML=entries.map(({n,t})=>{
-    if(t==='(Não use.)')return'';
+  div.innerHTML='';
+  let found=0;
+  entries.forEach(({n,t})=>{
+    const indisponivel=t==='(Não use.)';
     const u=discursos.filter(d=>d.temaNum==n).length;
-    if(temaFiltro==='0'&&u>0)return'';
-    if(temaFiltro==='1'&&u!==1)return'';
-    if(temaFiltro==='2'&&u!==2)return'';
-    if(temaFiltro==='3'&&u<3)return'';
-    if(q&&!String(n).includes(q)&&!t.toLowerCase().includes(q))return'';
+    // Apply usage filters — indisponíveis skip usage filter
+    if(!indisponivel){
+      if(temaFiltro==='0'&&u>0)return;
+      if(temaFiltro==='1'&&u!==1)return;
+      if(temaFiltro==='2'&&u!==2)return;
+      if(temaFiltro==='3'&&u<3)return;
+    }
+    if(q&&!String(n).includes(q)&&!t.toLowerCase().includes(q))return;
+    found++;
+    const row=document.createElement('div');
+    row.className='tema-row'+(indisponivel?' nao':'');
+    if(indisponivel){
+      row.style.cssText='cursor:default;opacity:.55;border-color:rgba(239,68,68,.25)';
+    }
+    // Num badge
+    const numEl=document.createElement('div');
+    numEl.style.cssText='min-width:34px;text-align:center;font-size:11px;font-weight:700;color:'+(indisponivel?'var(--red)':u===0?'var(--green)':'var(--pur3)');
+    numEl.textContent=n;
+    row.appendChild(numEl);
+    // Info
+    const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
     const ult=discursos.filter(d=>d.temaNum==n).sort((a,b)=>b.data>a.data?1:-1)[0]?.data;
-    return '<div class="tema-row" onclick="openAgendComTema('+n+')">'
-      +'<div style="min-width:34px;text-align:center;font-size:11px;font-weight:700;color:'+(u===0?'var(--green)':'var(--pur3)')+'">'+n+'</div>'
-      +'<div style="flex:1;min-width:0"><div style="font-size:13px">'+t+'</div>'
-      +'<div style="font-size:11px;color:var(--whi3);margin-top:1px">'+(u?'Usado '+u+'× · último: '+fD(ult):'Nunca usado')+'</div></div>'
-      +(u===0?'<span class="badge bgrn">Novo</span>':'')
-      +'<span style="font-size:16px;opacity:.2;margin-left:4px">›</span></div>';
-  }).join('');
-  if(!div.innerHTML.trim())div.innerHTML='<div class="empty"><div class="ico">🔍</div>Nenhum tema encontrado</div>';
-}
-function openAgendComTema(n){
-  preencherModalAgend({temaNum:n});
-  document.getElementById('agData').value=nextSab();
-  document.getElementById('mAgendTit').textContent='Agendar — Tema nº '+n;
-  openM('mAgend');
+    const tEl=document.createElement('div');
+    tEl.style.cssText='font-size:13px;'+(indisponivel?'color:var(--red);text-decoration:line-through':'');
+    tEl.textContent=indisponivel?'Indisponível — Tema nº '+n:t;
+    info.appendChild(tEl);
+    const subEl=document.createElement('div');
+    subEl.style.cssText='font-size:11px;color:var(--whi3);margin-top:1px';
+    subEl.textContent=indisponivel?'Este tema não deve ser usado':(u?'Usado '+u+'× · último: '+fD(ult):'Nunca usado');
+    info.appendChild(subEl);
+    row.appendChild(info);
+    // Badges/arrow — only for normal themes
+    if(!indisponivel){
+      if(u===0){const b=document.createElement('span');b.className='badge bgrn';b.textContent='Novo';row.appendChild(b);}
+      const arr=document.createElement('span');arr.style.cssText='font-size:16px;opacity:.2;margin-left:4px';arr.textContent='›';row.appendChild(arr);
+    } else {
+      const lb=document.createElement('span');lb.className='badge bred';lb.textContent='Indisponível';row.appendChild(lb);
+    }
+    div.appendChild(row);
+  });
+  if(!found)div.innerHTML='<div class="empty"><div class="ico">🔍</div>Nenhum tema encontrado</div>';
 }
 
 // ORADORES
@@ -1014,6 +1037,20 @@ async function loadDiscursos(){if(!db)return;const s=await FF.gets(FF.col(db,'di
 
 // SUGESTÕES
 async function loadSugestoes(){if(!db)return;const s=await FF.gets(FF.col(db,'sugestoes'));sugestoes=s.docs.map(d=>({id:d.id,...d.data()}));renderSugestoes();}
+function calcSugStatus(s){
+  // Auto-calculate status from programa + discursos
+  const hoje=new Date().toISOString().slice(0,10);
+  if(s.temaNum){
+    // Check if tema has a future agendamento in programa
+    const agFut=programa.find(p=>p.temaNum==s.temaNum&&p.data>=hoje&&p.nome&&!ehSist(p.nome));
+    if(agFut)return{st:'agendado',info:fD(agFut.data)+' — '+agFut.nome};
+    // Check if tema was used in past discursos
+    const disc=discursos.filter(d=>d.temaNum==s.temaNum).sort((a,b)=>b.data>a.data?1:-1)[0];
+    if(disc)return{st:'realizado',info:fD(disc.data)+' — '+disc.nome};
+  }
+  return{st:'pendente',info:''};
+}
+
 function renderSugestoes(){
   const div=document.getElementById('listaSug');if(!div)return;
   if(!sugestoes.length){div.innerHTML='<div class="empty"><div class="ico">💡</div>Nenhuma sugestão</div>';return;}
@@ -1028,42 +1065,38 @@ function renderSugestoes(){
     hd+='<span class="badge bgry">'+itens.length+' sugestão'+(itens.length>1?'ões':'')+'</span></div>';
     box.innerHTML=hd;
     itens.forEach(s=>{
-      const st=s.status||'pendente';
       const nomeT=s.temaNum&&TL[s.temaNum]?TL[s.temaNum]:s.descricao||'—';
-      const stCor={pendente:'bamb',agendado:'bblu',realizado:'bgrn'}[st]||'bamb';
+      const {st,info}=calcSugStatus(s);
+      const stCor={pendente:'bamb',agendado:'bblu',realizado:'bgrn'}[st];
+      const stLabel={pendente:'⏳ Pendente',agendado:'📅 Agendado',realizado:'✅ Realizado'}[st];
       const item=document.createElement('div');
       item.style.cssText='padding:8px 10px;background:var(--surf3);border-radius:7px;margin-top:6px;display:flex;align-items:flex-start;gap:10px';
       let ih='';
-      if(s.temaNum) ih+='<span class="badge bpur" style="flex-shrink:0;margin-top:1px">Nº '+s.temaNum+'</span>';
+      if(s.temaNum)ih+='<span class="badge bpur" style="flex-shrink:0;margin-top:2px">Nº '+s.temaNum+'</span>';
       ih+='<div style="flex:1;min-width:0"><div style="font-size:13px">'+nomeT+'</div>';
-      if(s.descricao&&s.descricao!==nomeT) ih+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+s.descricao+'</div>';
+      if(s.descricao&&s.descricao!==nomeT)ih+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+s.descricao+'</div>';
+      if(info)ih+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+info+'</div>';
       ih+='</div>';
       item.innerHTML=ih;
-      // Status select via DOM
-      const sel=document.createElement('select');
-      sel.className='badge '+stCor;
-      sel.style.cssText='border:none;cursor:pointer;font-size:10px;font-weight:700;padding:3px 6px;background:transparent';
-      ['pendente','agendado','realizado'].forEach(v=>{
-        const opt=document.createElement('option');
-        opt.value=v;opt.textContent={pendente:'⏳ Pendente',agendado:'📅 Agendado',realizado:'✅ Realizado'}[v];
-        if(v===st)opt.selected=true;
-        sel.appendChild(opt);
-      });
-      sel.onchange=function(){setSugSt(s.id,this.value);};
-      // Delete button via DOM
+      // Auto status badge (read-only, no dropdown)
+      const badge=document.createElement('span');
+      badge.className='badge '+stCor;
+      badge.style.cssText='flex-shrink:0;margin-top:2px;font-size:10px;font-weight:700;padding:3px 8px';
+      badge.textContent=stLabel;
+      // Delete button
       const bd=document.createElement('button');
-      bd.className='btn bo bs';bd.style.cssText='color:var(--red);opacity:.7';bd.textContent='✕';
+      bd.className='btn bo bs';bd.style.cssText='color:var(--red);opacity:.7;flex-shrink:0';bd.textContent='✕';
       bd.onclick=function(){delSug(s.id);};
       const acts=document.createElement('div');
-      acts.style.cssText='display:flex;gap:4px;align-items:center;flex-shrink:0';
-      acts.appendChild(sel);acts.appendChild(bd);
+      acts.style.cssText='display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0';
+      acts.appendChild(badge);acts.appendChild(bd);
       item.appendChild(acts);
       box.appendChild(item);
     });
     div.appendChild(box);
   });
 }
-async function setSugSt(id,status){if(!db)return toast('Firebase não conectado!');await FF.upd(FF.doc(db,'sugestoes',id),{status});sugestoes=sugestoes.map(s=>s.id===id?{...s,status}:s);toast('Status atualizado!');}
+// setSugSt removida — status é calculado automaticamente
 function onSugNum(){const n=parseInt(document.getElementById('sNum').value);document.getElementById('sNumName').textContent=n&&TL[n]?TL[n]:'';}
 async function saveSug(){
   if(!db)return toast('Firebase não conectado!');
