@@ -512,83 +512,108 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const semJson=JSON.stringify(sem);
   const temDados=!!(sem.nome||sem.temaNum||sem.tema);
   const isSemDisc=!!(sem.semDiscurso);
-  let bg,brd;
-  if(isSemDisc){bg='rgba(255,255,255,.02)';brd='var(--border)';}
-  else if(isCurrent){bg='linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.04))';brd='rgba(124,58,237,.45)';}
-  else if(!temOr&&!isCurrent&&temDados&&!sem.temaNum&&!sem.tema){bg='var(--surf)';brd='rgba(239,68,68,.35)';}
-  else if(!temOr&&temDados){bg='var(--surf)';brd='rgba(239,68,68,.35)';}
-  else if(temDados){bg='var(--surf)';brd='var(--border)';}
-  else{bg='rgba(255,255,255,.02)';brd='rgba(239,68,68,.25)';}
+  const isEspecial=isSemDisc||(sem.motivo&&sem.motivo.trim().length>0);
   const isLarge=isCurrent||isFirst;
-  const pad=isLarge?'16px':'11px 14px';
-  const op=isPast?'0.65':'1';
+
+  // Border color
+  let bg,brd;
+  if(isEspecial){bg='rgba(245,158,11,.06)';brd='rgba(245,158,11,.35)';}
+  else if(isCurrent){bg='linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.04))';brd='rgba(124,58,237,.45)';}
+  else if(temOr){bg='var(--surf)';brd='var(--border)';}
+  else if(temDados){bg='var(--surf)';brd='rgba(239,68,68,.35)';}
+  else{bg='rgba(255,255,255,.02)';brd='rgba(239,68,68,.22)';}
+
   const el=document.createElement('div');
-  el.style.cssText='background:'+bg+';border:1px solid '+brd+';border-radius:10px;padding:'+pad+';position:relative;margin-bottom:6px;opacity:'+op;
-  // Date header
+  el.style.cssText='background:'+bg+';border:1px solid '+brd+';border-radius:10px;padding:'+(isLarge?'18px':'11px 14px')+';position:relative;margin-bottom:6px';
+
+  // Date label
   const dateEl=document.createElement('div');
-  dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isCurrent?'var(--pur3)':isPast?'var(--whi3)':'var(--whi2)')+';margin-bottom:'+(isCurrent?'5px':'3px');
+  dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isCurrent?'var(--pur3)':isEspecial?'var(--amber)':'var(--whi2)')+';margin-bottom:'+(isLarge?'6px':'3px');
   dateEl.textContent='📅 '+fDSem(sem.data);
   el.appendChild(dateEl);
-  if(isSemDisc){
+
+  if(isEspecial){
+    // Yellow special date
     const lbl=document.createElement('div');
-    lbl.style.cssText='font-size:12px;color:var(--whi3);font-style:italic;padding:4px 0';
-    lbl.textContent='🚫 Sem discurso'+(sem.motivo?' — '+sem.motivo:'');
+    lbl.style.cssText='font-size:'+(isLarge?'15px':'13px')+';font-weight:700;color:var(--amber)';
+    lbl.textContent='🌟 '+(sem.motivo||'Data especial');
     el.appendChild(lbl);
-  } else if(!temDados&&!isPast){
-    // Empty future saturday
+  } else if(!temDados){
+    // No data at all
     const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;justify-content:space-between';
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px';
     const lbl=document.createElement('span');
-    lbl.style.cssText='font-size:12px;color:var(--whi3);font-style:italic';
-    lbl.style.color='var(--red)';lbl.textContent='⚠ Sem orador definido';
-    const btn=document.createElement('button');
-    btn.className='btn bp bs';
-    btn.textContent='+ Definir';
+    lbl.style.cssText='font-size:12px;color:var(--red);font-style:italic';
+    lbl.textContent='⚠ Sem orador definido';
+    const btn=document.createElement('button');btn.className='btn bp bs';btn.textContent='+ Definir';
     btn.onclick=function(){editarAgend(semJson);};
     row.appendChild(lbl);row.appendChild(btn);
     el.appendChild(row);
-  } else if(!temDados&&isPast){
-    const lbl=document.createElement('span');
-    lbl.style.cssText='font-size:12px;color:var(--whi3);font-style:italic';
-    lbl.textContent='Sem registro';
-    el.appendChild(lbl);
   } else {
-    if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:4px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);el.appendChild(document.createTextNode(' '));}
-    const tEl=document.createElement('div');
-    tEl.style.cssText='font-size:'+(isLarge?'17px':'13px')+';font-weight:700;line-height:1.3;color:var(--whi);margin-bottom:'+(isLarge?'10px':'6px');
-    tEl.textContent=nomeT||'Tema não definido';
-    if(!nomeT)tEl.style.color='var(--whi3)';
-    el.appendChild(tEl);
-    if(sem.obs){const o=document.createElement('div');o.style.cssText='font-size:11px;color:var(--pur3);margin-bottom:6px';o.textContent='⚡ '+sem.obs;el.appendChild(o);}
-    if(temOr){
-      const row=document.createElement('div');
-      row.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;background:rgba(0,0,0,.2);border-radius:7px';
-      const info=document.createElement('div');
-      info.style.cssText='flex:1;min-width:90px';
-      const n=document.createElement('div');n.style.cssText='font-weight:600;font-size:'+(isLarge?'14px':'12px');n.textContent=sem.nome;
-      const c=document.createElement('div');c.style.cssText='font-size:11px;color:var(--whi3)';c.textContent=(sem.congregacao||'—')+(sem.telefone?' · '+sem.telefone:'');
-      info.appendChild(n);info.appendChild(c);row.appendChild(info);
-      if(!isPast&&sem.telefone){
-        const btns=document.createElement('div');btns.style.cssText='display:flex;gap:5px';
-        const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WA';wa.onclick=function(){abrirWADir(sem.telefone);};
-        const msg=document.createElement('button');msg.className='btn bo bs';msg.textContent='✦ Msg';msg.onclick=function(){abrirMsgPadrao(semJson);};
-        btns.appendChild(wa);btns.appendChild(msg);row.appendChild(btns);
+    // Has data — show ORADOR big on destaque, tema smaller below
+    if(temOr&&isLarge){
+      // LARGE CARD: orador name prominent
+      const nEl=document.createElement('div');
+      nEl.style.cssText='font-family:Space Grotesk,sans-serif;font-size:20px;font-weight:700;color:var(--whi);letter-spacing:-.02em;margin-bottom:2px';
+      nEl.textContent=sem.nome;
+      el.appendChild(nEl);
+      const cEl=document.createElement('div');
+      cEl.style.cssText='font-size:12px;color:var(--whi3);margin-bottom:10px';
+      cEl.textContent=(sem.congregacao||'—')+(sem.telefone?' · '+sem.telefone:'');
+      el.appendChild(cEl);
+      if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:6px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);el.appendChild(document.createElement('br'));}
+      if(nomeT){
+        const tEl=document.createElement('div');
+        tEl.style.cssText='font-size:13px;color:var(--whi2);margin-bottom:10px;line-height:1.4';
+        tEl.textContent=nomeT;
+        el.appendChild(tEl);
       }
-      el.appendChild(row);
-    } else if(!isPast){
-      const row=document.createElement('div');
-      row.style.cssText='padding:7px 10px;background:rgba(0,0,0,.12);border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:6px';
-      const lbl=document.createElement('span');lbl.style.cssText='font-size:11px;color:var(--red)';lbl.textContent='⚠ Orador não definido';
-      const btn=document.createElement('button');btn.className='btn bp bs';btn.textContent='+ Definir';btn.onclick=function(){editarAgend(semJson);};
-      row.appendChild(lbl);row.appendChild(btn);el.appendChild(row);
+      // WA buttons
+      if(sem.telefone){
+        const btns=document.createElement('div');btns.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+        const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirWADir(sem.telefone);};
+        const msg=document.createElement('button');msg.className='btn bo bs';msg.textContent='✦ Mensagem';msg.onclick=function(){abrirMsgPadrao(semJson);};
+        btns.appendChild(wa);btns.appendChild(msg);el.appendChild(btns);
+      }
+    } else {
+      // SMALL CARD or no orador
+      if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:3px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);el.appendChild(document.createTextNode(' '));}
+      if(nomeT){
+        const tEl=document.createElement('div');
+        tEl.style.cssText='font-size:13px;font-weight:600;color:var(--whi);margin-bottom:5px';
+        tEl.textContent=nomeT;
+        el.appendChild(tEl);
+      }
+      if(temOr){
+        const oRow=document.createElement('div');
+        oRow.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 10px;background:rgba(0,0,0,.18);border-radius:7px';
+        const info=document.createElement('div');info.style.cssText='flex:1;min-width:80px';
+        const n=document.createElement('div');n.style.cssText='font-weight:600;font-size:12px';n.textContent=sem.nome;
+        const c=document.createElement('div');c.style.cssText='font-size:11px;color:var(--whi3)';c.textContent=sem.congregacao||'—';
+        info.appendChild(n);info.appendChild(c);oRow.appendChild(info);
+        if(sem.telefone){
+          const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.onclick=function(){abrirWADir(sem.telefone);};
+          const msg=document.createElement('button');msg.className='btn bo bs';msg.textContent='✦';msg.onclick=function(){abrirMsgPadrao(semJson);};
+          oRow.appendChild(wa);oRow.appendChild(msg);
+        }
+        el.appendChild(oRow);
+      } else {
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 0';
+        const lbl=document.createElement('span');lbl.style.cssText='font-size:11px;color:var(--red)';lbl.textContent='⚠ Orador não definido';
+        const btn=document.createElement('button');btn.className='btn bp bs';btn.textContent='+ Definir';btn.onclick=function(){editarAgend(semJson);};
+        row.appendChild(lbl);row.appendChild(btn);el.appendChild(row);
+      }
     }
+    if(sem.obs){const o=document.createElement('div');o.style.cssText='font-size:11px;color:var(--pur3);margin-top:5px';o.textContent='⚡ '+sem.obs;el.appendChild(o);}
   }
-  if(!isPast){
-    const eb=document.createElement('button');
-    eb.style.cssText='position:absolute;top:7px;right:7px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:10px;padding:3px 6px;border-radius:4px';
-    eb.textContent='✏️';eb.onclick=function(){editarAgend(semJson);};
-    el.appendChild(eb);
-  }
+
+  // Edit button (future only)
+  const eb=document.createElement('button');
+  eb.style.cssText='position:absolute;top:7px;right:7px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:11px;padding:3px 6px;border-radius:4px';
+  eb.textContent='✏️';eb.onclick=function(){editarAgend(semJson);};
+  el.appendChild(eb);
+
   return el;
 }
 let anoAtivo=new Date().getFullYear();
@@ -871,7 +896,7 @@ function setOrSort(el){
   el.classList.add('on');orSort=el.dataset.or;renderOradores();
 }
 
-async function loadOradores(){if(!db)return;const s=await FF.gets(FF.col(db,'oradores'));oradores=s.docs.map(d=>({id:d.id,...d.data()}));renderOradores();}
+async function loadOradores(){if(!db)return;const s=await FF.gets(FF.col(db,'oradores'));oradores=s.docs.map(d=>({id:d.id,...d.data()}));renderOradores();if(document.getElementById('page-home').classList.contains('active'))renderHome();}
 function renderOradores(){
   const q=(document.getElementById('buscaOr')?.value||'').toLowerCase();
   const list=oradores.filter(o=>o.nome?.toLowerCase().includes(q)||o.cong?.toLowerCase().includes(q));
