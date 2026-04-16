@@ -225,6 +225,25 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
     <div class="brow"><button class="btn bp" onclick="saveSug()">Salvar</button><button class="btn bo" onclick="closeM('mSug')">Cancelar</button></div>
   </div>
 </div>
+<!-- MODAL DISCURSANTE -->
+<div class="mbg" id="mDiscursante">
+  <div class="modal">
+    <div class="modal-title" id="mDiscTit">Novo Discursante</div>
+    <input type="hidden" id="dcId">
+    <div class="g2">
+      <div class="field"><label>Nome *</label><input id="dcNome" placeholder="Nome completo"></div>
+      <div class="field"><label>WhatsApp</label><input id="dcTel" type="tel" placeholder="31 9xxxx-xxxx"></div>
+    </div>
+    <div class="field"><label>Última saída (data)</label><input id="dcUlt" type="date"></div>
+    <div class="field"><label>Próxima saída (data)</label><input id="dcProx" type="date"></div>
+    <div class="field"><label>Congregação destino</label><input id="dcDest" placeholder="Para onde vai discursar"></div>
+    <div class="field"><label>Observação</label><textarea id="dcObs" placeholder="Notas..."></textarea></div>
+    <div class="brow">
+      <button class="btn bp" onclick="saveDiscursante()">Salvar</button>
+      <button class="btn bo" onclick="closeM('mDiscursante')">Cancelar</button>
+    </div>
+  </div>
+</div>
 <!-- MODAL CONGREGAÇÃO -->
 <div class="mbg" id="mCong">
   <div class="modal">
@@ -271,6 +290,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
   <div class="tab" data-p="temas">🔍 Temas</div>
   <div class="tab" data-p="oradores">👤 Oradores</div>
   <div class="tab" data-p="sugestoes">💡 Sugestões</div>
+  <div class="tab" data-p="minha">🏠 Minha Cong.</div>
   <div class="tab" data-p="analytics">📊 Análise</div>
   <div class="tab" data-p="sentinela">📖 Sentinela</div>
   <div class="tab" data-p="config">⚙️ Config</div>
@@ -327,6 +347,19 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
     <button class="btn bp bs" onclick="openM('mSug')">+ Nova</button>
   </div>
   <div id="listaSug"><div class="spin"></div></div>
+</div>
+<div class="page" id="page-minha">
+  <div class="panel-head">
+    <div class="panel-title" style="margin:0">Minha Congregação</div>
+    <button class="btn bp bs" onclick="novoDiscursante()">+ Adicionar</button>
+  </div>
+  <p style="font-size:12px;color:var(--whi3);margin-bottom:14px;line-height:1.6">Controle de quando os irmãos da <strong style="color:var(--whi2)">Congregação Bom Jesus</strong> saem para discursar em outras congregações.</p>
+  <div class="filter-bar" style="margin-bottom:12px">
+    <div class="fchip on" data-mc="todos" onclick="setMCFilter(this)">Todos</div>
+    <div class="fchip" data-mc="agendado" onclick="setMCFilter(this)">📅 Agendados</div>
+    <div class="fchip" data-mc="sem" onclick="setMCFilter(this)">⏰ Sem saída</div>
+  </div>
+  <div id="listaMinha"><div class="spin"></div></div>
 </div>
 <div class="page" id="page-analytics">
   <div class="panel-title">Análise & Padrões</div>
@@ -430,7 +463,7 @@ async function initFB(fbCfg){
 }
 
 async function loadAll(){
-  await Promise.all([loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas(),loadPrograma()]);
+  await Promise.all([loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas(),loadPrograma(),loadDiscursantes()]);
   renderHome();renderTemas();renderAnalytics();
 }
 
@@ -441,6 +474,7 @@ function irTab(p){
   const t=document.querySelector('[data-p="'+p+'"]');if(t)t.classList.add('active');
   const pg=document.getElementById('page-'+p);if(pg)pg.classList.add('active');
   if(p==='analytics')renderAnalytics();
+  if(p==='minha')renderMinha();
   if(p==='oradores')renderOradores();
   if(p==='sugestoes')renderSugestoes();
   if(p==='temas')renderTemas();
@@ -509,7 +543,14 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const nT=sem.temaNum;
   const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'';
   const temOr=sem.nome&&!ehSist(sem.nome);
-  const semJson=JSON.stringify(sem);
+  // Look up telefone from oradores if missing in programa entry
+  let tel=sem.telefone||'';
+  if(!tel&&sem.nome){
+    const orCad=oradores.find(o=>o.nome===sem.nome);
+    if(orCad&&orCad.tel)tel=orCad.tel;
+  }
+  const semComTel={...sem,telefone:tel};
+  const semJson=JSON.stringify(semComTel);
   const temDados=!!(sem.nome||sem.temaNum||sem.tema);
   const isSemDisc=!!(sem.semDiscurso);
   const isEspecial=isSemDisc||(sem.motivo&&sem.motivo.trim().length>0);
@@ -559,7 +600,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
       el.appendChild(nEl);
       const cEl=document.createElement('div');
       cEl.style.cssText='font-size:12px;color:var(--whi3);margin-bottom:10px';
-      cEl.textContent=(sem.congregacao||'—')+(sem.telefone?' · '+sem.telefone:'');
+      cEl.textContent=(sem.congregacao||'—')+(tel?' · '+tel:'');
       el.appendChild(cEl);
       if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:6px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);el.appendChild(document.createElement('br'));}
       if(nomeT){
@@ -569,12 +610,10 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
         el.appendChild(tEl);
       }
       // WA buttons
-      if(sem.telefone){
-        const btns=document.createElement('div');btns.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
-        const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirWADir(sem.telefone);};
-        const msg=document.createElement('button');msg.className='btn bo bs';msg.textContent='✦ Mensagem';msg.onclick=function(){abrirMsgPadrao(semJson);};
-        btns.appendChild(wa);btns.appendChild(msg);el.appendChild(btns);
-      }
+      const btns=document.createElement('div');btns.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:4px';
+      if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirWADir(tel);};btns.appendChild(wa);}
+      const msg=document.createElement('button');msg.className='btn bo bs';msg.textContent='✦ Mensagem';msg.onclick=function(){abrirMsgPadrao(semJson);};btns.appendChild(msg);
+      el.appendChild(btns);
     } else {
       // SMALL CARD or no orador
       if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:3px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);el.appendChild(document.createTextNode(' '));}
@@ -591,11 +630,8 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
         const n=document.createElement('div');n.style.cssText='font-weight:600;font-size:12px';n.textContent=sem.nome;
         const c=document.createElement('div');c.style.cssText='font-size:11px;color:var(--whi3)';c.textContent=sem.congregacao||'—';
         info.appendChild(n);info.appendChild(c);oRow.appendChild(info);
-        if(sem.telefone){
-          const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.onclick=function(){abrirWADir(sem.telefone);};
-          const msg=document.createElement('button');msg.className='btn bo bs';msg.textContent='✦';msg.onclick=function(){abrirMsgPadrao(semJson);};
-          oRow.appendChild(wa);oRow.appendChild(msg);
-        }
+        if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.onclick=function(){abrirWADir(tel);};oRow.appendChild(wa);}
+        const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦';msgb.onclick=function(){abrirMsgPadrao(semJson);};oRow.appendChild(msgb);
         el.appendChild(oRow);
       } else {
         const row=document.createElement('div');
@@ -1167,6 +1203,127 @@ function addAIMsg(tipo,txt){const d=document.createElement('div');d.className='a
 
 // CONFIG
 function saveConfig(){cfg.cong=document.getElementById('cfgNome').value;cfg.end=document.getElementById('cfgEnd').value;cfg.hor=document.getElementById('cfgHor').value;localStorage.setItem('bj_cfg',JSON.stringify(cfg));renderMensagens();toast('✓ Salvo!');}
+
+// MINHA CONGREGAÇÃO — DISCURSANTES
+let discursantes=[];
+let mcFiltro='todos';
+
+function setMCFilter(el){
+  document.querySelectorAll('[data-mc]').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');mcFiltro=el.dataset.mc;renderMinha();
+}
+
+async function loadDiscursantes(){
+  if(!db)return;
+  const s=await FF.gets(FF.col(db,'discursantes'));
+  discursantes=s.docs.map(d=>({id:d.id,...d.data()}));
+  renderMinha();
+}
+
+function renderMinha(){
+  const div=document.getElementById('listaMinha');if(!div)return;
+  const hoje=new Date().toISOString().slice(0,10);
+  let lista=[...discursantes];
+  if(mcFiltro==='agendado') lista=lista.filter(d=>d.proxSaida&&d.proxSaida>=hoje);
+  if(mcFiltro==='sem') lista=lista.filter(d=>!d.proxSaida||d.proxSaida<hoje);
+  lista.sort((a,b)=>{
+    // Agendados primeiro, depois por data de próxima saída
+    const fa=a.proxSaida&&a.proxSaida>=hoje?0:1;
+    const fb=b.proxSaida&&b.proxSaida>=hoje?0:1;
+    if(fa!==fb)return fa-fb;
+    if(a.proxSaida&&b.proxSaida)return a.proxSaida>b.proxSaida?1:-1;
+    return (a.nome||'').localeCompare(b.nome||'');
+  });
+  if(!lista.length){div.innerHTML='<div class="empty"><div class="ico">🏠</div>Nenhum discursante cadastrado</div>';return;}
+  div.innerHTML='';
+  lista.forEach(d=>{
+    const temProx=d.proxSaida&&d.proxSaida>=hoje;
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--surf);border:1px solid '+(temProx?'rgba(124,58,237,.35)':'var(--border)')+';border-radius:10px;padding:13px 15px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px';
+    // Info
+    const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
+    const nm=document.createElement('div');nm.style.cssText='font-weight:700;font-size:14px;color:var(--whi)';nm.textContent=d.nome||'—';
+    info.appendChild(nm);
+    if(temProx){
+      const prox=document.createElement('div');prox.style.cssText='margin-top:4px';
+      prox.innerHTML='<span class="badge bpur">📅 Próxima: '+fD(d.proxSaida)+'</span>'+(d.destino?' <span style="font-size:11px;color:var(--whi3)"> → '+d.destino+'</span>':'');
+      info.appendChild(prox);
+    }
+    if(d.ultSaida){
+      const ult=document.createElement('div');ult.style.cssText='font-size:11px;color:var(--whi3);margin-top:3px';
+      ult.textContent='Última saída: '+fD(d.ultSaida);
+      info.appendChild(ult);
+    }
+    if(!d.ultSaida&&!temProx){
+      const sem=document.createElement('div');sem.style.cssText='font-size:11px;color:var(--whi3);margin-top:3px;font-style:italic';
+      sem.textContent='Nenhuma saída registrada';
+      info.appendChild(sem);
+    }
+    if(d.obs){const o=document.createElement('div');o.style.cssText='font-size:11px;color:var(--whi3);margin-top:3px;font-style:italic';o.textContent=d.obs;info.appendChild(o);}
+    card.appendChild(info);
+    // Buttons
+    const btns=document.createElement('div');btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
+    if(d.tel){
+      const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.title='WhatsApp';
+      wa.onclick=function(){abrirWADir(d.tel);};btns.appendChild(wa);
+    }
+    const ed=document.createElement('button');ed.className='btn bo bs';ed.textContent='✏️';ed.title='Editar';
+    ed.onclick=function(){editDiscursante(d.id);};btns.appendChild(ed);
+    const dl=document.createElement('button');dl.className='btn bo bs';dl.style.cssText='color:var(--red);opacity:.7';dl.textContent='🗑';
+    dl.onclick=function(){delDiscursante(d.id);};btns.appendChild(dl);
+    card.appendChild(btns);
+    div.appendChild(card);
+  });
+}
+
+function novoDiscursante(){
+  ['dcId','dcNome','dcTel','dcUlt','dcProx','dcDest','dcObs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mDiscTit').textContent='Novo Discursante';
+  openM('mDiscursante');
+}
+
+function editDiscursante(id){
+  const d=discursantes.find(x=>x.id===id);if(!d)return;
+  document.getElementById('dcId').value=id;
+  document.getElementById('dcNome').value=d.nome||'';
+  document.getElementById('dcTel').value=d.tel||'';
+  document.getElementById('dcUlt').value=d.ultSaida||'';
+  document.getElementById('dcProx').value=d.proxSaida||'';
+  document.getElementById('dcDest').value=d.destino||'';
+  document.getElementById('dcObs').value=d.obs||'';
+  document.getElementById('mDiscTit').textContent='Editar — '+d.nome;
+  openM('mDiscursante');
+}
+
+async function saveDiscursante(){
+  if(!db)return toast('Firebase não conectado!');
+  const id=document.getElementById('dcId').value.trim();
+  const nome=document.getElementById('dcNome').value.trim();
+  if(!nome)return toast('Informe o nome!');
+  const data={
+    nome,
+    tel:document.getElementById('dcTel').value.trim(),
+    ultSaida:document.getElementById('dcUlt').value||null,
+    proxSaida:document.getElementById('dcProx').value||null,
+    destino:document.getElementById('dcDest').value.trim(),
+    obs:document.getElementById('dcObs').value.trim()
+  };
+  if(id){
+    await FF.upd(FF.doc(db,'discursantes',id),data);
+    discursantes=discursantes.map(d=>d.id===id?{...d,...data}:d);
+  } else {
+    const ref=await FF.add(FF.col(db,'discursantes'),data);
+    discursantes.push({id:ref.id,...data});
+  }
+  closeM('mDiscursante');renderMinha();toast('✓ Salvo!');
+}
+
+async function delDiscursante(id){
+  if(!confirm('Remover este discursante?'))return;
+  await FF.del(FF.doc(db,'discursantes',id));
+  discursantes=discursantes.filter(d=>d.id!==id);
+  renderMinha();
+}
 
 // MENSAGENS
 function saveMensagens(){localStorage.setItem('bj_msgs',JSON.stringify(mensagens));}
