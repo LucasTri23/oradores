@@ -230,12 +230,18 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
   <div class="modal">
     <div class="modal-title" id="mDiscTit">Novo Discursante</div>
     <input type="hidden" id="dcId">
-    <div class="g2">
-      <div class="field"><label>Nome *</label><input id="dcNome" placeholder="Nome completo"></div>
-      <div class="field"><label>WhatsApp</label><input id="dcTel" type="tel" placeholder="31 9xxxx-xxxx"></div>
+    <input type="hidden" id="dcOradorId">
+    <div class="field">
+      <label>Irmão *</label>
+      <select id="dcSelect" onchange="onDcSelect()">
+        <option value="">— Selecionar irmão —</option>
+      </select>
     </div>
-    <div class="field"><label>Última saída (data)</label><input id="dcUlt" type="date"></div>
-    <div class="field"><label>Próxima saída (data)</label><input id="dcProx" type="date"></div>
+    <div id="dcInfo" style="display:none;background:var(--surf2);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--whi2)"></div>
+    <div class="g2">
+      <div class="field"><label>Última saída</label><input id="dcUlt" type="date"></div>
+      <div class="field"><label>Próxima saída</label><input id="dcProx" type="date"></div>
+    </div>
     <div class="field"><label>Congregação destino</label><input id="dcDest" placeholder="Para onde vai discursar"></div>
     <div class="field"><label>Observação</label><textarea id="dcObs" placeholder="Notas..."></textarea></div>
     <div class="brow">
@@ -1276,33 +1282,82 @@ function renderMinha(){
   });
 }
 
+function popularSelectDiscursante(selectedId){
+  const sel=document.getElementById('dcSelect');
+  sel.innerHTML='<option value="">— Selecionar irmão —</option>';
+  // BOM JESUS oradores (various spellings)
+  const minha=oradores.filter(o=>{
+    const c=(o.cong||'').toUpperCase().trim();
+    return c.includes('BOM JESUS')||c==='BJ'||c==='BOMJESUS';
+  }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  // Also add already-registered discursantes by name (in case not in oradores)
+  const extras=discursantes.filter(d=>!minha.find(o=>o.nome===d.nome));
+  const todos=[...minha,...extras.map(d=>({id:'_d_'+d.id,nome:d.nome,tel:d.tel,cong:'Bom Jesus'}))];
+  todos.forEach(o=>{
+    const opt=document.createElement('option');
+    opt.value=o.id;opt.textContent=o.nome+(o.tel?' ('+o.tel+')':'');
+    if(selectedId&&o.id===selectedId)opt.selected=true;
+    sel.appendChild(opt);
+  });
+  if(minha.length===0){
+    const opt=document.createElement('option');opt.disabled=true;
+    opt.textContent='Nenhum orador cadastrado com cong "Bom Jesus"';
+    sel.appendChild(opt);
+  }
+}
+
+function onDcSelect(){
+  const sel=document.getElementById('dcSelect');
+  const v=sel.value;
+  const info=document.getElementById('dcInfo');
+  if(!v){info.style.display='none';return;}
+  const o=oradores.find(x=>x.id===v);
+  if(o){
+    document.getElementById('dcOradorId').value=o.id;
+    info.style.display='block';
+    info.innerHTML='<strong>'+o.nome+'</strong><br>'+(o.cong||'')+(o.tel?' · '+o.tel:'');
+  }
+}
+
 function novoDiscursante(){
-  ['dcId','dcNome','dcTel','dcUlt','dcProx','dcDest','dcObs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('dcId').value='';
+  document.getElementById('dcOradorId').value='';
+  ['dcUlt','dcProx','dcDest','dcObs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('dcInfo').style.display='none';
   document.getElementById('mDiscTit').textContent='Novo Discursante';
+  popularSelectDiscursante(null);
   openM('mDiscursante');
 }
 
 function editDiscursante(id){
   const d=discursantes.find(x=>x.id===id);if(!d)return;
   document.getElementById('dcId').value=id;
-  document.getElementById('dcNome').value=d.nome||'';
-  document.getElementById('dcTel').value=d.tel||'';
+  document.getElementById('dcOradorId').value=d.oradorId||'';
   document.getElementById('dcUlt').value=d.ultSaida||'';
   document.getElementById('dcProx').value=d.proxSaida||'';
   document.getElementById('dcDest').value=d.destino||'';
   document.getElementById('dcObs').value=d.obs||'';
   document.getElementById('mDiscTit').textContent='Editar — '+d.nome;
+  popularSelectDiscursante(d.oradorId||null);
+  // Show info
+  const info=document.getElementById('dcInfo');
+  const o=oradores.find(x=>x.id===d.oradorId);
+  if(o){info.style.display='block';info.innerHTML='<strong>'+o.nome+'</strong><br>'+(o.cong||'')+(o.tel?' · '+o.tel:'');}
+  else{info.style.display='none';}
   openM('mDiscursante');
 }
 
 async function saveDiscursante(){
   if(!db)return toast('Firebase não conectado!');
   const id=document.getElementById('dcId').value.trim();
-  const nome=document.getElementById('dcNome').value.trim();
-  if(!nome)return toast('Informe o nome!');
+  const oradorId=document.getElementById('dcOradorId').value.trim();
+  const selV=document.getElementById('dcSelect').value;
+  const o=oradores.find(x=>x.id===selV);
+  if(!o&&!id)return toast('Selecione um irmão!');
+  const nome=o?o.nome:(discursantes.find(d=>d.id===id)?.nome||'');
+  const tel=o?o.tel||'':'';
   const data={
-    nome,
-    tel:document.getElementById('dcTel').value.trim(),
+    nome,tel,oradorId:selV||oradorId||'',
     ultSaida:document.getElementById('dcUlt').value||null,
     proxSaida:document.getElementById('dcProx').value||null,
     destino:document.getElementById('dcDest').value.trim(),
