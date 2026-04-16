@@ -219,7 +219,10 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
   <div class="modal">
     <div class="modal-title">Nova Sugestão</div>
     <div class="field"><label>Quem sugeriu</label><input id="sNome" placeholder="Nome do ancião"></div>
-    <div class="field"><label>Nº do Tema</label><input id="sNum" type="number" min="1" max="194" oninput="onSugNum()"></div>
+    <div class="g2">
+      <div class="field"><label>Nº do Tema</label><input id="sNum" type="number" min="1" max="194" oninput="onSugNum()"></div>
+      <div class="field"><label>Data da sugestão</label><input id="sData" type="date"></div>
+    </div>
     <div id="sNumName" style="font-size:11px;color:var(--pur3);margin:-6px 0 10px;min-height:13px"></div>
     <div class="field"><label>Observação</label><textarea id="sDesc" placeholder="Motivo..."></textarea></div>
     <div class="brow"><button class="btn bp" onclick="saveSug()">Salvar</button><button class="btn bo" onclick="closeM('mSug')">Cancelar</button></div>
@@ -350,7 +353,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 <div class="page" id="page-sugestoes">
   <div class="panel-head">
     <div class="panel-title" style="margin:0">Sugestões de Temas</div>
-    <button class="btn bp bs" onclick="openM('mSug')">+ Nova</button>
+    <button class="btn bp bs" onclick="abrirNovaSug()">+ Nova</button>
   </div>
   <div id="listaSug"><div class="spin"></div></div>
 </div>
@@ -597,55 +600,49 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
     row.appendChild(lbl);row.appendChild(btn);
     el.appendChild(row);
   } else {
-    // Has data — show ORADOR big on destaque, tema smaller below
-    if(temOr&&isLarge){
-      // LARGE CARD: orador name prominent
+    // TEMA é sempre o principal — orador é destaque no card grande
+    // Badge do tema
+    if(nT){
+      const b=document.createElement('span');b.className='badge bpur';
+      b.style.cssText='margin-bottom:'+(isLarge?'8px':'4px')+';display:inline-block';
+      b.textContent='Tema nº '+nT;el.appendChild(b);
+      if(isLarge)el.appendChild(document.createElement('br'));
+    }
+    // TEMA — sempre grande e principal
+    if(nomeT){
+      const tEl=document.createElement('div');
+      tEl.style.cssText='font-family:Space Grotesk,sans-serif;font-size:'+(isLarge?'19px':'14px')+';font-weight:700;line-height:1.3;color:var(--whi);margin-bottom:'+(isLarge?'12px':'7px')+';letter-spacing:-.01em';
+      tEl.textContent=nomeT;
+      el.appendChild(tEl);
+    } else if(!nomeT&&!nT){
+      const tEl=document.createElement('div');
+      tEl.style.cssText='font-size:'+(isLarge?'15px':'12px')+';color:var(--whi3);font-style:italic;margin-bottom:'+(isLarge?'10px':'6px');
+      tEl.textContent='Tema não definido';
+      el.appendChild(tEl);
+    }
+    // ORADOR — com foco no nome, abaixo do tema
+    if(temOr){
+      const oRow=document.createElement('div');
+      oRow.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:'+(isLarge?'11px 13px':'7px 10px')+';background:rgba(0,0,0,.2);border-radius:8px';
+      const info=document.createElement('div');info.style.cssText='flex:1;min-width:80px';
       const nEl=document.createElement('div');
-      nEl.style.cssText='font-family:Space Grotesk,sans-serif;font-size:20px;font-weight:700;color:var(--whi);letter-spacing:-.02em;margin-bottom:2px';
+      nEl.style.cssText='font-weight:700;font-size:'+(isLarge?'15px':'12px')+';color:var(--whi)';
       nEl.textContent=sem.nome;
-      el.appendChild(nEl);
       const cEl=document.createElement('div');
-      cEl.style.cssText='font-size:12px;color:var(--whi3);margin-bottom:10px';
+      cEl.style.cssText='font-size:11px;color:var(--whi3);margin-top:1px';
       cEl.textContent=(sem.congregacao||'—')+(tel?' · '+tel:'');
-      el.appendChild(cEl);
-      if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:6px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);el.appendChild(document.createElement('br'));}
-      if(nomeT){
-        const tEl=document.createElement('div');
-        tEl.style.cssText='font-size:13px;color:var(--whi2);margin-bottom:10px;line-height:1.4';
-        tEl.textContent=nomeT;
-        el.appendChild(tEl);
-      }
-      // WA buttons
-      const btns=document.createElement('div');btns.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:4px';
-      if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirWADir(tel);};btns.appendChild(wa);}
-      const msg=document.createElement('button');msg.className='btn bo bs';msg.textContent='✦ Mensagem';msg.onclick=function(){abrirMsgPadrao(semJson);};btns.appendChild(msg);
-      el.appendChild(btns);
+      info.appendChild(nEl);info.appendChild(cEl);oRow.appendChild(info);
+      const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:5px;flex-shrink:0';
+      if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬'+(isLarge?' WhatsApp':'');wa.onclick=function(){abrirWADir(tel);};btnWrap.appendChild(wa);}
+      const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦'+(isLarge?' Mensagem':'');msgb.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(msgb);
+      oRow.appendChild(btnWrap);
+      el.appendChild(oRow);
     } else {
-      // SMALL CARD or no orador
-      if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:3px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);el.appendChild(document.createTextNode(' '));}
-      if(nomeT){
-        const tEl=document.createElement('div');
-        tEl.style.cssText='font-size:13px;font-weight:600;color:var(--whi);margin-bottom:5px';
-        tEl.textContent=nomeT;
-        el.appendChild(tEl);
-      }
-      if(temOr){
-        const oRow=document.createElement('div');
-        oRow.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 10px;background:rgba(0,0,0,.18);border-radius:7px';
-        const info=document.createElement('div');info.style.cssText='flex:1;min-width:80px';
-        const n=document.createElement('div');n.style.cssText='font-weight:600;font-size:12px';n.textContent=sem.nome;
-        const c=document.createElement('div');c.style.cssText='font-size:11px;color:var(--whi3)';c.textContent=sem.congregacao||'—';
-        info.appendChild(n);info.appendChild(c);oRow.appendChild(info);
-        if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.onclick=function(){abrirWADir(tel);};oRow.appendChild(wa);}
-        const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦';msgb.onclick=function(){abrirMsgPadrao(semJson);};oRow.appendChild(msgb);
-        el.appendChild(oRow);
-      } else {
-        const row=document.createElement('div');
-        row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 0';
-        const lbl=document.createElement('span');lbl.style.cssText='font-size:11px;color:var(--red)';lbl.textContent='⚠ Orador não definido';
-        const btn=document.createElement('button');btn.className='btn bp bs';btn.textContent='+ Definir';btn.onclick=function(){editarAgend(semJson);};
-        row.appendChild(lbl);row.appendChild(btn);el.appendChild(row);
-      }
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 0';
+      const lbl=document.createElement('span');lbl.style.cssText='font-size:11px;color:var(--red)';lbl.textContent='⚠ Orador não definido';
+      const btn=document.createElement('button');btn.className='btn bp bs';btn.textContent='+ Definir';btn.onclick=function(){editarAgend(semJson);};
+      row.appendChild(lbl);row.appendChild(btn);el.appendChild(row);
     }
     if(sem.obs){const o=document.createElement('div');o.style.cssText='font-size:11px;color:var(--pur3);margin-top:5px';o.textContent='⚡ '+sem.obs;el.appendChild(o);}
   }
@@ -1038,14 +1035,16 @@ async function loadDiscursos(){if(!db)return;const s=await FF.gets(FF.col(db,'di
 // SUGESTÕES
 async function loadSugestoes(){if(!db)return;const s=await FF.gets(FF.col(db,'sugestoes'));sugestoes=s.docs.map(d=>({id:d.id,...d.data()}));renderSugestoes();}
 function calcSugStatus(s){
-  // Auto-calculate status from programa + discursos
   const hoje=new Date().toISOString().slice(0,10);
+  const dataRef=s.dataSugestao||s.criadoEm||'2020-01-01';
+  // Normalize dataRef to string date
+  const refStr=typeof dataRef==='string'?dataRef.slice(0,10):hoje;
   if(s.temaNum){
-    // Check if tema has a future agendamento in programa
+    // Agendamento futuro OU que foi feito após a data da sugestão
     const agFut=programa.find(p=>p.temaNum==s.temaNum&&p.data>=hoje&&p.nome&&!ehSist(p.nome));
     if(agFut)return{st:'agendado',info:fD(agFut.data)+' — '+agFut.nome};
-    // Check if tema was used in past discursos
-    const disc=discursos.filter(d=>d.temaNum==s.temaNum).sort((a,b)=>b.data>a.data?1:-1)[0];
+    // Discurso realizado APÓS a data da sugestão
+    const disc=discursos.filter(d=>d.temaNum==s.temaNum&&d.data>=refStr).sort((a,b)=>b.data>a.data?1:-1)[0];
     if(disc)return{st:'realizado',info:fD(disc.data)+' — '+disc.nome};
   }
   return{st:'pendente',info:''};
@@ -1075,7 +1074,8 @@ function renderSugestoes(){
       if(s.temaNum)ih+='<span class="badge bpur" style="flex-shrink:0;margin-top:2px">Nº '+s.temaNum+'</span>';
       ih+='<div style="flex:1;min-width:0"><div style="font-size:13px">'+nomeT+'</div>';
       if(s.descricao&&s.descricao!==nomeT)ih+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+s.descricao+'</div>';
-      if(info)ih+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+info+'</div>';
+      if(s.dataSugestao)ih+='<div style="font-size:11px;color:var(--whi3);margin-top:1px">📅 Sugerido em '+fD(s.dataSugestao)+'</div>';
+      if(info)ih+='<div style="font-size:11px;color:var(--pur3);margin-top:1px">'+info+'</div>';
       ih+='</div>';
       item.innerHTML=ih;
       // Auto status badge (read-only, no dropdown)
@@ -1098,13 +1098,15 @@ function renderSugestoes(){
 }
 // setSugSt removida — status é calculado automaticamente
 function onSugNum(){const n=parseInt(document.getElementById('sNum').value);document.getElementById('sNumName').textContent=n&&TL[n]?TL[n]:'';}
+function abrirNovaSug(){['sNome','sNum','sDesc'].forEach(id=>document.getElementById(id).value='');document.getElementById('sData').value=new Date().toISOString().slice(0,10);document.getElementById('sNumName').textContent='';openM('mSug');}
 async function saveSug(){
   if(!db)return toast('Firebase não conectado!');
   const nome=document.getElementById('sNome').value.trim();
   const num=parseInt(document.getElementById('sNum').value)||null;
   const desc=document.getElementById('sDesc').value.trim();
   if(!nome)return toast('Informe quem sugeriu!');
-  await FF.add(FF.col(db,'sugestoes'),{nome,temaNum:num,descricao:desc,status:'pendente',criadoEm:FF.ts()});
+  const sDataVal=document.getElementById('sData').value||new Date().toISOString().slice(0,10);
+  await FF.add(FF.col(db,'sugestoes'),{nome,temaNum:num,descricao:desc,dataSugestao:sDataVal,criadoEm:FF.ts()});
   closeM('mSug');await loadSugestoes();toast('✓ Salvo!');
 }
 async function delSug(id){if(!confirm('Remover?'))return;await FF.del(FF.doc(db,'sugestoes',id));await loadSugestoes();}
