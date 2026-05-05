@@ -1453,10 +1453,18 @@ function addMsg(){
   saveMensagens();renderMensagens();
 }
 
+function decodeHtmlEntities(str){
+  // Decode HTML entities that may appear in localStorage strings
+  const txt=document.createElement('textarea');
+  txt.innerHTML=str;
+  return txt.value;
+}
 function buildMsg(template,sem){
   const nT=sem.temaNum;
   const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'—';
-  return template
+  // Decode entities first (fixes emoji issues from textarea storage)
+  const tmpl=decodeHtmlEntities(template);
+  return tmpl
     .replace(/{orador}/g,sem.nome||'—')
     .replace(/{tema}/g,nomeT)
     .replace(/{data}/g,fDL(sem.data))
