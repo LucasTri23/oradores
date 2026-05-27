@@ -403,7 +403,7 @@ hr{border:none;border-top:1px solid var(--border);margin:12px 0}
   </div>
   <div class="card">
     <div class="slabel" style="margin-bottom:10px">Mensagens pré-prontas (WhatsApp)</div>
-    <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6">Use as variáveis: <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{tema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{data}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code></p>
+    <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6">Use as variáveis: <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{tema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{numtema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{data}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code></p>
     <div id="msgsList"></div>
     <div style="margin-top:10px;display:flex;gap:7px">
       <button class="btn bp bs" onclick="addMsg()">+ Nova mensagem</button>
@@ -482,6 +482,7 @@ function irTab(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   const t=document.querySelector('[data-p="'+p+'"]');if(t)t.classList.add('active');
   const pg=document.getElementById('page-'+p);if(pg)pg.classList.add('active');
+  if(p==='home')renderHome();
   if(p==='analytics')renderAnalytics();
   if(p==='minha')renderMinha();
   if(p==='oradores')renderOradores();
@@ -554,11 +555,15 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const temOr=sem.nome&&!ehSist(sem.nome);
   // Look up telefone from oradores if missing in programa entry
   let tel=sem.telefone||'';
-  if(!tel&&sem.nome){
+  let congregacao=sem.congregacao||'';
+  if(sem.nome){
     const orCad=oradores.find(o=>o.nome===sem.nome);
-    if(orCad&&orCad.tel)tel=orCad.tel;
+    if(orCad){
+      if(orCad.tel)tel=orCad.tel;
+      if(orCad.cong)congregacao=orCad.cong;
+    }
   }
-  const semComTel={...sem,telefone:tel};
+  const semComTel={...sem,telefone:tel,congregacao};
   const semJson=JSON.stringify(semComTel);
   const temDados=!!(sem.nome||sem.temaNum||sem.tema);
   const isSemDisc=!!(sem.semDiscurso);
@@ -610,7 +615,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
       // Congregação
       const cEl=document.createElement('div');
       cEl.style.cssText='font-size:'+(isLarge?'13px':'11px')+';color:var(--whi3);margin-bottom:'+(isLarge?'12px':'8px');
-      cEl.textContent=(sem.congregacao||'—')+(tel?' · '+tel:'');
+      cEl.textContent=(congregacao||'—')+(tel?' · '+tel:'');
       el.appendChild(cEl);
       // Tema — destaque mas menor que o nome
       if(nT||nomeT){
@@ -947,15 +952,38 @@ function renderTemas(){
     info.appendChild(subEl);
     row.appendChild(info);
     // Badges/arrow — only for normal themes
+    const originallyUnavail=TEMAS[n]==='(Não use.)';
     if(!indisponivel){
       if(u===0){const b=document.createElement('span');b.className='badge bgrn';b.textContent='Novo';row.appendChild(b);}
       const arr=document.createElement('span');arr.style.cssText='font-size:16px;opacity:.2;margin-left:4px';arr.textContent='›';row.appendChild(arr);
+      if(!originallyUnavail){
+        const tb=document.createElement('button');tb.className='btn bo bs';tb.style.cssText='font-size:10px;padding:3px 7px;flex-shrink:0;opacity:.6';tb.textContent='🚫';tb.title='Marcar como indisponível';
+        tb.onclick=function(e){e.stopPropagation();toggleTemaDisp(n);};row.appendChild(tb);
+      }
     } else {
       const lb=document.createElement('span');lb.className='badge bred';lb.textContent='Indisponível';row.appendChild(lb);
+      if(!originallyUnavail){
+        const tb=document.createElement('button');tb.className='btn bo bs';tb.style.cssText='font-size:10px;padding:3px 7px;flex-shrink:0';tb.textContent='✓ Liberar';tb.title='Marcar como disponível';
+        tb.onclick=function(e){e.stopPropagation();toggleTemaDisp(n);};row.appendChild(tb);
+      }
     }
     div.appendChild(row);
   });
   if(!found)div.innerHTML='<div class="empty"><div class="ico">🔍</div>Nenhum tema encontrado</div>';
+}
+
+function toggleTemaDisp(n){
+  if(TL[n]==='(Não use.)'){
+    TL[n]=TEMAS[n]||TL[n];
+    toast('Tema Nº '+n+' disponibilizado!');
+  } else {
+    TL[n]='(Não use.)';
+    toast('Tema Nº '+n+' marcado como indisponível.');
+  }
+  const saved={};
+  Object.keys(TL).forEach(k=>{if(TL[k]!==TEMAS[k])saved[k]=TL[k];});
+  localStorage.setItem('bj_temas',JSON.stringify(saved));
+  renderTemas();
 }
 
 // ORADORES
@@ -1274,11 +1302,12 @@ function renderMinha(){
   if(mcFiltro==='agendado') lista=lista.filter(d=>d.proxSaida&&d.proxSaida>=hoje);
   if(mcFiltro==='sem') lista=lista.filter(d=>!d.proxSaida||d.proxSaida<hoje);
   lista.sort((a,b)=>{
-    // Agendados primeiro, depois por data de próxima saída
-    const fa=a.proxSaida&&a.proxSaida>=hoje?0:1;
-    const fb=b.proxSaida&&b.proxSaida>=hoje?0:1;
-    if(fa!==fb)return fa-fb;
-    if(a.proxSaida&&b.proxSaida)return a.proxSaida>b.proxSaida?1:-1;
+    // Mais recente primeiro: usa proxSaida se existir, senão ultSaida
+    const da=a.proxSaida||a.ultSaida||'';
+    const db=b.proxSaida||b.ultSaida||'';
+    if(da&&db)return db>da?1:-1;
+    if(da)return -1;
+    if(db)return 1;
     return (a.nome||'').localeCompare(b.nome||'');
   });
   if(!lista.length){div.innerHTML='<div class="empty"><div class="ico">🏠</div>Nenhum discursante cadastrado</div>';return;}
@@ -1291,9 +1320,14 @@ function renderMinha(){
     const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
     const nm=document.createElement('div');nm.style.cssText='font-weight:700;font-size:14px;color:var(--whi)';nm.textContent=d.nome||'—';
     info.appendChild(nm);
+    if(d.destino){
+      const dest=document.createElement('div');dest.style.cssText='font-size:11px;color:var(--pur3);margin-top:1px';
+      dest.textContent='→ '+d.destino;
+      info.appendChild(dest);
+    }
     if(temProx){
       const prox=document.createElement('div');prox.style.cssText='margin-top:4px';
-      prox.innerHTML='<span class="badge bpur">📅 Próxima: '+fD(d.proxSaida)+'</span>'+(d.destino?' <span style="font-size:11px;color:var(--whi3)"> → '+d.destino+'</span>':'');
+      prox.innerHTML='<span class="badge bpur">📅 Próxima: '+fD(d.proxSaida)+'</span>';
       info.appendChild(prox);
     }
     if(d.ultSaida){
@@ -1462,11 +1496,12 @@ function decodeHtmlEntities(str){
 function buildMsg(template,sem){
   const nT=sem.temaNum;
   const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'—';
-  // Decode entities first (fixes emoji issues from textarea storage)
+  const temaCompleto=nT?('Nº '+nT+' — '+nomeT):nomeT;
   const tmpl=decodeHtmlEntities(template);
   return tmpl
     .replace(/{orador}/g,sem.nome||'—')
-    .replace(/{tema}/g,nomeT)
+    .replace(/{tema}/g,temaCompleto)
+    .replace(/{numtema}/g,nT||'—')
     .replace(/{data}/g,fDL(sem.data))
     .replace(/{cong}/g,cfg.cong)
     .replace(/{end}/g,cfg.end);
