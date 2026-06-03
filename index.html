@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Oradores — Bom Jesus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script src="data.js"></script>
+<div id="setup">
+  <div class="setup-box">
+    <div class="setup-logo">◈ Bom Jesus Oradores</div>
+    <div class="setup-sub">Configure o acesso antes de entrar</div>
+    <div class="setup-step">1 — Firebase</div>
+    <div class="setup-hint">Acesse <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → projeto → ⚙️ Configurações → Seus apps → Web → SDK setup.</div>
+    <div class="g2">
+      <div class="field"><label>API Key</label><input id="sApiKey" placeholder="AIzaSy..."></div>
+      <div class="field"><label>Project ID</label><input id="sProjId" placeholder="meu-projeto-id"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label>Auth Domain</label><input id="sAuth" placeholder="projeto.firebaseapp.com"></div>
+      <div class="field"><label>App ID</label><input id="sAppId" placeholder="1:123:web:abc..."></div>
+    </div>
+    <hr>
+    <div class="setup-step">2 — Gemini AI <span style="font-size:10px;color:var(--whi3);font-weight:400">(opcional)</span></div>
+    <div class="setup-hint">Chave gratuita em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></div>
+    <div class="field"><label>Gemini API Key</label><input id="sGemini" placeholder="AIzaSy..."></div>
+    <div id="setupErr"></div>
+    <button class="btn bp" style="width:100%;justify-content:center;margin-top:6px;padding:11px;font-size:13px" onclick="doSetup()">Entrar no sistema →</button>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="aiPanel">
+  <div class="ai-head"><div class="ai-title">◈ Assistente Gemini</div><button class="btn bo bs" onclick="closeAI()">✕</button></div>
+  <div class="ai-chips">
+    <div class="chip" onclick="askAI('Quem está há mais tempo sem discursar?')">⏰ Sem discursar</div>
+    <div class="chip" onclick="askAI('Quais os 10 temas mais usados?')">📊 Top temas</div>
+    <div class="chip" onclick="askAI('Quais temas nunca foram usados?')">🆕 Nunca usados</div>
+    <div class="chip" onclick="askAI('Análise geral do histórico de oradores')">📋 Análise</div>
+  </div>
+  <div class="ai-msgs" id="aiMsgs"><div class="ai-msg b">Olá! Tenho acesso ao histórico completo da Congregação Bom Jesus. O que você quer saber?</div></div>
+  <div class="ai-foot"><input id="aiIn" placeholder="Pergunte algo..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp bs" onclick="sendAI()">↑</button></div>
+</div>
+<!-- MODAL AGENDAMENTO -->
+<div class="mbg" id="mAgend">
+  <div class="modal">
+    <div class="modal-title" id="mAgendTit">Inserir na Programação</div>
+    <input type="hidden" id="agId">
+    <div class="g2">
+      <div class="field"><label>Data (sábado)</label><input type="date" id="agData"></div>
+      <div class="field"><label>Nº do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema()"></div>
+    </div>
+    <div id="agTemaDesc" style="font-size:11px;color:var(--pur3);margin:-6px 0 10px;min-height:13px"></div>
+    <div class="field">
+      <label>Orador</label>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <div class="fchip on" id="tabCadastrado" onclick="switchOradorTab('cadastrado')" style="flex:1;text-align:center">📋 Cadastrado</div>
+        <div class="fchip" id="tabNovo" onclick="switchOradorTab('novo')" style="flex:1;text-align:center">➕ Novo / Manual</div>
+      </div>
+      <div id="agTabCadastrado">
+        <select id="agOradorSel" onchange="onAgOradorSel()">
+          <option value="">— Selecionar orador —</option>
+        </select>
+      </div>
+      <div id="agTabNovo" style="display:none">
+        <div class="g2">
+          <div class="field"><label>Nome *</label><input id="agNome" placeholder="Nome completo"></div>
+          <div class="field"><label>Congregação</label><input id="agCong" placeholder="Congregação"></div>
+        </div>
+        <div class="field"><label>WhatsApp</label><input id="agTel" type="tel" placeholder="31 9xxxx-xxxx"></div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--whi2);margin-bottom:10px"><input type="checkbox" id="agCadastrar" style="width:auto;margin:0"> Salvar como novo orador no banco</label>
+      </div>
+    </div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="agSemDiscurso" style="width:auto;margin:0" onchange="onAgSemDiscurso()">
+        <span>Sem discurso nesta data (assembleia, congresso, etc.)</span>
+      </label>
+    </div>
+    <div id="agCamposNormais">
+      <div class="field"><label>Observação</label><input id="agObs" placeholder="Ex: Discurso especial..."></div>
+    </div>
+    <div id="agCamposSemDisc" style="display:none">
+      <div class="field"><label>Motivo</label><input id="agMotivo" placeholder="Ex: Assembleia Regional, Congresso..."></div>
+    </div>
+    <div class="brow"><button class="btn bp" onclick="saveAgend()">Salvar</button><button class="btn bo" onclick="closeM('mAgend')">Cancelar</button></div>
+  </div>
+</div>
+<!-- MODAL ORADOR -->
+<div class="mbg" id="mOrador">
+  <div class="modal">
+    <div class="modal-title" id="mOradorTit">Novo Orador</div>
+    <input type="hidden" id="oId">
+    <div class="g2">
+      <div class="field"><label>Nome</label><input id="oNome" placeholder="Nome completo"></div>
+      <div class="field"><label>Congregação</label><input id="oCong" placeholder="Congregação"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label>WhatsApp</label><input id="oTel" type="tel" placeholder="31 9xxxx-xxxx"></div>
+      <div class="field"><label>Último discurso</label><input id="oUlt" type="date"></div>
+    </div>
+    <div class="field"><label>Nota</label><div class="stars-el" id="starsEl"><span class="star" data-v="1">★</span><span class="star" data-v="2">★</span><span class="star" data-v="3">★</span><span class="star" data-v="4">★</span><span class="star" data-v="5">★</span></div></div>
+    <div class="field"><label>Observação</label><textarea id="oObs" placeholder="Anotações..."></textarea></div>
+    <div class="brow"><button class="btn bp" onclick="saveOrador()">Salvar</button><button class="btn bo" onclick="closeM('mOrador')">Cancelar</button></div>
+  </div>
+</div>
+<!-- MODAL SUGESTÃO -->
+<div class="mbg" id="mSug">
+  <div class="modal">
+    <div class="modal-title">Nova Sugestão</div>
+    <div class="field"><label>Quem sugeriu</label><input id="sNome" placeholder="Nome do ancião"></div>
+    <div class="g2">
+      <div class="field"><label>Nº do Tema</label><input id="sNum" type="number" min="1" max="194" oninput="onSugNum()"></div>
+      <div class="field"><label>Data da sugestão</label><input id="sData" type="date"></div>
+    </div>
+    <div id="sNumName" style="font-size:11px;color:var(--pur3);margin:-6px 0 10px;min-height:13px"></div>
+    <div class="field"><label>Observação</label><textarea id="sDesc" placeholder="Motivo..."></textarea></div>
+    <div class="brow"><button class="btn bp" onclick="saveSug()">Salvar</button><button class="btn bo" onclick="closeM('mSug')">Cancelar</button></div>
+  </div>
+</div>
+<!-- MODAL DISCURSANTE -->
+<div class="mbg" id="mDiscursante">
+  <div class="modal">
+    <div class="modal-title" id="mDiscTit">Novo Discursante</div>
+    <input type="hidden" id="dcId">
+    <input type="hidden" id="dcOradorId">
+    <div class="field">
+      <label>Irmão *</label>
+      <select id="dcSelect" onchange="onDcSelect()">
+        <option value="">— Selecionar irmão —</option>
+      </select>
+    </div>
+    <div id="dcInfo" style="display:none;background:var(--surf2);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--whi2)"></div>
+    <div class="g2">
+      <div class="field"><label>Última saída</label><input id="dcUlt" type="date"></div>
+      <div class="field"><label>Próxima saída</label><input id="dcProx" type="date"></div>
+    </div>
+    <div class="field"><label>Congregação destino</label><input id="dcDest" placeholder="Para onde vai discursar"></div>
+    <div class="field"><label>Observação</label><textarea id="dcObs" placeholder="Notas..."></textarea></div>
+    <div class="brow">
+      <button class="btn bp" onclick="saveDiscursante()">Salvar</button>
+      <button class="btn bo" onclick="closeM('mDiscursante')">Cancelar</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL CONGREGAÇÃO -->
+<div class="mbg" id="mCong">
+  <div class="modal">
+    <div class="modal-title" id="mCongTit">Congregação</div>
+    <div id="mCongLista"></div>
+    <div class="brow"><button class="btn bo" onclick="closeM('mCong')">Fechar</button></div>
+  </div>
+</div>
+<!-- MODAL IMPORT XLSX -->
+<div class="mbg" id="mImportXlsx">
+  <div class="modal">
+    <div class="modal-title">📂 Importar Planilha Excel</div>
+    <div class="field"><label>Arquivo .xlsx</label><input type="file" id="xlsxFile" accept=".xlsx,.xls" onchange="onXlsxSelect()" style="padding:7px"></div>
+    <div id="xlsxInfo" style="font-size:12px;color:var(--whi2);min-height:16px;margin-bottom:6px"></div>
+    <div class="imp-bar-wrap"><div class="imp-bar" id="impBarXlsx"></div></div>
+    <div class="imp-log" id="impLogXlsx">Selecione um arquivo...</div>
+    <div class="brow" id="impBtnsXlsx"><button class="btn bp" id="btnImportXlsx" onclick="startImportXlsx()" disabled style="opacity:.4">▶ Importar</button><button class="btn bo" onclick="closeM('mImportXlsx')">Cancelar</button></div>
+  </div>
+</div>
+<!-- MODAL EXPORT -->
+<div class="mbg" id="mExport">
+  <div class="modal">
+    <div class="modal-title">📤 Exportar para Excel</div>
+    <div class="brow" style="flex-direction:column;gap:8px">
+      <button class="btn bw" style="justify-content:flex-start" onclick="exportXlsx('oradores')">👤 Oradores</button>
+      <button class="btn bw" style="justify-content:flex-start" onclick="exportXlsx('programa')">📅 Programação</button>
+      <button class="btn bw" style="justify-content:flex-start" onclick="exportXlsx('historico')">📖 Histórico de discursos</button>
+    </div>
+    <div class="brow"><button class="btn bo" onclick="closeM('mExport')">Fechar</button></div>
+  </div>
+</div>
+<!-- APP -->
+<header>
+  <div class="logo">◈ Bom Jesus <span>Oradores</span></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn bo bs" onclick="openM('mImportXlsx')" title="Importar planilha">📂</button>
+    <button class="btn bo bs" onclick="openM('mExport')" title="Exportar Excel">📤</button>
+    <div class="ai-btn" onclick="toggleAI()">◈ IA</div>
+  </div>
+</header>
+<nav>
+  <div class="tab active" data-p="home">🏠 Home</div>
+  <div class="tab" data-p="programa">📋 Histórico</div>
+  <div class="tab" data-p="temas">🔍 Temas</div>
+  <div class="tab" data-p="oradores">👤 Oradores</div>
+  <div class="tab" data-p="sugestoes">💡 Sugestões</div>
+  <div class="tab" data-p="minha">🏠 Minha Cong.</div>
+  <div class="tab" data-p="analytics">📊 Análise</div>
+  <div class="tab" data-p="sentinela">📖 Sentinela</div>
+  <div class="tab" data-p="config">⚙️ Config</div>
+</nav>
+<main>
+<div class="page active" id="page-home">
+  <div id="homeSentinela"></div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:11px;color:var(--whi3);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Ano:</span>
+    <div id="anoFilterBar" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+  <div id="homeWeekCard"></div>
+</div>
+<div class="page" id="page-programa">
+  <div class="panel-head">
+    <div class="panel-title" style="margin:0">Histórico de Discursos</div>
+    <div class="brow-r">
+      <button class="btn bp bs" onclick="openNovoAgend()">+ Inserir semana</button>
+      <button class="btn bo bs" onclick="exportXlsx('historico')">📤 Exportar</button>
+    </div>
+  </div>
+  <input id="buscaHist" placeholder="🔍 Buscar por orador, tema ou data..." oninput="renderPrograma()" style="margin-bottom:10px">
+  <div id="listaPrograma"><div class="spin"></div></div>
+</div>
+<div class="page" id="page-temas">
+  <div class="panel-title">Temas dos Discursos</div>
+  <input id="temaSearch" placeholder="🔍 Buscar por número ou palavra..." oninput="renderTemas()" style="margin-bottom:10px">
+  <div class="filter-bar">
+    <div class="fchip on" data-f="todos" onclick="setTF(this)">Todos</div>
+    <div class="fchip" data-f="0" onclick="setTF(this)">Nunca usados</div>
+    <div class="fchip" data-f="1" onclick="setTF(this)">Usados 1×</div>
+    <div class="fchip" data-f="2" onclick="setTF(this)">Usados 2×</div>
+    <div class="fchip" data-f="3" onclick="setTF(this)">Usados 3×+</div>
+  </div>
+  <div id="temasLista"></div>
+</div>
+<div class="page" id="page-oradores">
+  <div class="panel-head">
+    <div class="panel-title" style="margin:0">Oradores</div>
+    <div class="brow-r"><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
+  </div>
+  <input id="buscaOr" placeholder="🔍 Buscar por nome ou congregação..." oninput="renderOradores()" style="margin-bottom:8px">
+  <div class="filter-bar" style="margin-bottom:10px">
+    <div class="fchip on" data-or="az" onclick="setOrSort(this)">A–Z</div>
+    <div class="fchip" data-or="mais" onclick="setOrSort(this)">⏰ Mais tempo</div>
+    <div class="fchip" data-or="menos" onclick="setOrSort(this)">🟢 Menos tempo</div>
+    <div class="fchip" data-or="agendado" onclick="setOrSort(this)">📅 Agendados</div>
+  </div>
+  <div id="listaOr"><div class="spin"></div></div>
+</div>
+<div class="page" id="page-sugestoes">
+  <div class="panel-head">
+    <div class="panel-title" style="margin:0">Sugestões de Temas</div>
+    <button class="btn bp bs" onclick="abrirNovaSug()">+ Nova</button>
+  </div>
+  <div id="listaSug"><div class="spin"></div></div>
+</div>
+<div class="page" id="page-minha">
+  <div class="panel-head">
+    <div class="panel-title" style="margin:0">Minha Congregação</div>
+    <button class="btn bp bs" onclick="novoDiscursante()">+ Adicionar</button>
+  </div>
+  <p style="font-size:12px;color:var(--whi3);margin-bottom:14px;line-height:1.6">Controle de quando os irmãos da <strong style="color:var(--whi2)">Congregação Bom Jesus</strong> saem para discursar em outras congregações.</p>
+  <div class="filter-bar" style="margin-bottom:12px">
+    <div class="fchip on" data-mc="todos" onclick="setMCFilter(this)">Todos</div>
+    <div class="fchip" data-mc="agendado" onclick="setMCFilter(this)">📅 Agendados</div>
+    <div class="fchip" data-mc="sem" onclick="setMCFilter(this)">⏰ Sem saída</div>
+  </div>
+  <div id="listaMinha"><div class="spin"></div></div>
+</div>
+<div class="page" id="page-analytics">
+  <div class="panel-title">Análise & Padrões</div>
+  <div class="stat-grid" id="statGrid"></div>
+  <div class="g2">
+    <div class="card"><div class="slabel">Temas mais usados</div><div id="rankTemas"></div></div>
+    <div class="card"><div class="slabel">Sem discursar há mais tempo</div><div id="rankSem"></div></div>
+  </div>
+  <div class="card" style="margin-top:0"><div class="slabel">Congregações — clique para ver oradores</div><div id="rankCongs"></div></div>
+</div>
+<div class="page" id="page-sentinela">
+  <div class="panel-title">Tema A Sentinela</div>
+  <div class="card">
+    <div class="g2">
+      <div class="field"><label>Tema</label><input id="sentTema" placeholder="Cole o tema aqui..."></div>
+      <div class="field"><label>Data da edição</label><input type="date" id="sentData"></div>
+    </div>
+    <button class="btn bp" onclick="saveSentinela()">Salvar</button>
+  </div>
+  <div class="card"><div class="slabel">Histórico</div><div id="sentLista"><div class="spin"></div></div></div>
+</div>
+<div class="page" id="page-config">
+  <div class="panel-title">Configurações</div>
+  <div class="card">
+    <div class="slabel">Congregação</div>
+    <div class="g2">
+      <div class="field"><label>Nome</label><input id="cfgNome" value="Congregação Bom Jesus"></div>
+      <div class="field"><label>Horário</label><input id="cfgHor" value="19:00"></div>
+    </div>
+    <div class="field"><label>Endereço</label><input id="cfgEnd" value="R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG"></div>
+    <button class="btn bp" onclick="saveConfig()">Salvar</button>
+  </div>
+  <div class="card">
+    <div class="slabel" style="margin-bottom:10px">Mensagens pré-prontas (WhatsApp)</div>
+    <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6">Use as variáveis: <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{tema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{numtema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{data}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code></p>
+    <div id="msgsList"></div>
+    <div style="margin-top:10px;display:flex;gap:7px">
+      <button class="btn bp bs" onclick="addMsg()">+ Nova mensagem</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="slabel">Sistema</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn bo" onclick="openM('mExport')">📤 Exportar Excel</button>
+      <button class="btn bo" onclick="if(confirm('Limpar configurações?')){localStorage.clear();location.reload()}">⚙️ Redefinir</button>
+    </div>
+  </div>
+</div>
+</main>
+<script>
+// STATE
+let db=null,FF=null,oradores=[],discursos=[],sugestoes=[],sentinelas=[],programa=[];
+let notaAtual=0,temaFiltro='todos',orSort='az';
+let bloqueados=new Set();
+let cfg={cong:'Congregação Bom Jesus',end:'R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG',hor:'19:00'};
+let mensagens=[
+  {id:1,titulo:'Convite padrão',texto:'Olá {orador}, tudo bem?\n\nGostaríamos de convidá-lo para proferir o discurso público na nossa congregação:\n\n📖 Tema: {tema}\n📅 Data: {data}\n🏠 Congregação: {cong}\n📍 Endereço: {end}\n\nAguardamos sua confirmação. 🙏'},
+  {id:2,titulo:'Lembrete',texto:'Olá {orador}! Passando para lembrar do discurso público:\n\n📖 {tema}\n📅 {data}\n📍 {cong}\n\nObrigado! 🙏'},
+];
+let TL={...TEMAS}; // temasLocal — updatable copy
+
+// SETUP
+function checkSetup(){
+  const fb=localStorage.getItem('bj_fb');
+  renderHome();renderTemas();renderMensagens();
+  if(fb){document.getElementById('setup').style.display='none';initFB(JSON.parse(fb));}
+}
+
+async function doSetup(){
+  const key=document.getElementById('sApiKey').value.trim();
+  const pid=document.getElementById('sProjId').value.trim();
+  const err=document.getElementById('setupErr');
+  if(!key||!pid){err.textContent='Preencha pelo menos API Key e Project ID.';err.style.display='block';return;}
+  err.style.display='none';
+  const auth=document.getElementById('sAuth').value.trim();
+  const appid=document.getElementById('sAppId').value.trim();
+  const gem=document.getElementById('sGemini').value.trim();
+  const fbcfg={apiKey:key,authDomain:auth||pid+'.firebaseapp.com',projectId:pid,appId:appid};
+  localStorage.setItem('bj_fb',JSON.stringify(fbcfg));
+  if(gem)localStorage.setItem('bj_gem',gem);
+  document.getElementById('setup').style.display='none';
+  initFB(fbcfg);
+}
+
+async function initFB(fbCfg){
+  try{
+    const{initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const F=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const app=getApps().length?getApps()[0]:initializeApp(fbCfg);
+    db=F.getFirestore(app);
+    FF={col:F.collection,doc:F.doc,set:F.setDoc,get:F.getDoc,gets:F.getDocs,upd:F.updateDoc,del:F.deleteDoc,add:F.addDoc,ts:F.serverTimestamp};
+    await loadAll();
+    toast('◈ Firebase conectado!');
+  }catch(e){toast('Erro: '+e.message);console.error(e);}
+}
+
+async function loadAll(){
+  await Promise.all([loadConfig(),loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas(),loadPrograma(),loadDiscursantes()]);
+  renderHome();renderTemas();renderAnalytics();
+}
+
+// NAV
+function irTab(p){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  const t=document.querySelector('[data-p="'+p+'"]');if(t)t.classList.add('active');
+  const pg=document.getElementById('page-'+p);if(pg)pg.classList.add('active');
+  if(p==='home')renderHome();
+  if(p==='analytics')renderAnalytics();
+  if(p==='minha')renderMinha();
+  if(p==='oradores')renderOradores();
+  if(p==='sugestoes')renderSugestoes();
+  if(p==='temas')renderTemas();
+  if(p==='programa')renderPrograma();
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>irTab(t.dataset.p)));
+
+// UTILS
+function fD(iso){if(!iso)return'—';const[y,m,d]=iso.slice(0,10).split('-');return d+'/'+m+'/'+y;}
+function fDL(iso){
+  if(!iso)return'—';
+  const dt=new Date(iso+'T12:00:00');
+  const dias=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const mes=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  return dias[dt.getDay()]+', '+dt.getDate()+' de '+mes[dt.getMonth()]+' de '+dt.getFullYear()+' — '+cfg.hor;
+}
+function fDSem(iso){
+  if(!iso)return'—';
+  const dt=new Date(iso+'T12:00:00');
+  const dias=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const mes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return dias[dt.getDay()]+', '+dt.getDate()+' de '+mes[dt.getMonth()]+' de '+dt.getFullYear();
+}
+function diaSem(iso){if(!iso)return'';try{const dt=new Date(iso+'T12:00:00');return['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][dt.getDay()];}catch(e){return'';}}
+function mesesAno(iso){
+  if(!iso)return null;
+  const hoje=new Date();const ult=new Date(iso+'T12:00:00');const ms=hoje-ult;if(ms<0)return null;
+  const m=Math.floor(ms/(864e5*30.44));
+  if(m<1)return'Este mês';if(m===1)return'1 mês';
+  if(m<12)return m+' meses';
+  const a=Math.floor(m/12);const r=m%12;
+  return a+(a>1?' anos':' ano')+(r>0?' e '+r+(r>1?' meses':' mês'):'');
+}
+function corTempo(iso){
+  if(!iso)return'bred';
+  const m=Math.floor((new Date()-new Date(iso+'T12:00:00'))/(864e5*30.44));
+  return m<6?'bgrn':m<12?'bamb':'bred';
+}
+function ehSist(nome){if(!nome)return true;const s=['CONGRESSO','ASSEMBLEIA','CELEBRAÇÃO','VISITA','REUNIÃO','DISCURSO ESPECIAL','TRANSIÇÃO','STREAM'];return s.some(x=>nome.toUpperCase().includes(x));}
+function nextSab(){
+  // Returns the current or upcoming Saturday
+  const d=new Date();d.setHours(12,0,0,0);
+  const dow=d.getDay(); // 0=Sun, 6=Sat
+  const diff=dow===6?0:(6-dow);
+  d.setDate(d.getDate()+diff);
+  return d.toISOString().slice(0,10);
+}
+function currentOrNextProg(){
+  // Returns the programa entry to highlight: exact saturday match, or closest future
+  const sab=nextSab();
+  const today=new Date().toISOString().slice(0,10);
+  // Dedup by date
+  const byDate={};
+  programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
+  const sorted=Object.values(byDate).filter(p=>p.data>=today).sort((a,b)=>a.data<b.data?-1:1);
+  // Prefer exact saturday match, fallback to first future
+  return sorted.find(p=>p.data===sab)||sorted[0]||null;
+}
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.mbg').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)b.classList.remove('open');}));
+function toast(msg,dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
+
+// HOME
+function mkWeekCard(sem,isCurrent,isPast,isFirst){
+  const nT=sem.temaNum;
+  const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'';
+  const temOr=sem.nome&&!ehSist(sem.nome);
+  // Look up telefone from oradores if missing in programa entry
+  let tel=sem.telefone||'';
+  let congregacao=sem.congregacao||'';
+  if(sem.nome){
+    const orCad=oradores.find(o=>o.nome===sem.nome);
+    if(orCad){
+      if(orCad.tel)tel=orCad.tel;
+      if(orCad.cong)congregacao=orCad.cong;
+    }
+  }
+  const semComTel={...sem,telefone:tel,congregacao};
+  const semJson=JSON.stringify(semComTel);
+  const temDados=!!(sem.nome||sem.temaNum||sem.tema);
+  const isSemDisc=!!(sem.semDiscurso);
+  const isEspecial=isSemDisc||(sem.motivo&&sem.motivo.trim().length>0);
+  const isLarge=isCurrent||isFirst;
+
+  // Border color
+  let bg,brd;
+  if(isEspecial){bg='rgba(245,158,11,.06)';brd='rgba(245,158,11,.35)';}
+  else if(isCurrent){bg='linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.04))';brd='rgba(124,58,237,.45)';}
+  else if(temOr){bg='var(--surf)';brd='var(--border)';}
+  else if(temDados){bg='var(--surf)';brd='rgba(239,68,68,.35)';}
+  else{bg='rgba(255,255,255,.02)';brd='rgba(239,68,68,.22)';}
+
+  const el=document.createElement('div');
+  el.style.cssText='background:'+bg+';border:1px solid '+brd+';border-radius:10px;padding:'+(isLarge?'18px':'11px 14px')+';position:relative;margin-bottom:6px';
+
+  // Date label
+  const dateEl=document.createElement('div');
+  dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isCurrent?'var(--pur3)':isEspecial?'var(--amber)':'var(--whi2)')+';margin-bottom:'+(isLarge?'6px':'3px');
+  dateEl.textContent='📅 '+fDSem(sem.data);
+  el.appendChild(dateEl);
+
+  if(isEspecial){
+    // Yellow special date
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:'+(isLarge?'15px':'13px')+';font-weight:700;color:var(--amber)';
+    lbl.textContent='🌟 '+(sem.motivo||'Data especial');
+    el.appendChild(lbl);
+  } else if(!temDados){
+    // No data at all
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px';
+    const lbl=document.createElement('span');
+    lbl.style.cssText='font-size:12px;color:var(--red);font-style:italic';
+    lbl.textContent='⚠ Sem orador definido';
+    const btn=document.createElement('button');btn.className='btn bp bs';btn.textContent='+ Definir';
+    btn.onclick=function(){editarAgend(semJson);};
+    row.appendChild(lbl);row.appendChild(btn);
+    el.appendChild(row);
+  } else {
+    // ORADOR é o foco principal — tema vem abaixo com destaque
+    if(temOr){
+      // Nome do orador — GRANDE em todos os cards
+      const nEl=document.createElement('div');
+      nEl.style.cssText='font-family:Space Grotesk,sans-serif;font-weight:700;letter-spacing:-.02em;color:var(--whi);line-height:1.15;margin-bottom:2px;font-size:'+(isLarge?'22px':'16px');
+      nEl.textContent=sem.nome;
+      el.appendChild(nEl);
+      // Congregação
+      const cEl=document.createElement('div');
+      cEl.style.cssText='font-size:'+(isLarge?'13px':'11px')+';color:var(--whi3);margin-bottom:'+(isLarge?'12px':'8px');
+      cEl.textContent=(congregacao||'—')+(tel?' · '+tel:'');
+      el.appendChild(cEl);
+      // Tema — destaque mas menor que o nome
+      if(nT||nomeT){
+        const tWrap=document.createElement('div');
+        tWrap.style.cssText='padding:'+(isLarge?'10px 12px':'7px 10px')+';background:rgba(0,0,0,.2);border-radius:8px;margin-bottom:'+(isLarge?'12px':'0');
+        if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:5px;display:inline-block;font-size:10px';b.textContent='Tema nº '+nT;tWrap.appendChild(b);}
+        if(nomeT){
+          const tEl=document.createElement('div');
+          tEl.style.cssText='font-size:'+(isLarge?'14px':'12px')+';font-weight:600;color:var(--whi2);line-height:1.4';
+          tEl.textContent=nomeT;
+          tWrap.appendChild(tEl);
+        }
+        el.appendChild(tWrap);
+      }
+      // Botões WA
+      if(isLarge){
+        const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+        if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirWADir(tel);};btnWrap.appendChild(wa);}
+        const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦ Mensagem';msgb.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(msgb);
+        el.appendChild(btnWrap);
+      } else {
+        // Small card: botões compactos ao lado do tema já renderizado acima
+        const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:4px;margin-top:6px';
+        if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.onclick=function(){abrirWADir(tel);};btnWrap.appendChild(wa);}
+        const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦';msgb.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(msgb);
+        el.appendChild(btnWrap);
+      }
+    } else {
+      // Sem orador — tema em destaque e botão definir
+      if(nT||nomeT){
+        if(nT){const b=document.createElement('span');b.className='badge bpur';b.style.cssText='margin-bottom:4px;display:inline-block';b.textContent='Tema nº '+nT;el.appendChild(b);}
+        if(nomeT){const tEl=document.createElement('div');tEl.style.cssText='font-size:'+(isLarge?'15px':'13px')+';font-weight:600;color:var(--whi2);margin-bottom:8px;line-height:1.4';tEl.textContent=nomeT;el.appendChild(tEl);}
+      }
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 0';
+      const lbl=document.createElement('span');lbl.style.cssText='font-size:11px;color:var(--red)';lbl.textContent='⚠ Orador não definido';
+      const btn=document.createElement('button');btn.className='btn bp bs';btn.textContent='+ Definir';btn.onclick=function(){editarAgend(semJson);};
+      row.appendChild(lbl);row.appendChild(btn);el.appendChild(row);
+    }
+    if(sem.obs){const o=document.createElement('div');o.style.cssText='font-size:11px;color:var(--pur3);margin-top:5px';o.textContent='⚡ '+sem.obs;el.appendChild(o);}
+  }
+
+  // Edit button (future only)
+  const eb=document.createElement('button');
+  eb.style.cssText='position:absolute;top:7px;right:7px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:11px;padding:3px 6px;border-radius:4px';
+  eb.textContent='✏️';eb.onclick=function(){editarAgend(semJson);};
+  el.appendChild(eb);
+
+  return el;
+}
+let anoAtivo=new Date().getFullYear();
+
+function initAnoFilter(){
+  const anos=new Set();
+  const hoje=new Date().getFullYear();
+  [hoje,hoje+1,hoje+2].forEach(a=>anos.add(a));
+  programa.forEach(p=>{if(p.data)anos.add(parseInt(p.data.slice(0,4)));});
+  const sorted=[...anos].sort();
+  const bar=document.getElementById('anoFilterBar');
+  if(!bar)return;
+  bar.innerHTML='';
+  sorted.forEach(a=>{
+    const chip=document.createElement('div');
+    chip.className='fchip'+(a===anoAtivo?' on':'');
+    chip.style.cssText='font-size:12px;padding:5px 13px';
+    chip.textContent=a;
+    chip.onclick=function(){setAno(a);};
+    bar.appendChild(chip);
+  });
+}
+
+function setAno(a){
+  anoAtivo=+a;
+  document.querySelectorAll('#anoFilterBar .fchip').forEach(el=>el.classList.toggle('on',+el.textContent===anoAtivo));
+  renderHome();
+}
+
+function allSaturdays(year){
+  const sats=[];
+  let d=new Date(year,0,1);
+  // find first saturday
+  while(d.getDay()!==6)d.setDate(d.getDate()+1);
+  while(d.getFullYear()===year){
+    sats.push(d.toISOString().slice(0,10));
+    d.setDate(d.getDate()+7);
+  }
+  return sats;
+}
+
+function renderHome(){
+  const hoje=new Date().toISOString().slice(0,10);
+  const byDate={};
+  programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
+  const sats=allSaturdays(anoAtivo);
+  const destaque=currentOrNextProg();
+  const div=document.getElementById('homeWeekCard');
+  div.innerHTML='';
+  // Only show future saturdays (today and forward)
+  const futures=sats.filter(d=>d>=hoje);
+  if(!futures.length){
+    const emp=document.createElement('div');
+    emp.style.cssText='text-align:center;padding:28px;color:var(--whi3)';
+    emp.textContent='Sem sábados futuros neste ano.';
+    div.appendChild(emp);
+  } else {
+    futures.forEach((data,i)=>{
+      const sem=byDate[data]||{data};
+      const isDestaque=destaque&&data===destaque.data;
+      div.appendChild(mkWeekCard(sem,isDestaque,false,i===0&&!isDestaque));
+    });
+  }
+  initAnoFilter();
+  // Sentinela chip
+  const sd=document.getElementById('homeSentinela');
+  const us=sentinelas.length?sentinelas[0]:null;
+  if(us){
+    const sc=document.createElement('div');sc.className='sentchip';
+    sc.innerHTML='📖 <strong>Sentinela:</strong> '+us.tema+(us.data?' <span style="opacity:.6;margin-left:6px">'+fD(us.data)+'</span>':'');
+    sd.innerHTML='';sd.appendChild(sc);
+  } else {
+    const sc2=document.createElement('div');sc2.className='sentchip';sc2.style.cssText='opacity:.4;cursor:pointer';
+    sc2.textContent='📖 Nenhum tema da Sentinela registrado';sc2.onclick=function(){irTab('sentinela');};
+    sd.innerHTML='';sd.appendChild(sc2);
+  }
+}
+
+// PROGRAMAÇÃO (Histórico)
+async function loadPrograma(){
+  if(!db){renderPrograma();return;}
+  const s=await FF.gets(FF.col(db,'programa'));
+  if(s.docs.length>0) programa=s.docs.map(d=>({id:d.id,...d.data()}));
+  renderPrograma();renderHome();
+}
+
+function renderPrograma(){
+  const hoje=new Date().toISOString().slice(0,10);
+  const q=(document.getElementById('buscaHist')?.value||'').toLowerCase();
+  // Show past entries sorted by date desc
+  let hist=[...programa].filter(p=>p.data&&p.data<hoje);
+  if(q) hist=hist.filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.congregacao||'').toLowerCase().includes(q)||(p.data||'').includes(q)||String(p.temaNum||'').includes(q)||(p.tema||'').toLowerCase().includes(q));
+  hist.sort((a,b)=>b.data>a.data?1:-1);
+  const div=document.getElementById('listaPrograma');
+  if(!div)return;
+  if(!hist.length){div.innerHTML='<div class="empty"><div class="ico">📋</div>'+(q?'Nenhum resultado':'Nenhum histórico')+'</div>';return;}
+  div.innerHTML=hist.map(p=>{
+    const temOr=p.nome&&!ehSist(p.nome);
+    const nT=p.temaNum;
+    const nomeT=nT&&TL[nT]?TL[nT]:p.tema||'';
+    let h='<div class="prog-row">';
+    h+='<div style="min-width:70px;flex-shrink:0"><div style="font-size:12px;font-weight:700;color:var(--whi2)">'+fD(p.data)+'</div><div style="font-size:10px;color:var(--whi3)">'+diaSem(p.data)+'</div></div>';
+    h+='<div style="flex:1;min-width:0">';
+    if(nT) h+='<span class="badge bpur" style="margin-bottom:2px;display:inline-block">Nº '+nT+'</span> ';
+    h+='<div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(nomeT||'<em style="color:var(--whi3)">Tema não definido</em>')+'</div>';
+    h+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+(temOr?p.nome+' · '+(p.congregacao||'—'):'—')+'</div>';
+    h+='</div></div>';
+    return h;
+  }).join('');
+}
+
+// AGENDAMENTO
+function openNovoAgend(){
+  preencherModalAgend({});
+  document.getElementById('agData').value=nextSab();
+  document.getElementById('mAgendTit').textContent='Inserir na Programação';
+  openM('mAgend');
+}
+function editarAgend(jsonOrEnc){
+  let p;
+  try{p=JSON.parse(jsonOrEnc);}catch(e){p=JSON.parse(decodeURIComponent(jsonOrEnc));}
+  preencherModalAgend(p);
+  document.getElementById('mAgendTit').textContent='Editar — '+fD(p.data);
+  openM('mAgend');
+}
+function switchOradorTab(tab){
+  const isCad=tab==='cadastrado';
+  document.getElementById('agTabCadastrado').style.display=isCad?'block':'none';
+  document.getElementById('agTabNovo').style.display=isCad?'none':'block';
+  document.getElementById('tabCadastrado').classList.toggle('on',isCad);
+  document.getElementById('tabNovo').classList.toggle('on',!isCad);
+}
+function preencherModalAgend(p){
+  document.getElementById('agId').value=p.id||'';
+  document.getElementById('agData').value=p.data||'';
+  document.getElementById('agTema').value=p.temaNum||'';
+  document.getElementById('agObs').value=p.obs||'';
+  document.getElementById('agMotivo').value=p.motivo||'';
+  document.getElementById('agCadastrar').checked=false;
+  document.getElementById('agSemDiscurso').checked=!!(p.semDiscurso);
+  onAgSemDiscurso();
+  onAgTema();
+  // Populate select
+  const sel=document.getElementById('agOradorSel');
+  sel.innerHTML='<option value="">— Selecionar orador —</option>';
+  [...oradores].sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(o=>{
+    const opt=document.createElement('option');
+    opt.value=o.id;opt.textContent=o.nome+' ('+(o.cong||'?')+')';
+    if(p.nome&&p.nome===o.nome)opt.selected=true;
+    sel.appendChild(opt);
+  });
+  const matched=p.nome&&oradores.find(o=>o.nome===p.nome);
+  if(p.nome&&!matched){
+    // Has name but not in database — show "Novo" tab with data
+    switchOradorTab('novo');
+    document.getElementById('agNome').value=p.nome||'';
+    document.getElementById('agCong').value=p.congregacao||'';
+    document.getElementById('agTel').value=p.telefone||'';
+  } else {
+    switchOradorTab('cadastrado');
+    document.getElementById('agNome').value='';
+    document.getElementById('agCong').value='';
+    document.getElementById('agTel').value='';
+  }
+}
+function onAgSemDiscurso(){
+  const chk=document.getElementById('agSemDiscurso').checked;
+  document.getElementById('agCamposNormais').style.display=chk?'none':'block';
+  document.getElementById('agCamposSemDisc').style.display=chk?'block':'none';
+  document.getElementById('agTabCadastrado').style.display=chk?'none':'block';
+  document.getElementById('agTabNovo').style.display='none';
+  document.getElementById('tabCadastrado').style.display=chk?'none':'flex';
+  document.getElementById('tabNovo').style.display=chk?'none':'flex';
+}
+function onAgTema(){const n=parseInt(document.getElementById('agTema').value);document.getElementById('agTemaDesc').textContent=n&&TL[n]?TL[n]:'';}
+// removed
+function _NOOP(){}
+function onAgOradorSel(){
+  const v=document.getElementById('agOradorSel').value;
+  if(v){const o=oradores.find(x=>x.id===v);if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}}
+}
+async function saveAgend(){
+  if(!db)return toast('Firebase não conectado!');
+  const idField=document.getElementById('agId').value.trim();
+  const data_val=document.getElementById('agData').value;
+  if(!data_val)return toast('Informe a data!');
+  const isCadTab=document.getElementById('agTabCadastrado').style.display!=='none';
+  const selV=document.getElementById('agOradorSel').value;
+  let nome='',cong='',tel='';
+  if(isCadTab&&selV){
+    const o=oradores.find(x=>x.id===selV);
+    if(o){nome=o.nome;cong=o.cong||'';tel=o.tel||'';}
+  } else {
+    nome=document.getElementById('agNome').value.trim();
+    cong=document.getElementById('agCong').value.trim();
+    tel=document.getElementById('agTel').value.trim();
+    if(nome&&document.getElementById('agCadastrar').checked){
+      try{
+        await FF.add(FF.col(db,'oradores'),{nome,cong,tel,ultimoDiscurso:data_val,nota:0,obs:''});
+        await loadOradores();
+        toast('✓ Orador "'+nome+'" cadastrado!');
+      }catch(e){toast('Erro ao cadastrar orador: '+e.message);}
+    }
+  }
+  const isSemDisc=document.getElementById('agSemDiscurso').checked;
+  const entry={
+    data:data_val,
+    semDiscurso:isSemDisc||false,
+    temaNum:isSemDisc?null:(parseInt(document.getElementById('agTema').value)||null),
+    nome:isSemDisc?null:(nome||null),
+    congregacao:isSemDisc?'':cong,
+    telefone:isSemDisc?'':tel,
+    obs:isSemDisc?'':document.getElementById('agObs').value.trim(),
+    motivo:isSemDisc?document.getElementById('agMotivo').value.trim():''
+  };
+  // Resolve ID: use field, or find existing Firebase doc for this date
+  let resolvedId=idField;
+  if(!resolvedId){
+    const snap=await FF.gets(FF.col(db,'programa'));
+    const match=snap.docs.find(d=>d.data().data===data_val);
+    if(match)resolvedId=match.id;
+  }
+  if(resolvedId){
+    await FF.upd(FF.doc(db,'programa',resolvedId),entry);
+    entry.id=resolvedId;
+  } else {
+    const ref=await FF.add(FF.col(db,'programa'),entry);
+    entry.id=ref.id;
+  }
+  // Replace local entry for this date
+  programa=programa.filter(p=>p.data!==data_val);
+  programa.push(entry);
+  // Atualiza ultimoDiscurso do orador para datas já passadas
+  const hoje3=new Date().toISOString().slice(0,10);
+  if(!isSemDisc&&nome&&data_val<=hoje3){
+    const orCad=oradores.find(o=>o.nome===nome);
+    if(orCad&&db&&(!orCad.ultimoDiscurso||data_val>orCad.ultimoDiscurso)){
+      await FF.upd(FF.doc(db,'oradores',orCad.id),{ultimoDiscurso:data_val});
+      orCad.ultimoDiscurso=data_val;
+      renderOradores();
+    }
+  }
+  closeM('mAgend');renderHome();toast('✓ Salvo!');
+}
+async function delAgend(id){
+  if(!confirm('Remover?'))return;
+  if(db)await FF.del(FF.doc(db,'programa',id));
+  programa=programa.filter(p=>p.id!==id);
+  renderHome();
+}
+
+// WA
+function abrirWADir(tel){window.open('https://wa.me/55'+tel.replace(/\D/g,''),'_blank');}
+
+
+// TEMAS
+function setTF(el){document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on'));el.classList.add('on');temaFiltro=el.dataset.f;renderTemas();}
+function renderTemas(){
+  const q=(document.getElementById('temaSearch')?.value||'').toLowerCase().trim();
+  const div=document.getElementById('temasLista');if(!div)return;
+  const entries=Object.entries(TL).map(([n,t])=>({n:+n,t})).sort((a,b)=>a.n-b.n);
+  div.innerHTML='';
+  let found=0;
+  entries.forEach(({n,t})=>{
+    const bloqueado=bloqueados.has(n);
+    const editado=TEMAS[n]&&t!==TEMAS[n]&&!bloqueado;
+    const u=discursos.filter(d=>d.temaNum==n).length;
+    if(!bloqueado){
+      if(temaFiltro==='0'&&u>0)return;
+      if(temaFiltro==='1'&&u!==1)return;
+      if(temaFiltro==='2'&&u!==2)return;
+      if(temaFiltro==='3'&&u<3)return;
+    }
+    if(q&&!String(n).includes(q)&&!t.toLowerCase().includes(q))return;
+    found++;
+    const row=document.createElement('div');
+    row.className='tema-row';
+    if(bloqueado)row.style.cssText='opacity:.5;border-color:rgba(239,68,68,.25)';
+    // Número
+    const numEl=document.createElement('div');
+    numEl.style.cssText='min-width:34px;text-align:center;font-size:11px;font-weight:700;color:'+(bloqueado?'var(--red)':u===0?'var(--green)':'var(--pur3)');
+    numEl.textContent=n;
+    row.appendChild(numEl);
+    // Info
+    const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
+    const ult=discursos.filter(d=>d.temaNum==n).sort((a,b)=>b.data>a.data?1:-1)[0]?.data;
+    const tEl=document.createElement('div');
+    tEl.style.cssText='font-size:13px;'+(bloqueado?'color:var(--red);text-decoration:line-through':'');
+    tEl.textContent=t;
+    info.appendChild(tEl);
+    const subEl=document.createElement('div');
+    subEl.style.cssText='font-size:11px;color:var(--whi3);margin-top:1px';
+    subEl.textContent=bloqueado?'Tema bloqueado':(u?'Usado '+u+'× · último: '+fD(ult):'Nunca usado');
+    info.appendChild(subEl);
+    row.appendChild(info);
+    // Ações
+    const acts=document.createElement('div');acts.style.cssText='display:flex;gap:4px;align-items:center;flex-shrink:0';
+    // Editar nome
+    const eb=document.createElement('button');eb.className='btn bo bs';eb.style.cssText='font-size:10px;padding:3px 7px;opacity:.5';eb.textContent='✏️';eb.title='Editar nome do tema';
+    eb.onclick=function(e){e.stopPropagation();editTemaNome(n);};acts.appendChild(eb);
+    if(editado){const bE=document.createElement('span');bE.className='badge bamb';bE.style.cssText='font-size:9px';bE.textContent='Editado';acts.appendChild(bE);}
+    if(!bloqueado){
+      if(u===0){const bN=document.createElement('span');bN.className='badge bgrn';bN.textContent='Novo';acts.appendChild(bN);}
+      const tb=document.createElement('button');tb.className='btn bo bs';tb.style.cssText='font-size:10px;padding:3px 7px;opacity:.6';tb.textContent='🚫';tb.title='Bloquear tema';
+      tb.onclick=function(e){e.stopPropagation();toggleTemaDisp(n);};acts.appendChild(tb);
+    } else {
+      const lb2=document.createElement('span');lb2.className='badge bred';lb2.textContent='Bloqueado';acts.appendChild(lb2);
+      const tb=document.createElement('button');tb.className='btn bo bs';tb.style.cssText='font-size:10px;padding:3px 7px';tb.textContent='✓ Liberar';
+      tb.onclick=function(e){e.stopPropagation();toggleTemaDisp(n);};acts.appendChild(tb);
+    }
+    row.appendChild(acts);
+    div.appendChild(row);
+  });
+  if(!found)div.innerHTML='<div class="empty"><div class="ico">🔍</div>Nenhum tema encontrado</div>';
+}
+
+function toggleTemaDisp(n){
+  n=+n;
+  if(bloqueados.has(n)){bloqueados.delete(n);toast('Tema Nº '+n+' liberado!');}
+  else{bloqueados.add(n);toast('Tema Nº '+n+' bloqueado.');}
+  salvarConfigTemas();
+  renderTemas();
+}
+function editTemaNome(n){
+  const atual=TL[n]||'';
+  const novo=prompt('Editar nome do Tema Nº '+n+':',atual);
+  if(novo===null)return;
+  const trimmed=novo.trim();
+  if(!trimmed)return toast('Nome não pode ser vazio.');
+  TL[n]=trimmed;
+  salvarConfigTemas();
+  renderTemas();
+  toast('Tema Nº '+n+' atualizado!');
+}
+
+// ORADORES
+function setOrSort(el){
+  document.querySelectorAll('[data-or]').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');orSort=el.dataset.or;renderOradores();
+}
+
+async function loadOradores(){if(!db)return;const s=await FF.gets(FF.col(db,'oradores'));oradores=s.docs.map(d=>({id:d.id,...d.data()}));renderOradores();if(document.getElementById('page-home').classList.contains('active'))renderHome();}
+function renderOradores(){
+  const q=(document.getElementById('buscaOr')?.value||'').toLowerCase();
+  const list=oradores.filter(o=>o.nome?.toLowerCase().includes(q)||o.cong?.toLowerCase().includes(q));
+  const div=document.getElementById('listaOr');if(!div)return;
+  if(!list.length){div.innerHTML='<div class="empty"><div class="ico">👤</div>Nenhum orador</div>';return;}
+  const hoje=new Date().toISOString().slice(0,10);
+  const agMap={};
+  programa.forEach(p=>{
+    if(!p.nome||ehSist(p.nome))return;
+    if(p.data>=hoje){const o=oradores.find(x=>x.nome===p.nome);if(o&&!agMap[o.id])agMap[o.id]=p.data;}
+  });
+  div.innerHTML='';
+  const hoje2=new Date().toISOString().slice(0,10);
+  // Sort
+  if(orSort==='mais') list.sort((a,b)=>{
+    const ma=a.ultimoDiscurso?new Date(a.ultimoDiscurso):new Date(0);
+    const mb=b.ultimoDiscurso?new Date(b.ultimoDiscurso):new Date(0);
+    return ma-mb; // oldest first
+  });
+  else if(orSort==='menos') list.sort((a,b)=>{
+    const ma=a.ultimoDiscurso?new Date(a.ultimoDiscurso):new Date(0);
+    const mb=b.ultimoDiscurso?new Date(b.ultimoDiscurso):new Date(0);
+    return mb-ma; // newest first
+  });
+  else if(orSort==='agendado') list.sort((a,b)=>{
+    const aa=agMap[a.id]?0:1;const ab=agMap[b.id]?0:1;return aa-ab;
+  });
+  else list.sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  list.forEach(o=>{
+    const cor=corTempo(o.ultimoDiscurso);
+    const tempo=mesesAno(o.ultimoDiscurso);
+    const ag=agMap[o.id];
+    const row=document.createElement('div');
+    row.className='or-item';
+    let ih='<div style="min-width:0;flex:1"><div style="font-weight:600;font-size:13px">'+o.nome;
+    if(o.nota)ih+='&nbsp;<span style="color:var(--amber);font-size:11px">'+'★'.repeat(o.nota)+'</span>';
+    if(ag)ih+='&nbsp;<span class="badge bblu">AGENDADO '+fD(ag)+'</span>';
+    ih+='</div><div style="font-size:11px;color:var(--whi3);margin-top:2px">'+(o.cong||'—')+' · '+(o.tel||'sem contato')+'</div>';
+    if(tempo)ih+='<div style="font-size:11px;margin-top:3px"><span class="badge '+cor+'">'+tempo+' sem discursar</span></div>';
+    if(o.obs)ih+='<div style="font-size:11px;color:var(--whi3);margin-top:2px;font-style:italic">"'+o.obs+'"</div>';
+    ih+='</div>';
+    row.innerHTML=ih;
+    const btns=document.createElement('div');
+    btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
+    if(o.tel){const b=document.createElement('button');b.className='btn bo bs';b.title='WhatsApp';b.textContent='💬';b.onclick=()=>abrirWADir(o.tel);btns.appendChild(b);}
+    const be=document.createElement('button');be.className='btn bo bs';be.title='Editar';be.textContent='✏️';be.onclick=()=>editOrador(o.id);btns.appendChild(be);
+    const bd=document.createElement('button');bd.className='btn bo bs';bd.style.cssText='color:var(--red);opacity:.7';bd.title='Excluir';bd.textContent='🗑';bd.onclick=()=>delOrador(o.id);btns.appendChild(bd);
+    row.appendChild(btns);
+    div.appendChild(row);
+  });
+}
+function novoOrador(){['oId','oNome','oCong','oTel','oUlt','oObs'].forEach(id=>document.getElementById(id).value='');notaAtual=0;rStars(0);document.getElementById('mOradorTit').textContent='Novo Orador';openM('mOrador');}
+function editOrador(id){
+  const o=oradores.find(x=>x.id===id);if(!o)return;
+  document.getElementById('oId').value=id;document.getElementById('oNome').value=o.nome||'';document.getElementById('oCong').value=o.cong||'';
+  document.getElementById('oTel').value=o.tel||'';document.getElementById('oUlt').value=o.ultimoDiscurso||'';document.getElementById('oObs').value=o.obs||'';
+  notaAtual=o.nota||0;rStars(notaAtual);document.getElementById('mOradorTit').textContent='Editar Orador';openM('mOrador');
+}
+async function saveOrador(){
+  if(!db)return toast('Firebase não conectado!');
+  const id=document.getElementById('oId').value;
+  const data={nome:document.getElementById('oNome').value.trim(),cong:document.getElementById('oCong').value.trim(),tel:document.getElementById('oTel').value.trim(),ultimoDiscurso:document.getElementById('oUlt').value,obs:document.getElementById('oObs').value.trim(),nota:notaAtual};
+  if(!data.nome)return toast('Informe o nome!');
+  if(id)await FF.upd(FF.doc(db,'oradores',id),data);else await FF.add(FF.col(db,'oradores'),data);
+  closeM('mOrador');await loadOradores();toast('✓ Salvo!');
+}
+async function delOrador(id){if(!confirm('Excluir?'))return;await FF.del(FF.doc(db,'oradores',id));await loadOradores();toast('Excluído.');}
+document.querySelectorAll('#starsEl .star').forEach(s=>{s.addEventListener('click',()=>{notaAtual=+s.dataset.v;rStars(notaAtual);});s.addEventListener('mouseover',()=>rStars(+s.dataset.v));s.addEventListener('mouseout',()=>rStars(notaAtual));});
+function rStars(v){document.querySelectorAll('#starsEl .star').forEach(s=>s.classList.toggle('on',+s.dataset.v<=v));}
+
+// DISCURSOS
+async function loadDiscursos(){if(!db)return;const s=await FF.gets(FF.col(db,'discursos'));discursos=s.docs.map(d=>({id:d.id,...d.data()}));}
+
+// SUGESTÕES
+async function loadSugestoes(){if(!db)return;const s=await FF.gets(FF.col(db,'sugestoes'));sugestoes=s.docs.map(d=>({id:d.id,...d.data()}));renderSugestoes();}
+function calcSugStatus(s){
+  const hoje=new Date().toISOString().slice(0,10);
+  const dataRef=s.dataSugestao||s.criadoEm||'2020-01-01';
+  // Normalize dataRef to string date
+  const refStr=typeof dataRef==='string'?dataRef.slice(0,10):hoje;
+  if(s.temaNum){
+    // Agendamento futuro OU que foi feito após a data da sugestão
+    const agFut=programa.find(p=>p.temaNum==s.temaNum&&p.data>=hoje&&p.nome&&!ehSist(p.nome));
+    if(agFut)return{st:'agendado',info:fD(agFut.data)+' — '+agFut.nome};
+    // Discurso realizado APÓS a data da sugestão
+    const disc=discursos.filter(d=>d.temaNum==s.temaNum&&d.data>=refStr).sort((a,b)=>b.data>a.data?1:-1)[0];
+    if(disc)return{st:'realizado',info:fD(disc.data)+' — '+disc.nome};
+  }
+  return{st:'pendente',info:''};
+}
+
+function renderSugestoes(){
+  const div=document.getElementById('listaSug');if(!div)return;
+  if(!sugestoes.length){div.innerHTML='<div class="empty"><div class="ico">💡</div>Nenhuma sugestão</div>';return;}
+  const pp={};
+  sugestoes.forEach(s=>{if(!pp[s.nome])pp[s.nome]=[];pp[s.nome].push(s);});
+  div.innerHTML='';
+  Object.entries(pp).forEach(([nome,itens])=>{
+    const box=document.createElement('div');
+    box.className='sug-item';
+    let hd='<div style="display:flex;align-items:center;justify-content:space-between">';
+    hd+='<div style="font-weight:600;font-size:13px">'+nome+'</div>';
+    hd+='<span class="badge bgry">'+itens.length+' sugestão'+(itens.length>1?'ões':'')+'</span></div>';
+    box.innerHTML=hd;
+    itens.forEach(s=>{
+      const nomeT=s.temaNum&&TL[s.temaNum]?TL[s.temaNum]:s.descricao||'—';
+      const {st,info}=calcSugStatus(s);
+      const stCor={pendente:'bamb',agendado:'bblu',realizado:'bgrn'}[st];
+      const stLabel={pendente:'⏳ Pendente',agendado:'📅 Agendado',realizado:'✅ Realizado'}[st];
+      const item=document.createElement('div');
+      item.style.cssText='padding:8px 10px;background:var(--surf3);border-radius:7px;margin-top:6px;display:flex;align-items:flex-start;gap:10px';
+      let ih='';
+      if(s.temaNum)ih+='<span class="badge bpur" style="flex-shrink:0;margin-top:2px">Nº '+s.temaNum+'</span>';
+      ih+='<div style="flex:1;min-width:0"><div style="font-size:13px">'+nomeT+'</div>';
+      if(s.descricao&&s.descricao!==nomeT)ih+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+s.descricao+'</div>';
+      if(s.dataSugestao)ih+='<div style="font-size:11px;color:var(--whi3);margin-top:1px">📅 Sugerido em '+fD(s.dataSugestao)+'</div>';
+      if(info)ih+='<div style="font-size:11px;color:var(--pur3);margin-top:1px">'+info+'</div>';
+      ih+='</div>';
+      item.innerHTML=ih;
+      // Auto status badge (read-only, no dropdown)
+      const badge=document.createElement('span');
+      badge.className='badge '+stCor;
+      badge.style.cssText='flex-shrink:0;margin-top:2px;font-size:10px;font-weight:700;padding:3px 8px';
+      badge.textContent=stLabel;
+      // Delete button
+      const bd=document.createElement('button');
+      bd.className='btn bo bs';bd.style.cssText='color:var(--red);opacity:.7;flex-shrink:0';bd.textContent='✕';
+      bd.onclick=function(){delSug(s.id);};
+      const acts=document.createElement('div');
+      acts.style.cssText='display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0';
+      acts.appendChild(badge);acts.appendChild(bd);
+      item.appendChild(acts);
+      box.appendChild(item);
+    });
+    div.appendChild(box);
+  });
+}
+// setSugSt removida — status é calculado automaticamente
+function onSugNum(){const n=parseInt(document.getElementById('sNum').value);document.getElementById('sNumName').textContent=n&&TL[n]?TL[n]:'';}
+function abrirNovaSug(){['sNome','sNum','sDesc'].forEach(id=>document.getElementById(id).value='');document.getElementById('sData').value=new Date().toISOString().slice(0,10);document.getElementById('sNumName').textContent='';openM('mSug');}
+async function saveSug(){
+  if(!db)return toast('Firebase não conectado!');
+  const nome=document.getElementById('sNome').value.trim();
+  const num=parseInt(document.getElementById('sNum').value)||null;
+  const desc=document.getElementById('sDesc').value.trim();
+  if(!nome)return toast('Informe quem sugeriu!');
+  const sDataVal=document.getElementById('sData').value||new Date().toISOString().slice(0,10);
+  await FF.add(FF.col(db,'sugestoes'),{nome,temaNum:num,descricao:desc,dataSugestao:sDataVal,criadoEm:FF.ts()});
+  closeM('mSug');await loadSugestoes();toast('✓ Salvo!');
+}
+async function delSug(id){if(!confirm('Remover?'))return;await FF.del(FF.doc(db,'sugestoes',id));await loadSugestoes();}
+
+// ANALYTICS
+function renderAnalytics(){
+  const hoje=new Date().toISOString().slice(0,10);
+  const ano=new Date().getFullYear();
+  const validos=Object.keys(TL).filter(n=>!bloqueados.has(+n));
+  const nunca=validos.filter(n=>!discursos.find(d=>d.temaNum==n)).length;
+  document.getElementById('statGrid').innerHTML=
+    '<div class="stat-box"><div class="stat-val">'+oradores.length+'</div><div class="stat-lbl">Oradores</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+discursos.length+'</div><div class="stat-lbl">Discursos</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+discursos.filter(d=>d.data?.startsWith(ano)).length+'</div><div class="stat-lbl">Em '+ano+'</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+nunca+'</div><div class="stat-lbl">Temas nunca usados</div></div>'
+    +'<div class="stat-box"><div class="stat-val">'+sugestoes.length+'</div><div class="stat-lbl">Sugestões</div></div>';
+  const ct={};
+  discursos.forEach(d=>{if(d.temaNum&&d.temaNum>0)ct[d.temaNum]=(ct[d.temaNum]||0)+1;});
+  const topT=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const mx=topT[0]?.[1]||1;
+  document.getElementById('rankTemas').innerHTML=topT.map(([n,c])=>
+    '<div class="rank-row"><div style="flex:1;min-width:0"><div>Nº'+n+' — '+(TL[n]||'?').slice(0,35)+((TL[n]||'').length>35?'…':'')+'</div><div class="rank-bar" style="width:'+Math.round(c/mx*100)+'%"></div></div><strong>'+c+'×</strong></div>'
+  ).join('');
+  const mapU={};
+  discursos.forEach(d=>{if(d.oradorId&&(!mapU[d.oradorId]||d.data>mapU[d.oradorId]))mapU[d.oradorId]=d.data;});
+  const rank=oradores.map(o=>{const u=mapU[o.id]||o.ultimoDiscurso;const m=u?Math.floor((new Date()-new Date(u+'T12:00:00'))/(864e5*30.44)):999;return{o,m};}).sort((a,b)=>b.m-a.m).slice(0,8);
+  document.getElementById('rankSem').innerHTML=rank.map(({o,m})=>
+    '<div class="rank-row"><div><div style="font-size:12px">'+o.nome+'</div><div style="font-size:10px;color:var(--whi3)">'+(o.cong||'—')+'</div></div><span class="badge '+corTempo(o.ultimoDiscurso)+'">'+(m>900?'Nunca':(mesesAno(o.ultimoDiscurso)||'—'))+'</span></div>'
+  ).join('');
+  const cc={};oradores.forEach(o=>{if(o.cong&&o.cong.trim())cc[o.cong]=(cc[o.cong]||0)+1;});
+  const topC=Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,20);
+  document.getElementById('rankCongs').innerHTML='<div style="display:flex;flex-wrap:wrap;margin-top:4px">'
+    +topC.map(([c,n])=>'<div class="cong-chip" onclick="verCong(\''+encodeURIComponent(c)+'\')">'+c+' <strong>'+n+'</strong></div>').join('')+'</div>';
+}
+function verCong(enc){
+  const cong=decodeURIComponent(enc);
+  const ors=oradores.filter(o=>o.cong===cong);
+  document.getElementById('mCongTit').textContent=cong+' ('+ors.length+')';
+  document.getElementById('mCongLista').innerHTML=ors.length?ors.map(o=>{
+    const t=mesesAno(o.ultimoDiscurso);
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<div><div style="font-size:13px;font-weight:500">'+o.nome+'</div><div style="font-size:11px;color:var(--whi3)">'+(o.tel||'sem contato')+'</div></div>'
+      +(t?'<span class="badge '+corTempo(o.ultimoDiscurso)+'">'+t+'</span>':'')+'</div>';
+  }).join(''):'<div style="color:var(--whi3);font-size:13px;padding:8px 0">Nenhum orador.</div>';
+  openM('mCong');
+}
+
+// SENTINELA
+async function loadSentinelas(){if(!db)return;const s=await FF.gets(FF.col(db,'sentinela'));sentinelas=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.data>a.data?1:-1);renderSentinelas();}
+function renderSentinelas(){
+  const div=document.getElementById('sentLista');if(!div)return;
+  if(!sentinelas.length){div.innerHTML='<div style="color:var(--whi3);font-size:13px">Nenhum tema salvo.</div>';return;}
+  div.innerHTML='';
+  sentinelas.forEach(s=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)';
+    const info=document.createElement('div');
+    info.innerHTML='<div style="font-size:13px">'+s.tema+'</div><div style="font-size:11px;color:var(--whi3);margin-top:1px">'+(s.data?fD(s.data):'—')+'</div>';
+    const btn=document.createElement('button');
+    btn.className='btn bo bs';btn.style.cssText='color:var(--red);opacity:.7';btn.textContent='✕';
+    btn.onclick=function(){delSent(s.id);};
+    row.appendChild(info);row.appendChild(btn);
+    div.appendChild(row);
+  });
+}
+async function saveSentinela(){
+  if(!db)return toast('Firebase não conectado!');
+  const tema=document.getElementById('sentTema').value.trim();
+  const data=document.getElementById('sentData').value;
+  if(!tema)return toast('Informe o tema!');
+  await FF.add(FF.col(db,'sentinela'),{tema,data,criadoEm:FF.ts()});
+  document.getElementById('sentTema').value='';
+  await loadSentinelas();renderHome();toast('✓ Salvo!');
+}
+async function delSent(id){if(!confirm('Remover?'))return;await FF.del(FF.doc(db,'sentinela',id));await loadSentinelas();renderHome();}
+
+// IMPORT EMBUTIDO
+async function startImportXlsx(){
+  if(!db||!xlsxParsed)return;
+  const bar=document.getElementById('impBarXlsx'),log=document.getElementById('impLogXlsx'),btns=document.getElementById('impBtnsXlsx');
+  btns.innerHTML='<div class="spin" style="margin:4px 0"></div>';log.innerHTML='';
+  const aL=m=>{log.innerHTML+=m+'\n';log.scrollTop=log.scrollHeight;};
+  try{
+    const hoje=new Date().toISOString().slice(0,10);
+    const comOr=xlsxParsed.filter(p=>p.nome&&!ehSist(p.nome));
+    const fut=xlsxParsed.filter(p=>p.data>=hoje);
+    aL('► '+comOr.length+' discursos...');
+    for(let i=0;i<comOr.length;i++){await FF.add(FF.col(db,'discursos'),comOr[i]);bar.style.width=Math.round((i+1)/comOr.length*60)+'%';}
+    aL('✓ Discursos');aL('► '+fut.length+' datas futuras...');
+    for(let i=0;i<fut.length;i++){await FF.add(FF.col(db,'programa'),fut[i]);bar.style.width=60+Math.round((i+1)/fut.length*40)+'%';}
+    bar.style.width='100%';aL('✓ Programação\n◈ Concluído!');
+    await loadAll();btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';toast('◈ Planilha importada!');
+  }catch(e){aL('✗ ERRO: '+e.message);btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';}
+}
+
+// EXPORT EXCEL
+async function exportXlsx(tipo){
+  if(!window.XLSX){await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+  let rows=[],fn='';
+  if(tipo==='oradores'){fn='oradores_bom_jesus.xlsx';rows=[['Nome','Congregação','Telefone','Último Discurso','Nota','Observação']];oradores.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(o=>rows.push([o.nome,o.cong||'',o.tel||'',o.ultimoDiscurso||'',o.nota||0,o.obs||'']));}
+  else if(tipo==='programa'){fn='programacao_bom_jesus.xlsx';rows=[['Data','Dia','Nº Tema','Tema','Orador','Congregação','Telefone','Obs']];[...programa].sort((a,b)=>a.data>b.data?1:-1).forEach(p=>{const nT=p.temaNum&&TL[p.temaNum]?TL[p.temaNum]:p.tema||'';rows.push([p.data,diaSem(p.data),p.temaNum||'',nT,p.nome||'',p.congregacao||'',p.telefone||'',p.obs||'']);});}
+  else{fn='historico_discursos.xlsx';rows=[['Data','Orador','Congregação','Telefone','Nº Tema','Tema']];[...discursos].sort((a,b)=>a.data>b.data?1:-1).forEach(d=>rows.push([d.data,d.nome||'',d.congregacao||'',d.telefone||'',d.temaNum||'',d.tema||'']));}
+  const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Dados');XLSX.writeFile(wb,fn);
+  toast('◈ Exportado!');closeM('mExport');
+}
+
+// GEMINI AI
+async function gemini(prompt,key,retry=0){
+  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+key;
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+  if(r.status===429){if(retry<2){await new Promise(res=>setTimeout(res,3000*(retry+1)));return gemini(prompt,key,retry+1);}throw new Error('Limite atingido (429). Aguarde e tente novamente.');}
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const data=await r.json();return data.candidates?.[0]?.content?.parts?.[0]?.text||'Sem resposta.';
+}
+function buildCtx(){
+  const ct={};discursos.forEach(d=>{if(d.temaNum&&d.temaNum>0)ct[d.temaNum]=(ct[d.temaNum]||0)+1;});
+  const topT=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c])=>'T'+n+'('+( TL[n]||'?')+'):'+c+'x').join(', ');
+  const mapU={};discursos.forEach(d=>{if(d.oradorId&&(!mapU[d.oradorId]||d.data>mapU[d.oradorId]))mapU[d.oradorId]=d.data;});
+  const sem=oradores.map(o=>{const u=mapU[o.id]||o.ultimoDiscurso;const m=u?Math.floor((new Date()-new Date(u+'T12:00:00'))/(864e5*30.44)):999;return o.nome+'('+( o.cong||'—')+'):'+( m>900?'nunca':m+'m');}).sort().slice(0,10).join(', ');
+  return 'CONGREGAÇÃO BOM JESUS (Matozinhos/MG)\nOradores:'+oradores.length+' | Discursos:'+discursos.length+'\nTop temas: '+topT+'\nSem discursar: '+sem;
+}
+function toggleAI(){document.getElementById('aiPanel').classList.toggle('open');}
+function closeAI(){document.getElementById('aiPanel').classList.remove('open');}
+async function sendAI(){const inp=document.getElementById('aiIn');const msg=inp.value.trim();if(!msg)return;inp.value='';await askAI(msg);}
+async function askAI(msg){
+  const gk=localStorage.getItem('bj_gem');
+  document.getElementById('aiPanel').classList.add('open');
+  addAIMsg('u',msg);
+  if(!gk){addAIMsg('b','⚠️ Configure a chave Gemini em ⚙️ Config.');return;}
+  const bot=addAIMsg('b','⏳ Pensando...');
+  try{const r=await gemini(buildCtx()+'\n\nVocê é assistente da Congregação Bom Jesus. Responda em português.\n\nPergunta: '+msg,gk);bot.textContent=r;}
+  catch(e){bot.textContent='✗ '+e.message;}
+}
+function addAIMsg(tipo,txt){const d=document.createElement('div');d.className='ai-msg '+tipo;d.textContent=txt;const c=document.getElementById('aiMsgs');c.appendChild(d);d.scrollIntoView({behavior:'smooth',block:'nearest'});return d;}
+
+// CONFIG
+async function loadConfig(){
+  if(!db)return;
+  // App config
+  const appDoc=await FF.get(FF.doc(db,'config','app'));
+  if(appDoc.exists){
+    const d=appDoc.data();
+    if(d.cong)cfg.cong=d.cong;
+    if(d.end)cfg.end=d.end;
+    if(d.hor)cfg.hor=d.hor;
+  } else {
+    // migração única do localStorage
+    const lc=localStorage.getItem('bj_cfg');
+    if(lc){cfg=JSON.parse(lc);FF.set(FF.doc(db,'config','app'),cfg);}
+  }
+  // Mensagens
+  const msgsDoc=await FF.get(FF.doc(db,'config','mensagens'));
+  if(msgsDoc.exists&&msgsDoc.data().lista){
+    mensagens=msgsDoc.data().lista;
+  } else {
+    const lm=localStorage.getItem('bj_msgs');
+    if(lm){mensagens=JSON.parse(lm);FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});}
+  }
+  // Temas (overrides + bloqueados)
+  const temasDoc=await FF.get(FF.doc(db,'config','temas'));
+  if(temasDoc.exists){
+    const d=temasDoc.data();
+    if(d.overrides)Object.assign(TL,d.overrides);
+    if(d.bloqueados)bloqueados=new Set((d.bloqueados||[]).map(Number));
+  } else {
+    // migração única do localStorage
+    const lt=localStorage.getItem('bj_temas');
+    const lb=localStorage.getItem('bj_bloqueados');
+    if(lt){const ov=JSON.parse(lt);Object.entries(ov).forEach(([k,v])=>{if(v==='(Não use.)')bloqueados.add(+k);else TL[k]=v;});}
+    if(lb)bloqueados=new Set(JSON.parse(lb).map(Number));
+    if(lt||lb)salvarConfigTemas();
+  }
+  renderMensagens();
+}
+
+function salvarConfigTemas(){
+  if(!db)return;
+  const overrides={};
+  Object.keys(TL).forEach(k=>{if(TL[k]!==TEMAS[k])overrides[k]=TL[k];});
+  FF.set(FF.doc(db,'config','temas'),{overrides,bloqueados:[...bloqueados]});
+}
+
+function saveConfig(){
+  cfg.cong=document.getElementById('cfgNome').value;
+  cfg.end=document.getElementById('cfgEnd').value;
+  cfg.hor=document.getElementById('cfgHor').value;
+  if(db)FF.set(FF.doc(db,'config','app'),cfg);
+  renderMensagens();toast('✓ Salvo!');
+}
+
+// MINHA CONGREGAÇÃO — DISCURSANTES
+let discursantes=[];
+let mcFiltro='todos';
+
+function setMCFilter(el){
+  document.querySelectorAll('[data-mc]').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');mcFiltro=el.dataset.mc;renderMinha();
+}
+
+async function loadDiscursantes(){
+  if(!db)return;
+  const s=await FF.gets(FF.col(db,'discursantes'));
+  discursantes=s.docs.map(d=>({id:d.id,...d.data()}));
+  renderMinha();
+}
+
+function renderMinha(){
+  const div=document.getElementById('listaMinha');if(!div)return;
+  const hoje=new Date().toISOString().slice(0,10);
+  let lista=[...discursantes];
+  if(mcFiltro==='agendado') lista=lista.filter(d=>d.proxSaida&&d.proxSaida>=hoje);
+  if(mcFiltro==='sem') lista=lista.filter(d=>!d.proxSaida||d.proxSaida<hoje);
+  lista.sort((a,b)=>{
+    // Mais recente primeiro: usa proxSaida se existir, senão ultSaida
+    const da=a.proxSaida||a.ultSaida||'';
+    const db=b.proxSaida||b.ultSaida||'';
+    if(da&&db)return db>da?1:-1;
+    if(da)return -1;
+    if(db)return 1;
+    return (a.nome||'').localeCompare(b.nome||'');
+  });
+  if(!lista.length){div.innerHTML='<div class="empty"><div class="ico">🏠</div>Nenhum discursante cadastrado</div>';return;}
+  div.innerHTML='';
+  lista.forEach(d=>{
+    const temProx=d.proxSaida&&d.proxSaida>=hoje;
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--surf);border:1px solid '+(temProx?'rgba(124,58,237,.35)':'var(--border)')+';border-radius:10px;padding:13px 15px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px';
+    // Info
+    const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
+    const nm=document.createElement('div');nm.style.cssText='font-weight:700;font-size:14px;color:var(--whi)';nm.textContent=d.nome||'—';
+    info.appendChild(nm);
+    if(d.destino){
+      const dest=document.createElement('div');dest.style.cssText='font-size:11px;color:var(--pur3);margin-top:1px';
+      dest.textContent='→ '+d.destino;
+      info.appendChild(dest);
+    }
+    if(temProx){
+      const prox=document.createElement('div');prox.style.cssText='margin-top:4px';
+      prox.innerHTML='<span class="badge bpur">📅 Próxima: '+fD(d.proxSaida)+'</span>';
+      info.appendChild(prox);
+    }
+    if(d.ultSaida){
+      const ult=document.createElement('div');ult.style.cssText='font-size:11px;color:var(--whi3);margin-top:3px';
+      ult.textContent='Última saída: '+fD(d.ultSaida);
+      info.appendChild(ult);
+    }
+    if(!d.ultSaida&&!temProx){
+      const sem=document.createElement('div');sem.style.cssText='font-size:11px;color:var(--whi3);margin-top:3px;font-style:italic';
+      sem.textContent='Nenhuma saída registrada';
+      info.appendChild(sem);
+    }
+    if(d.obs){const o=document.createElement('div');o.style.cssText='font-size:11px;color:var(--whi3);margin-top:3px;font-style:italic';o.textContent=d.obs;info.appendChild(o);}
+    card.appendChild(info);
+    // Buttons
+    const btns=document.createElement('div');btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
+    if(d.tel){
+      const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.title='WhatsApp';
+      wa.onclick=function(){abrirWADir(d.tel);};btns.appendChild(wa);
+    }
+    const ed=document.createElement('button');ed.className='btn bo bs';ed.textContent='✏️';ed.title='Editar';
+    ed.onclick=function(){editDiscursante(d.id);};btns.appendChild(ed);
+    const dl=document.createElement('button');dl.className='btn bo bs';dl.style.cssText='color:var(--red);opacity:.7';dl.textContent='🗑';
+    dl.onclick=function(){delDiscursante(d.id);};btns.appendChild(dl);
+    card.appendChild(btns);
+    div.appendChild(card);
+  });
+}
+
+function popularSelectDiscursante(selectedId){
+  const sel=document.getElementById('dcSelect');
+  sel.innerHTML='<option value="">— Selecionar irmão —</option>';
+  // BOM JESUS oradores (various spellings)
+  const minha=oradores.filter(o=>{
+    const c=(o.cong||'').toUpperCase().trim();
+    return c.includes('BOM JESUS')||c==='BJ'||c==='BOMJESUS';
+  }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  // Also add already-registered discursantes by name (in case not in oradores)
+  const extras=discursantes.filter(d=>!minha.find(o=>o.nome===d.nome));
+  const todos=[...minha,...extras.map(d=>({id:'_d_'+d.id,nome:d.nome,tel:d.tel,cong:'Bom Jesus'}))];
+  todos.forEach(o=>{
+    const opt=document.createElement('option');
+    opt.value=o.id;opt.textContent=o.nome+(o.tel?' ('+o.tel+')':'');
+    if(selectedId&&o.id===selectedId)opt.selected=true;
+    sel.appendChild(opt);
+  });
+  if(minha.length===0){
+    const opt=document.createElement('option');opt.disabled=true;
+    opt.textContent='Nenhum orador cadastrado com cong "Bom Jesus"';
+    sel.appendChild(opt);
+  }
+}
+
+function onDcSelect(){
+  const sel=document.getElementById('dcSelect');
+  const v=sel.value;
+  const info=document.getElementById('dcInfo');
+  if(!v){info.style.display='none';return;}
+  const o=oradores.find(x=>x.id===v);
+  if(o){
+    document.getElementById('dcOradorId').value=o.id;
+    info.style.display='block';
+    info.innerHTML='<strong>'+o.nome+'</strong><br>'+(o.cong||'')+(o.tel?' · '+o.tel:'');
+  }
+}
+
+function novoDiscursante(){
+  document.getElementById('dcId').value='';
+  document.getElementById('dcOradorId').value='';
+  ['dcUlt','dcProx','dcDest','dcObs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('dcInfo').style.display='none';
+  document.getElementById('mDiscTit').textContent='Novo Discursante';
+  popularSelectDiscursante(null);
+  openM('mDiscursante');
+}
+
+function editDiscursante(id){
+  const d=discursantes.find(x=>x.id===id);if(!d)return;
+  document.getElementById('dcId').value=id;
+  document.getElementById('dcOradorId').value=d.oradorId||'';
+  document.getElementById('dcUlt').value=d.ultSaida||'';
+  document.getElementById('dcProx').value=d.proxSaida||'';
+  document.getElementById('dcDest').value=d.destino||'';
+  document.getElementById('dcObs').value=d.obs||'';
+  document.getElementById('mDiscTit').textContent='Editar — '+d.nome;
+  popularSelectDiscursante(d.oradorId||null);
+  // Show info
+  const info=document.getElementById('dcInfo');
+  const o=oradores.find(x=>x.id===d.oradorId);
+  if(o){info.style.display='block';info.innerHTML='<strong>'+o.nome+'</strong><br>'+(o.cong||'')+(o.tel?' · '+o.tel:'');}
+  else{info.style.display='none';}
+  openM('mDiscursante');
+}
+
+async function saveDiscursante(){
+  if(!db)return toast('Firebase não conectado!');
+  const id=document.getElementById('dcId').value.trim();
+  const oradorId=document.getElementById('dcOradorId').value.trim();
+  const selV=document.getElementById('dcSelect').value;
+  const o=oradores.find(x=>x.id===selV);
+  if(!o&&!id)return toast('Selecione um irmão!');
+  const nome=o?o.nome:(discursantes.find(d=>d.id===id)?.nome||'');
+  const tel=o?o.tel||'':'';
+  const data={
+    nome,tel,oradorId:selV||oradorId||'',
+    ultSaida:document.getElementById('dcUlt').value||null,
+    proxSaida:document.getElementById('dcProx').value||null,
+    destino:document.getElementById('dcDest').value.trim(),
+    obs:document.getElementById('dcObs').value.trim()
+  };
+  if(id){
+    await FF.upd(FF.doc(db,'discursantes',id),data);
+    discursantes=discursantes.map(d=>d.id===id?{...d,...data}:d);
+  } else {
+    const ref=await FF.add(FF.col(db,'discursantes'),data);
+    discursantes.push({id:ref.id,...data});
+  }
+  closeM('mDiscursante');renderMinha();toast('✓ Salvo!');
+}
+
+async function delDiscursante(id){
+  if(!confirm('Remover este discursante?'))return;
+  await FF.del(FF.doc(db,'discursantes',id));
+  discursantes=discursantes.filter(d=>d.id!==id);
+  renderMinha();
+}
+
+// MENSAGENS
+function saveMensagens(){if(db)FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});}
+
+function renderMensagens(){
+  const div=document.getElementById('msgsList');if(!div)return;
+  div.innerHTML='';
+  mensagens.forEach((m,i)=>{
+    const box=document.createElement('div');
+    box.style.cssText='background:var(--surf2);border:1px solid var(--border2);border-radius:8px;padding:12px;margin-bottom:8px';
+    const head=document.createElement('div');
+    head.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+    const inp=document.createElement('input');
+    inp.value=m.titulo;inp.placeholder='Nome da mensagem';
+    inp.style.cssText='flex:1;font-size:12px;font-weight:600';
+    inp.oninput=function(){mensagens[i].titulo=this.value;saveMensagens();};
+    const del=document.createElement('button');
+    del.className='btn bo bs';del.style.cssText='color:var(--red);opacity:.7;flex-shrink:0';del.textContent='✕';
+    del.onclick=function(){if(confirm('Remover esta mensagem?')){mensagens.splice(i,1);saveMensagens();renderMensagens();}};
+    head.appendChild(inp);head.appendChild(del);
+    const ta=document.createElement('textarea');
+    ta.value=m.texto;ta.rows=4;ta.placeholder='Texto da mensagem...';ta.style.cssText='font-size:12px;line-height:1.6';
+    ta.oninput=function(){mensagens[i].texto=this.value;saveMensagens();};
+    box.appendChild(head);box.appendChild(ta);
+    div.appendChild(box);
+  });
+}
+
+function addMsg(){
+  mensagens.push({id:Date.now(),titulo:'Nova mensagem',texto:'Olá {orador}!\n\n📖 Tema: {tema}\n📅 Data: {data}\n📍 {cong}\n\n🙏'});
+  saveMensagens();renderMensagens();
+}
+
+function decodeHtmlEntities(str){
+  // Decode HTML entities that may appear in localStorage strings
+  const txt=document.createElement('textarea');
+  txt.innerHTML=str;
+  return txt.value;
+}
+function buildMsg(template,sem){
+  const nT=sem.temaNum;
+  const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'—';
+  const temaCompleto=nT?('Nº '+nT+' — '+nomeT):nomeT;
+  const tmpl=decodeHtmlEntities(template);
+  return tmpl
+    .replace(/{orador}/g,sem.nome||'—')
+    .replace(/{tema}/g,temaCompleto)
+    .replace(/{numtema}/g,nT||'—')
+    .replace(/{data}/g,fDL(sem.data))
+    .replace(/{cong}/g,cfg.cong)
+    .replace(/{end}/g,cfg.end);
+}
+
+function abrirMsgPadrao(jsonOrEnc){
+  let sem;try{sem=JSON.parse(jsonOrEnc);}catch(e){sem=JSON.parse(decodeURIComponent(jsonOrEnc));}
+  if(mensagens.length===0){toast('Nenhuma mensagem configurada. Configure em ⚙️ Config.');return;}
+  if(mensagens.length===1){
+    const txt=buildMsg(mensagens[0].texto,sem);
+    const tel=sem.telefone?sem.telefone.replace(/\D/g,''):'';
+    window.open(tel?'https://wa.me/55'+tel+'?text='+encodeURIComponent(txt):'https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+    return;
+  }
+  // Multiple messages — show picker modal
+  mostrarPickerMsg(sem);
+}
+
+function mostrarPickerMsg(sem){
+  const existing=document.getElementById('mMsgPicker');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='mMsgPicker';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  const modal=document.createElement('div');
+  modal.style.cssText='background:var(--surf);border:1px solid var(--border2);border-radius:12px;padding:20px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto';
+  const title=document.createElement('div');
+  title.style.cssText='font-family:Space Grotesk,sans-serif;font-size:16px;font-weight:700;color:var(--whi);margin-bottom:14px';
+  title.textContent='Escolha a mensagem';
+  modal.appendChild(title);
+  mensagens.forEach(m=>{
+    const btn=document.createElement('button');
+    btn.style.cssText='display:block;width:100%;text-align:left;padding:12px 14px;background:var(--surf2);border:1px solid var(--border2);border-radius:8px;color:var(--whi2);font-size:13px;cursor:pointer;margin-bottom:8px;transition:.15s';
+    btn.onmouseover=function(){this.style.borderColor='var(--pur)';};
+    btn.onmouseout=function(){this.style.borderColor='var(--border2)';};
+    const preview=buildMsg(m.texto,sem).slice(0,80)+'...';
+    btn.innerHTML='<strong style="color:var(--whi);display:block;margin-bottom:3px">'+m.titulo+'</strong><span style="font-size:11px;color:var(--whi3)">'+preview+'</span>';
+    btn.onclick=function(){
+      const txt=buildMsg(m.texto,sem);
+      const tel=sem.telefone?sem.telefone.replace(/\D/g,''):'';
+      window.open(tel?'https://wa.me/55'+tel+'?text='+encodeURIComponent(txt):'https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+      overlay.remove();
+    };
+    modal.appendChild(btn);
+  });
+  const close=document.createElement('button');
+  close.className='btn bo';close.style.cssText='width:100%;justify-content:center;margin-top:4px';close.textContent='Cancelar';
+  close.onclick=function(){overlay.remove();};
+  modal.appendChild(close);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
+
+// INIT
+checkSetup();
+</script>
+</body>
+</html>
