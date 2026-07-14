@@ -1194,19 +1194,16 @@ function fetchTemaJW(dataAlvo){
       const slug='sentinela-estudo-'+mesesPt[d.getMonth()]+'-'+d.getFullYear();
       try{
         const url='https://www.jw.org/pt/biblioteca/revistas/'+slug+'/';
-        const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url));
+        // r.jina.ai espelha a página como texto/markdown limpo, sem exigir CORS do jw.org
+        const r=await fetch('https://r.jina.ai/'+url);
         if(!r.ok)continue;
-        const html=await r.text();
-        const doc=new DOMParser().parseFromString(html,'text/html');
-        const blocos=doc.querySelectorAll('div.syn-body');
-        for(const b of blocos){
-          const descEl=b.querySelector('p.desc');
-          const h2a=b.querySelector('h2 a');
-          if(!descEl||!h2a)continue;
-          const dm=descEl.textContent.match(/semana de\s*(.+?)\./i);
-          if(!dm)continue;
-          const range=parseRangeSentinela(dm[1]);
-          if(range&&alvo>=range[0]&&alvo<=range[1])return h2a.textContent.trim();
+        const texto=await r.text();
+        const re=/##\s*\[([^\]]+)\]\([^)]*\)\s*\n+\s*Estudo para a semana de\s*([^.\n]+)\./gi;
+        let m;
+        while((m=re.exec(texto))){
+          const titulo=m[1].trim();
+          const range=parseRangeSentinela(m[2]);
+          if(range&&alvo>=range[0]&&alvo<=range[1])return titulo;
         }
       }catch(e){/* tenta a próxima edição */}
     }
