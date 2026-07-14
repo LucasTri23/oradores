@@ -380,6 +380,7 @@ function irTab(p){
   if(p==='sugestoes')renderSugestoes();
   if(p==='temas')renderTemas();
   if(p==='programa')renderPrograma();
+  if(p==='sentinela')autoFillSentinelaTab();
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>irTab(t.dataset.p)));
 
@@ -634,18 +635,37 @@ function renderHome(){
     });
   }
   initAnoFilter();
-  // Sentinela chip
+  // Sentinela chip — se já tiver um registro salvo pra essa semana usa ele, senão busca sozinho no jw.org
+  renderSentinelaChip();
+}
+function renderSentinelaChip(){
   const sd=document.getElementById('homeSentinela');
-  const us=sentinelas.length?sentinelas[0]:null;
+  if(!sd)return;
+  const alvo=nextSab();
+  const us=sentinelas.find(s=>s.data===alvo)||(sentinelas.length?sentinelas[0]:null);
   if(us){
     const sc=document.createElement('div');sc.className='sentchip';
     sc.innerHTML='📖 <strong>Sentinela:</strong> '+us.tema+(us.data?' <span style="opacity:.6;margin-left:6px">'+fD(us.data)+'</span>':'');
     sd.innerHTML='';sd.appendChild(sc);
-  } else {
-    const sc2=document.createElement('div');sc2.className='sentchip';sc2.style.cssText='opacity:.4;cursor:pointer';
-    sc2.textContent='📖 Nenhum tema da Sentinela registrado';sc2.onclick=function(){irTab('sentinela');};
-    sd.innerHTML='';sd.appendChild(sc2);
+    return;
   }
+  sd.innerHTML='';
+  const loading=document.createElement('div');loading.className='sentchip';loading.style.cssText='opacity:.5';
+  loading.textContent='📖 Buscando o tema da Sentinela...';
+  sd.appendChild(loading);
+  fetchTemaJW(alvo).then(titulo=>{
+    if(!sd.isConnected)return;
+    sd.innerHTML='';
+    if(titulo){
+      const sc=document.createElement('div');sc.className='sentchip';
+      sc.innerHTML='📖 <strong>Sentinela:</strong> '+titulo+' <span style="opacity:.6;margin-left:6px">'+fD(alvo)+'</span>';
+      sd.appendChild(sc);
+    } else {
+      const sc2=document.createElement('div');sc2.className='sentchip';sc2.style.cssText='opacity:.4;cursor:pointer';
+      sc2.textContent='📖 Não encontrei automaticamente — toque para preencher manual';sc2.onclick=function(){irTab('sentinela');};
+      sd.appendChild(sc2);
+    }
+  });
 }
 
 // PROGRAMAÇÃO (Histórico)
@@ -1160,41 +1180,66 @@ function parseRangeSentinela(str){
   }
   return null;
 }
+// Núcleo da busca — não mexe em DOM/toast, só resolve pro título encontrado (ou null).
+// Cacheado por data (por Promise, não só valor) pra não disparar buscas duplicadas quando
+// renderHome() é chamado várias vezes em sequência durante o carregamento inicial.
+let _jwTemaCache={};
+function fetchTemaJW(dataAlvo){
+  if(_jwTemaCache[dataAlvo])return _jwTemaCache[dataAlvo];
+  const p=(async()=>{
+    const mesesPt=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const alvo=new Date(dataAlvo+'T12:00:00');
+    for(let off=0;off<=3;off++){
+      const d=new Date(alvo.getFullYear(),alvo.getMonth()-off,1);
+      const slug='sentinela-estudo-'+mesesPt[d.getMonth()]+'-'+d.getFullYear();
+      try{
+        const url='https://www.jw.org/pt/biblioteca/revistas/'+slug+'/';
+        const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url));
+        if(!r.ok)continue;
+        const html=await r.text();
+        const doc=new DOMParser().parseFromString(html,'text/html');
+        const blocos=doc.querySelectorAll('div.syn-body');
+        for(const b of blocos){
+          const descEl=b.querySelector('p.desc');
+          const h2a=b.querySelector('h2 a');
+          if(!descEl||!h2a)continue;
+          const dm=descEl.textContent.match(/semana de\s*(.+?)\./i);
+          if(!dm)continue;
+          const range=parseRangeSentinela(dm[1]);
+          if(range&&alvo>=range[0]&&alvo<=range[1])return h2a.textContent.trim();
+        }
+      }catch(e){/* tenta a próxima edição */}
+    }
+    return null;
+  })();
+  _jwTemaCache[dataAlvo]=p;
+  return p;
+}
+// Botão manual da aba Sentinela (mantido para forçar nova busca / outra data)
 async function buscarSentinelaJW(){
-  const mesesPt=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   const dataInput=document.getElementById('sentData').value;
   const dataAlvo=dataInput||nextSab();
-  const alvo=new Date(dataAlvo+'T12:00:00');
   toast('🔎 Buscando no jw.org...',6000);
-  // A revista é publicada ~2 meses antes da semana de estudo; tenta algumas edições próximas.
-  for(let off=0;off<=3;off++){
-    const d=new Date(alvo.getFullYear(),alvo.getMonth()-off,1);
-    const slug='sentinela-estudo-'+mesesPt[d.getMonth()]+'-'+d.getFullYear();
-    try{
-      const url='https://www.jw.org/pt/biblioteca/revistas/'+slug+'/';
-      const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url));
-      if(!r.ok)continue;
-      const html=await r.text();
-      const doc=new DOMParser().parseFromString(html,'text/html');
-      const blocos=doc.querySelectorAll('div.syn-body');
-      for(const b of blocos){
-        const descEl=b.querySelector('p.desc');
-        const h2a=b.querySelector('h2 a');
-        if(!descEl||!h2a)continue;
-        const dm=descEl.textContent.match(/semana de\s*(.+?)\./i);
-        if(!dm)continue;
-        const range=parseRangeSentinela(dm[1]);
-        if(range&&alvo>=range[0]&&alvo<=range[1]){
-          const titulo=h2a.textContent.trim();
-          document.getElementById('sentTema').value=titulo;
-          if(!dataInput)document.getElementById('sentData').value=dataAlvo;
-          toast('✓ Tema encontrado: '+titulo);
-          return;
-        }
-      }
-    }catch(e){/* tenta a próxima edição */}
+  delete _jwTemaCache[dataAlvo]; // força nova tentativa mesmo se já tinha falhado antes
+  const titulo=await fetchTemaJW(dataAlvo);
+  if(titulo){
+    document.getElementById('sentTema').value=titulo;
+    if(!dataInput)document.getElementById('sentData').value=dataAlvo;
+    toast('✓ Tema encontrado: '+titulo);
+  } else {
+    toast('Não encontrei o tema para essa data no jw.org. Preencha manualmente.',4000);
   }
-  toast('Não encontrei o tema para essa data no jw.org. Preencha manualmente.',4000);
+}
+// Auto-preenche os campos ao abrir a aba Sentinela, sem precisar clicar em nada
+async function autoFillSentinelaTab(){
+  const temaEl=document.getElementById('sentTema'),dataEl=document.getElementById('sentData');
+  if(temaEl.value.trim())return; // já tem algo digitado, não sobrescreve
+  const dataAlvo=dataEl.value||nextSab();
+  const titulo=await fetchTemaJW(dataAlvo);
+  if(titulo&&!temaEl.value.trim()){
+    temaEl.value=titulo;
+    if(!dataEl.value)dataEl.value=dataAlvo;
+  }
 }
 
 // IMPORT EMBUTIDO
