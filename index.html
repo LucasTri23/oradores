@@ -300,7 +300,8 @@
   </div>
   <div class="card">
     <div class="slabel" style="margin-bottom:10px">Mensagens pré-prontas (WhatsApp)</div>
-    <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6">Use as variáveis: <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{tema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{numtema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{data}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code></p>
+    <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6">Use as variáveis: <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{tema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{numtema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{data}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{minha_cong}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong_orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code></p>
+    <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6"><code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{minha_cong}</code> = sua congregação (que convida) · <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong_orador}</code> = a congregação do orador · <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code> = seu endereço</p>
     <div id="msgsList"></div>
     <div style="margin-top:10px;display:flex;gap:7px">
       <button class="btn bp bs" onclick="addMsg()">+ Nova mensagem</button>
@@ -1215,6 +1216,13 @@ function parseRangeSentinela(str){
 let _jwTemaCache={};
 function fetchTemaJW(dataAlvo){
   if(_jwTemaCache[dataAlvo])return _jwTemaCache[dataAlvo];
+  // Tabela pesquisada previamente (data.js) — instantâneo, sem depender do proxy externo.
+  const local=SENTINELA_SEMANAS.find(s=>dataAlvo>=s.de&&dataAlvo<=s.ate);
+  if(local){
+    const p2=Promise.resolve(local.tema);
+    _jwTemaCache[dataAlvo]=p2;
+    return p2;
+  }
   const p=(async()=>{
     const mesesPt=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     const alvo=new Date(dataAlvo+'T12:00:00');
@@ -1606,7 +1614,9 @@ function buildMsg(template,sem){
     .replace(/{tema}/g,temaCompleto)
     .replace(/{numtema}/g,nT||'—')
     .replace(/{data}/g,fDL(sem.data))
-    .replace(/{cong}/g,cfg.cong)
+    .replace(/{minha_cong}/g,cfg.cong)
+    .replace(/{cong_orador}/g,sem.congregacao||'—')
+    .replace(/{cong}/g,cfg.cong) // mantido por compatibilidade com mensagens antigas — sempre foi a MINHA congregação
     .replace(/{end}/g,cfg.end);
 }
 
