@@ -279,7 +279,11 @@
       <div class="field"><label>Tema</label><input id="sentTema" placeholder="Cole o tema aqui..."></div>
       <div class="field"><label>Data da edição</label><input type="date" id="sentData"></div>
     </div>
-    <button class="btn bp" onclick="saveSentinela()">Salvar</button>
+    <div class="brow">
+      <button class="btn bp" onclick="saveSentinela()">Salvar</button>
+      <button class="btn bo" onclick="buscarSentinelaJW()">🔄 Buscar do jw.org</button>
+    </div>
+    <div style="font-size:11px;color:var(--whi3);margin-top:8px;line-height:1.5">Busca automática pelo site oficial jw.org. Se a data acima estiver vazia, usa o próximo sábado. Se não encontrar, preencha manualmente.</div>
   </div>
   <div class="card"><div class="slabel">Histórico</div><div id="sentLista"><div class="spin"></div></div></div>
 </div>
@@ -410,6 +414,23 @@ function corTempo(iso){
   const m=Math.floor((new Date()-new Date(iso+'T12:00:00'))/(864e5*30.44));
   return m<6?'bgrn':m<12?'bamb':'bred';
 }
+// Calcula a última data de discurso de um orador a partir do Histórico (programa) e dos discursos importados,
+// em vez de confiar só no campo ultimoDiscurso salvo no cadastro — assim fica sempre em sincronia com o que é editado lá.
+function getUltimoDiscurso(o){
+  const hoje=new Date().toISOString().slice(0,10);
+  let max=o.ultimoDiscurso||null;
+  programa.forEach(p=>{
+    if(p.nome===o.nome&&!p.semDiscurso&&p.data&&p.data<=hoje){
+      if(!max||p.data>max)max=p.data;
+    }
+  });
+  discursos.forEach(d=>{
+    if((d.oradorId===o.id||d.nome===o.nome)&&d.data){
+      if(!max||d.data>max)max=d.data;
+    }
+  });
+  return max;
+}
 function ehSist(nome){if(!nome)return true;const s=['CONGRESSO','ASSEMBLEIA','CELEBRAÇÃO','VISITA','REUNIÃO','DISCURSO ESPECIAL','TRANSIÇÃO','STREAM'];return s.some(x=>nome.toUpperCase().includes(x));}
 function nextSab(){
   // Returns the current or upcoming Saturday
@@ -517,17 +538,15 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
         }
         el.appendChild(tWrap);
       }
-      // Botões WA
+      // Botão WA — abre direto no WhatsApp já com a mensagem pronta
       if(isLarge){
         const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
-        if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirWADir(tel);};btnWrap.appendChild(wa);}
-        const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦ Mensagem';msgb.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(msgb);
+        const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(wa);
         el.appendChild(btnWrap);
       } else {
-        // Small card: botões compactos ao lado do tema já renderizado acima
+        // Small card: botão compacto ao lado do tema já renderizado acima
         const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:4px;margin-top:6px';
-        if(tel){const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.onclick=function(){abrirWADir(tel);};btnWrap.appendChild(wa);}
-        const msgb=document.createElement('button');msgb.className='btn bo bs';msgb.textContent='✦';msgb.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(msgb);
+        const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(wa);
         el.appendChild(btnWrap);
       }
     } else {
@@ -908,13 +927,13 @@ function renderOradores(){
   const hoje2=new Date().toISOString().slice(0,10);
   // Sort
   if(orSort==='mais') list.sort((a,b)=>{
-    const ma=a.ultimoDiscurso?new Date(a.ultimoDiscurso):new Date(0);
-    const mb=b.ultimoDiscurso?new Date(b.ultimoDiscurso):new Date(0);
+    const ma=new Date(getUltimoDiscurso(a)||0);
+    const mb=new Date(getUltimoDiscurso(b)||0);
     return ma-mb; // oldest first
   });
   else if(orSort==='menos') list.sort((a,b)=>{
-    const ma=a.ultimoDiscurso?new Date(a.ultimoDiscurso):new Date(0);
-    const mb=b.ultimoDiscurso?new Date(b.ultimoDiscurso):new Date(0);
+    const ma=new Date(getUltimoDiscurso(a)||0);
+    const mb=new Date(getUltimoDiscurso(b)||0);
     return mb-ma; // newest first
   });
   else if(orSort==='agendado') list.sort((a,b)=>{
@@ -922,8 +941,9 @@ function renderOradores(){
   });
   else list.sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   list.forEach(o=>{
-    const cor=corTempo(o.ultimoDiscurso);
-    const tempo=mesesAno(o.ultimoDiscurso);
+    const ultimo=getUltimoDiscurso(o);
+    const cor=corTempo(ultimo);
+    const tempo=mesesAno(ultimo);
     const ag=agMap[o.id];
     const row=document.createElement('div');
     row.className='or-item';
@@ -1064,11 +1084,9 @@ function renderAnalytics(){
   document.getElementById('rankTemas').innerHTML=topT.map(([n,c])=>
     '<div class="rank-row"><div style="flex:1;min-width:0"><div>Nº'+n+' — '+(TL[n]||'?').slice(0,35)+((TL[n]||'').length>35?'…':'')+'</div><div class="rank-bar" style="width:'+Math.round(c/mx*100)+'%"></div></div><strong>'+c+'×</strong></div>'
   ).join('');
-  const mapU={};
-  discursos.forEach(d=>{if(d.oradorId&&(!mapU[d.oradorId]||d.data>mapU[d.oradorId]))mapU[d.oradorId]=d.data;});
-  const rank=oradores.map(o=>{const u=mapU[o.id]||o.ultimoDiscurso;const m=u?Math.floor((new Date()-new Date(u+'T12:00:00'))/(864e5*30.44)):999;return{o,m};}).sort((a,b)=>b.m-a.m).slice(0,8);
-  document.getElementById('rankSem').innerHTML=rank.map(({o,m})=>
-    '<div class="rank-row"><div><div style="font-size:12px">'+o.nome+'</div><div style="font-size:10px;color:var(--whi3)">'+(o.cong||'—')+'</div></div><span class="badge '+corTempo(o.ultimoDiscurso)+'">'+(m>900?'Nunca':(mesesAno(o.ultimoDiscurso)||'—'))+'</span></div>'
+  const rank=oradores.map(o=>{const u=getUltimoDiscurso(o);const m=u?Math.floor((new Date()-new Date(u+'T12:00:00'))/(864e5*30.44)):999;return{o,u,m};}).sort((a,b)=>b.m-a.m).slice(0,8);
+  document.getElementById('rankSem').innerHTML=rank.map(({o,u,m})=>
+    '<div class="rank-row"><div><div style="font-size:12px">'+o.nome+'</div><div style="font-size:10px;color:var(--whi3)">'+(o.cong||'—')+'</div></div><span class="badge '+corTempo(u)+'">'+(m>900?'Nunca':(mesesAno(u)||'—'))+'</span></div>'
   ).join('');
   const cc={};oradores.forEach(o=>{if(o.cong&&o.cong.trim())cc[o.cong]=(cc[o.cong]||0)+1;});
   const topC=Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,20);
@@ -1080,10 +1098,11 @@ function verCong(enc){
   const ors=oradores.filter(o=>o.cong===cong);
   document.getElementById('mCongTit').textContent=cong+' ('+ors.length+')';
   document.getElementById('mCongLista').innerHTML=ors.length?ors.map(o=>{
-    const t=mesesAno(o.ultimoDiscurso);
+    const ultimo=getUltimoDiscurso(o);
+    const t=mesesAno(ultimo);
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
       +'<div><div style="font-size:13px;font-weight:500">'+o.nome+'</div><div style="font-size:11px;color:var(--whi3)">'+(o.tel||'sem contato')+'</div></div>'
-      +(t?'<span class="badge '+corTempo(o.ultimoDiscurso)+'">'+t+'</span>':'')+'</div>';
+      +(t?'<span class="badge '+corTempo(ultimo)+'">'+t+'</span>':'')+'</div>';
   }).join(''):'<div style="color:var(--whi3);font-size:13px;padding:8px 0">Nenhum orador.</div>';
   openM('mCong');
 }
@@ -1116,6 +1135,67 @@ async function saveSentinela(){
   await loadSentinelas();renderHome();toast('✓ Salvo!');
 }
 async function delSent(id){if(!confirm('Remover?'))return;await FF.del(FF.doc(db,'sentinela',id));await loadSentinelas();renderHome();}
+
+// Busca automática do tema de A Sentinela no jw.org.
+// O site não é servido com cabeçalhos CORS, então o navegador não consegue buscar direto;
+// usamos um proxy CORS público só para repassar o HTML. Se o proxy ou o jw.org mudarem,
+// a busca falha silenciosamente e cai no preenchimento manual (que continua funcionando).
+function parseRangeSentinela(str){
+  const meses={janeiro:0,fevereiro:1,'março':2,marco:2,abril:3,maio:4,junho:5,julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11};
+  str=str.trim().toLowerCase();
+  let m=str.match(/(\d{1,2})\s*de\s*([a-zçã]+)\s*[–-]\s*(\d{1,2})\s*de\s*([a-zçã]+)\s*de\s*(\d{4})/);
+  if(m){
+    const[,d1,mo1,d2,mo2,y]=m;
+    const mo1i=meses[mo1],mo2i=meses[mo2];
+    if(mo1i===undefined||mo2i===undefined)return null;
+    const y0=mo1i>mo2i?(+y-1):+y;
+    return[new Date(y0,mo1i,+d1,0,0,0),new Date(+y,mo2i,+d2,23,59,59)];
+  }
+  m=str.match(/(\d{1,2})\s*[–-]\s*(\d{1,2})\s*de\s*([a-zçã]+)\s*de\s*(\d{4})/);
+  if(m){
+    const[,d1,d2,mo,y]=m;
+    const moi=meses[mo];
+    if(moi===undefined)return null;
+    return[new Date(+y,moi,+d1,0,0,0),new Date(+y,moi,+d2,23,59,59)];
+  }
+  return null;
+}
+async function buscarSentinelaJW(){
+  const mesesPt=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const dataInput=document.getElementById('sentData').value;
+  const dataAlvo=dataInput||nextSab();
+  const alvo=new Date(dataAlvo+'T12:00:00');
+  toast('🔎 Buscando no jw.org...',6000);
+  // A revista é publicada ~2 meses antes da semana de estudo; tenta algumas edições próximas.
+  for(let off=0;off<=3;off++){
+    const d=new Date(alvo.getFullYear(),alvo.getMonth()-off,1);
+    const slug='sentinela-estudo-'+mesesPt[d.getMonth()]+'-'+d.getFullYear();
+    try{
+      const url='https://www.jw.org/pt/biblioteca/revistas/'+slug+'/';
+      const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url));
+      if(!r.ok)continue;
+      const html=await r.text();
+      const doc=new DOMParser().parseFromString(html,'text/html');
+      const blocos=doc.querySelectorAll('div.syn-body');
+      for(const b of blocos){
+        const descEl=b.querySelector('p.desc');
+        const h2a=b.querySelector('h2 a');
+        if(!descEl||!h2a)continue;
+        const dm=descEl.textContent.match(/semana de\s*(.+?)\./i);
+        if(!dm)continue;
+        const range=parseRangeSentinela(dm[1]);
+        if(range&&alvo>=range[0]&&alvo<=range[1]){
+          const titulo=h2a.textContent.trim();
+          document.getElementById('sentTema').value=titulo;
+          if(!dataInput)document.getElementById('sentData').value=dataAlvo;
+          toast('✓ Tema encontrado: '+titulo);
+          return;
+        }
+      }
+    }catch(e){/* tenta a próxima edição */}
+  }
+  toast('Não encontrei o tema para essa data no jw.org. Preencha manualmente.',4000);
+}
 
 // IMPORT EMBUTIDO
 async function startImportXlsx(){
@@ -1158,8 +1238,7 @@ async function gemini(prompt,key,retry=0){
 function buildCtx(){
   const ct={};discursos.forEach(d=>{if(d.temaNum&&d.temaNum>0)ct[d.temaNum]=(ct[d.temaNum]||0)+1;});
   const topT=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c])=>'T'+n+'('+( TL[n]||'?')+'):'+c+'x').join(', ');
-  const mapU={};discursos.forEach(d=>{if(d.oradorId&&(!mapU[d.oradorId]||d.data>mapU[d.oradorId]))mapU[d.oradorId]=d.data;});
-  const sem=oradores.map(o=>{const u=mapU[o.id]||o.ultimoDiscurso;const m=u?Math.floor((new Date()-new Date(u+'T12:00:00'))/(864e5*30.44)):999;return o.nome+'('+( o.cong||'—')+'):'+( m>900?'nunca':m+'m');}).sort().slice(0,10).join(', ');
+  const sem=oradores.map(o=>{const u=getUltimoDiscurso(o);const m=u?Math.floor((new Date()-new Date(u+'T12:00:00'))/(864e5*30.44)):999;return o.nome+'('+( o.cong||'—')+'):'+( m>900?'nunca':m+'m');}).sort().slice(0,10).join(', ');
   return 'CONGREGAÇÃO BOM JESUS (Matozinhos/MG)\nOradores:'+oradores.length+' | Discursos:'+discursos.length+'\nTop temas: '+topT+'\nSem discursar: '+sem;
 }
 function toggleAI(){document.getElementById('aiPanel').classList.toggle('open');}
