@@ -565,6 +565,28 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
     if(sem.obs){const o=document.createElement('div');o.style.cssText='font-size:11px;color:var(--pur3);margin-top:5px';o.textContent='⚡ '+sem.obs;el.appendChild(o);}
   }
 
+  // Tema d'A Sentinela desta semana — mostra se já souber (salvo ou já buscado antes),
+  // senão busca em segundo plano no jw.org e só aparece se/quando achar (não polui o card com "carregando").
+  if(!isEspecial){
+    const salvo=sentinelas.find(s=>s.data===sem.data);
+    if(salvo){
+      const sentEl=document.createElement('div');
+      sentEl.style.cssText='font-size:11px;color:var(--pur3);margin-top:6px';
+      sentEl.innerHTML='📖 <strong>Estudo A Sentinela:</strong> '+salvo.tema;
+      el.appendChild(sentEl);
+    } else if((new Date(sem.data+'T12:00:00')-new Date())/864e5<=130){
+      fetchTemaJW(sem.data).then(titulo=>{
+        if(titulo&&el.isConnected){
+          const sentEl=document.createElement('div');
+          sentEl.style.cssText='font-size:11px;color:var(--pur3);margin-top:6px';
+          sentEl.innerHTML='📖 <strong>Estudo A Sentinela:</strong> '+titulo;
+          el.insertBefore(sentEl,el.lastElementChild); // antes do botão de editar
+          registrarSentinelaAuto(sem.data,titulo);
+        }
+      });
+    }
+  }
+
   // Edit button (future only)
   const eb=document.createElement('button');
   eb.style.cssText='position:absolute;top:7px;right:7px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:11px;padding:3px 6px;border-radius:4px';
@@ -660,6 +682,7 @@ function renderSentinelaChip(){
       const sc=document.createElement('div');sc.className='sentchip';
       sc.innerHTML='📖 <strong>Sentinela:</strong> '+titulo+' <span style="opacity:.6;margin-left:6px">'+fD(alvo)+'</span>';
       sd.appendChild(sc);
+      registrarSentinelaAuto(alvo,titulo);
     } else {
       const sc2=document.createElement('div');sc2.className='sentchip';sc2.style.cssText='opacity:.4;cursor:pointer';
       sc2.textContent='📖 Não encontrei automaticamente — toque para preencher manual';sc2.onclick=function(){irTab('sentinela');};
@@ -765,8 +788,6 @@ function onAgSemDiscurso(){
   document.getElementById('tabNovo').style.display=chk?'none':'flex';
 }
 function onAgTema(){const n=parseInt(document.getElementById('agTema').value);document.getElementById('agTemaDesc').textContent=n&&TL[n]?TL[n]:'';}
-// removed
-function _NOOP(){}
 function onAgOradorSel(){
   const v=document.getElementById('agOradorSel').value;
   if(v){const o=oradores.find(x=>x.id===v);if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}}
@@ -833,12 +854,6 @@ async function saveAgend(){
     }
   }
   closeM('mAgend');renderHome();toast('✓ Salvo!');
-}
-async function delAgend(id){
-  if(!confirm('Remover?'))return;
-  if(db)await FF.del(FF.doc(db,'programa',id));
-  programa=programa.filter(p=>p.id!==id);
-  renderHome();
 }
 
 // WA
@@ -1129,6 +1144,20 @@ function verCong(enc){
 
 // SENTINELA
 async function loadSentinelas(){if(!db)return;const s=await FF.gets(FF.col(db,'sentinela'));sentinelas=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.data>a.data?1:-1);renderSentinelas();}
+// Salva no histórico um tema descoberto automaticamente no jw.org (Home, cards ou aba Sentinela),
+// sem duplicar se essa data já estiver registrada (manual ou automático).
+let _salvandoSentinela=new Set();
+async function registrarSentinelaAuto(data,tema){
+  if(!db||sentinelas.find(s=>s.data===data)||_salvandoSentinela.has(data))return;
+  _salvandoSentinela.add(data);
+  try{
+    const ref=await FF.add(FF.col(db,'sentinela'),{tema,data,criadoEm:FF.ts()});
+    sentinelas.push({id:ref.id,tema,data});
+    sentinelas.sort((a,b)=>b.data>a.data?1:-1);
+    if(document.getElementById('page-sentinela')?.classList.contains('active'))renderSentinelas();
+  }catch(e){/* Firestore indisponível — o tema já aparece na tela mesmo sem salvar */}
+  finally{_salvandoSentinela.delete(data);}
+}
 function renderSentinelas(){
   const div=document.getElementById('sentLista');if(!div)return;
   if(!sentinelas.length){div.innerHTML='<div style="color:var(--whi3);font-size:13px">Nenhum tema salvo.</div>';return;}
@@ -1236,6 +1265,7 @@ async function autoFillSentinelaTab(){
   if(titulo&&!temaEl.value.trim()){
     temaEl.value=titulo;
     if(!dataEl.value)dataEl.value=dataAlvo;
+    registrarSentinelaAuto(dataAlvo,titulo);
   }
 }
 
