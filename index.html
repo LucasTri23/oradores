@@ -354,7 +354,12 @@ async function checkSetup(){
 }
 function showSetupError(msg){const e=document.getElementById('setupErr');e.textContent=msg;e.style.display='block';}
 async function doSetup(){
-  try{if(!supabase){const c=await getPublicConfig();if(!c)throw new Error('Supabase não configurado na Vercel.');await loadSupabase(c);}const{error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href}});if(error)throw error;}
+  try{
+    if(!supabase){const c=await getPublicConfig();if(!c)throw new Error('Supabase não configurado na Vercel.');await loadSupabase(c);}
+    const redirectTo=location.origin+location.pathname+location.search;
+    const{error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{prompt:'select_account'}}});
+    if(error)throw error;
+  }
   catch(e){showSetupError('Não foi possível entrar: '+e.message);}
 }
 async function logout(){if(supabase)await supabase.auth.signOut();currentUser=null;document.getElementById('setup').style.display='flex';}
