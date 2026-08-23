@@ -2,6 +2,19 @@
 
 Aplicativo estático para programação e histórico de discursos, preparado para Supabase e Vercel.
 
+## Estrutura
+
+```text
+index.html                    Estrutura das telas
+assets/css/style.css          Tema, componentes e responsividade
+assets/js/app.js              Estado, navegação e utilitários
+assets/js/data.js             Catálogo estático de temas
+assets/js/supabase-client.js  Autenticação e persistência
+assets/js/features/           Funcionalidades separadas por domínio
+api/config.js                 Variáveis públicas na Vercel
+supabase.sql                  Banco de dados e políticas RLS
+```
+
 ## Implantação
 
 1. Crie um projeto no Supabase e execute [`supabase.sql`](./supabase.sql) no SQL Editor.

@@ -1,4 +1,4 @@
-// AUTO-GERADO — lista completa de 194 temas
+// Dados estáticos — lista completa de 194 temas
 const TEMAS={
 "1":"Você conhece bem a Deus?",
 "2":"Você vai sobreviver aos últimos dias?",
