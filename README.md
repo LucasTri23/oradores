@@ -1,4 +1,4 @@
-# Bom Jesus Oradores
+# Oradores
 
 Aplicativo estático para programação e histórico de discursos, preparado para Supabase e Vercel.
 

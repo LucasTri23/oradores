@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Oradores — Bom Jesus</title>
+<title>Oradores</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -13,7 +13,7 @@
 <script src="data.js"></script>
 <div id="setup">
   <div class="setup-box">
-    <div class="setup-logo">◈ Bom Jesus Oradores</div>
+    <div class="setup-logo">◈ Oradores</div>
     <div class="setup-sub">Sua programação de discursos, simples e organizada</div>
     <div class="setup-hint" style="text-align:center;margin:18px 0">Cada conta possui programação, histórico, configurações e oradores separados.</div>
     <div id="setupErr"></div>
@@ -29,7 +29,7 @@
     <div class="chip" onclick="askAI('Quais temas nunca foram usados?')">🆕 Nunca usados</div>
     <div class="chip" onclick="askAI('Análise geral do histórico de oradores')">📋 Análise</div>
   </div>
-  <div class="ai-msgs" id="aiMsgs"><div class="ai-msg b">Olá! Tenho acesso ao histórico completo da Congregação Bom Jesus. O que você quer saber?</div></div>
+  <div class="ai-msgs" id="aiMsgs"><div class="ai-msg b">Olá! Posso analisar seu histórico de discursos. O que você quer saber?</div></div>
   <div class="ai-foot"><input id="aiIn" placeholder="Pergunte algo..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp bs" onclick="sendAI()">↑</button></div>
 </div>
 <!-- MODAL AGENDAMENTO -->
@@ -167,7 +167,7 @@
 </div>
 <!-- APP -->
 <header>
-  <div class="logo">◈ Bom Jesus <span>Oradores</span></div>
+  <div class="logo">◈ <span>Oradores</span></div>
   <div style="display:flex;gap:8px;align-items:center">
     <button class="btn bo bs" id="themeBtn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
     <button class="btn bo bs" onclick="compartilharProgramacao()" title="Enviar programação a um grupo do WhatsApp">💬 Grupo</button>
@@ -246,7 +246,7 @@
     <div class="panel-title" style="margin:0">Minha Congregação</div>
     <button class="btn bp bs" onclick="novoDiscursante()">+ Adicionar</button>
   </div>
-  <p style="font-size:12px;color:var(--whi3);margin-bottom:14px;line-height:1.6">Controle de quando os irmãos da <strong style="color:var(--whi2)">Congregação Bom Jesus</strong> saem para discursar em outras congregações.</p>
+  <p style="font-size:12px;color:var(--whi3);margin-bottom:14px;line-height:1.6">Controle de quando os irmãos da sua congregação saem para discursar em outras congregações.</p>
   <div class="filter-bar" style="margin-bottom:12px">
     <div class="fchip on" data-mc="todos" onclick="setMCFilter(this)">Todos</div>
     <div class="fchip" data-mc="agendado" onclick="setMCFilter(this)">📅 Agendados</div>
@@ -283,10 +283,10 @@
   <div class="card">
     <div class="slabel">Congregação</div>
     <div class="g2">
-      <div class="field"><label>Nome</label><input id="cfgNome" value="Congregação Bom Jesus"></div>
+      <div class="field"><label>Nome</label><input id="cfgNome" value="Minha Congregação"></div>
       <div class="field"><label>Horário</label><input id="cfgHor" value="19:00"></div>
     </div>
-    <div class="field"><label>Endereço</label><input id="cfgEnd" value="R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG"></div>
+    <div class="field"><label>Endereço</label><input id="cfgEnd" placeholder="Endereço da congregação"></div>
     <button class="btn bp" onclick="saveConfig()">Salvar</button>
     <div class="field" style="margin-top:12px"><label>Dia dos discursos</label><select id="cfgDia"><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
     <div class="field"><label>Gemini API Key (opcional)</label><input id="cfgGemini" type="password" placeholder="AIzaSy..."></div>
@@ -315,7 +315,7 @@
 let db=null,FF=null,supabase=null,currentUser=null,oradores=[],discursos=[],sugestoes=[],sentinelas=[],programa=[];
 let notaAtual=0,temaFiltro='todos',orSort='az';
 let bloqueados=new Set();
-let cfg={cong:'Congregação Bom Jesus',end:'R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG',hor:'19:00',dia:6};
+let cfg={cong:'Minha Congregação',end:'',hor:'19:00',dia:6};
 let mensagens=[
   {id:1,titulo:'Convite padrão',texto:'Olá {orador}, tudo bem?\n\nGostaríamos de convidá-lo para proferir o discurso público na nossa congregação:\n\n📖 Tema: {tema}\n📅 Data: {data}\n🏠 Congregação: {cong}\n📍 Endereço: {end}\n\nAguardamos sua confirmação. 🙏'},
   {id:2,titulo:'Lembrete',texto:'Olá {orador}! Passando para lembrar do discurso público:\n\n📖 {tema}\n📅 {data}\n📍 {cong}\n\nObrigado! 🙏'},
@@ -1381,8 +1381,8 @@ async function startImportXlsx(){
 async function exportXlsx(tipo){
   if(!window.XLSX){await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
   let rows=[],fn='';
-  if(tipo==='oradores'){fn='oradores_bom_jesus.xlsx';rows=[['Nome','Congregação','Telefone','Último Discurso','Nota','Observação']];oradores.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(o=>rows.push([o.nome,o.cong||'',o.tel||'',o.ultimoDiscurso||'',o.nota||0,o.obs||'']));}
-  else if(tipo==='programa'){fn='programacao_bom_jesus.xlsx';rows=[['Data','Dia','Nº Tema','Tema','Orador','Congregação','Telefone','Obs']];[...programa].sort((a,b)=>a.data>b.data?1:-1).forEach(p=>{const nT=p.temaNum&&TL[p.temaNum]?TL[p.temaNum]:p.tema||'';rows.push([p.data,diaSem(p.data),p.temaNum||'',nT,p.nome||'',p.congregacao||'',p.telefone||'',p.obs||'']);});}
+  if(tipo==='oradores'){fn='oradores.xlsx';rows=[['Nome','Congregação','Telefone','Último Discurso','Nota','Observação']];oradores.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).forEach(o=>rows.push([o.nome,o.cong||'',o.tel||'',o.ultimoDiscurso||'',o.nota||0,o.obs||'']));}
+  else if(tipo==='programa'){fn='programacao.xlsx';rows=[['Data','Dia','Nº Tema','Tema','Orador','Congregação','Telefone','Obs']];[...programa].sort((a,b)=>a.data>b.data?1:-1).forEach(p=>{const nT=p.temaNum&&TL[p.temaNum]?TL[p.temaNum]:p.tema||'';rows.push([p.data,diaSem(p.data),p.temaNum||'',nT,p.nome||'',p.congregacao||'',p.telefone||'',p.obs||'']);});}
   else{fn='historico_discursos.xlsx';rows=[['Data','Orador','Congregação','Telefone','Nº Tema','Tema']];[...discursos].sort((a,b)=>a.data>b.data?1:-1).forEach(d=>rows.push([d.data,d.nome||'',d.congregacao||'',d.telefone||'',d.temaNum||'',d.tema||'']));}
   const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Dados');XLSX.writeFile(wb,fn);
   toast('◈ Exportado!');closeM('mExport');
@@ -1400,7 +1400,7 @@ function buildCtx(){
   const ct={};discursos.forEach(d=>{if(d.temaNum&&d.temaNum>0)ct[d.temaNum]=(ct[d.temaNum]||0)+1;});
   const topT=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c])=>'T'+n+'('+( TL[n]||'?')+'):'+c+'x').join(', ');
   const sem=oradores.map(o=>{const u=getUltimoDiscurso(o);const m=u?Math.floor((new Date()-new Date(u+'T12:00:00'))/(864e5*30.44)):999;return o.nome+'('+( o.cong||'—')+'):'+( m>900?'nunca':m+'m');}).sort().slice(0,10).join(', ');
-  return 'CONGREGAÇÃO BOM JESUS (Matozinhos/MG)\nOradores:'+oradores.length+' | Discursos:'+discursos.length+'\nTop temas: '+topT+'\nSem discursar: '+sem;
+  return (cfg.cong||'Minha Congregação')+'\nOradores:'+oradores.length+' | Discursos:'+discursos.length+'\nTop temas: '+topT+'\nSem discursar: '+sem;
 }
 function toggleAI(){document.getElementById('aiPanel').classList.toggle('open');}
 function closeAI(){document.getElementById('aiPanel').classList.remove('open');}
@@ -1411,7 +1411,7 @@ async function askAI(msg){
   addAIMsg('u',msg);
   if(!gk){addAIMsg('b','⚠️ Configure a chave Gemini em ⚙️ Config.');return;}
   const bot=addAIMsg('b','⏳ Pensando...');
-  try{const r=await gemini(buildCtx()+'\n\nVocê é assistente da Congregação Bom Jesus. Responda em português.\n\nPergunta: '+msg,gk);bot.textContent=r;}
+  try{const r=await gemini(buildCtx()+'\n\nVocê é um assistente de organização de discursos. Responda em português.\n\nPergunta: '+msg,gk);bot.textContent=r;}
   catch(e){bot.textContent='✗ '+e.message;}
 }
 function addAIMsg(tipo,txt){const d=document.createElement('div');d.className='ai-msg '+tipo;d.textContent=txt;const c=document.getElementById('aiMsgs');c.appendChild(d);d.scrollIntoView({behavior:'smooth',block:'nearest'});return d;}
@@ -1557,14 +1557,15 @@ function renderMinha(){
 function popularSelectDiscursante(selectedId){
   const sel=document.getElementById('dcSelect');
   sel.innerHTML='<option value="">— Selecionar irmão —</option>';
-  // BOM JESUS oradores (various spellings)
+  // Oradores cadastrados na congregação definida pelo usuário.
+  const congLocal=(cfg.cong||'').toLocaleUpperCase('pt-BR').trim();
   const minha=oradores.filter(o=>{
-    const c=(o.cong||'').toUpperCase().trim();
-    return c.includes('BOM JESUS')||c==='BJ'||c==='BOMJESUS';
+    const c=(o.cong||'').toLocaleUpperCase('pt-BR').trim();
+    return congLocal&&c===congLocal;
   }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   // Also add already-registered discursantes by name (in case not in oradores)
   const extras=discursantes.filter(d=>!minha.find(o=>o.nome===d.nome));
-  const todos=[...minha,...extras.map(d=>({id:'_d_'+d.id,nome:d.nome,tel:d.tel,cong:'Bom Jesus'}))];
+  const todos=[...minha,...extras.map(d=>({id:'_d_'+d.id,nome:d.nome,tel:d.tel,cong:cfg.cong}))];
   todos.forEach(o=>{
     const opt=document.createElement('option');
     opt.value=o.id;opt.textContent=o.nome+(o.tel?' ('+o.tel+')':'');
@@ -1573,7 +1574,7 @@ function popularSelectDiscursante(selectedId){
   });
   if(minha.length===0){
     const opt=document.createElement('option');opt.disabled=true;
-    opt.textContent='Nenhum orador cadastrado com cong "Bom Jesus"';
+    opt.textContent='Nenhum orador cadastrado em "'+(cfg.cong||'Minha Congregação')+'"';
     sel.appendChild(opt);
   }
 }
