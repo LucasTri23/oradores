@@ -61,6 +61,19 @@ function fDSem(iso){
   return dias[dt.getDay()]+', '+dt.getDate()+' de '+mes[dt.getMonth()]+' de '+dt.getFullYear();
 }
 function diaSem(iso){if(!iso)return'';try{const dt=new Date(iso+'T12:00:00');return['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][dt.getDay()];}catch(e){return'';}}
+function normalizarTexto(valor){
+  return String(valor||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+}
+function normalizarCongregacao(valor){
+  return normalizarTexto(valor)
+    .replace(/\b(congregacao|cong)\b/g,' ')
+    .replace(/\b(de|da|do|das|dos)\b/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function chaveIdentidadeOrador(orador){
+  return normalizarTexto(orador?.nome)+'|'+normalizarCongregacao(orador?.cong||orador?.congregacao);
+}
 function mesesAno(iso){
   if(!iso)return null;
   const hoje=new Date();const ult=new Date(iso+'T12:00:00');const ms=hoje-ult;if(ms<0)return null;
@@ -115,4 +128,3 @@ function openM(id){document.getElementById(id).classList.add('open');}
 function closeM(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.mbg').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)b.classList.remove('open');}));
 function toast(msg,dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
-

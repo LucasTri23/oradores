@@ -28,8 +28,8 @@ async function checkSharedImport(){
     const{data,error}=await supabase.rpc('get_shared_speakers',{share_token:token});if(error)throw error;
     const lista=Array.isArray(data)?data:[];if(!lista.length)throw new Error('Este link expirou ou não existe.');
     if(confirm('Esta lista compartilhada contém '+lista.length+' oradores. Deseja copiar para sua conta?')){
-      const existentes=new Set(oradores.map(o=>(o.nome+'|'+(o.cong||'')).toLowerCase()));let novos=0;
-      for(const o of lista){const chave=((o.nome||'')+'|'+(o.cong||'')).toLowerCase();if(o.nome&&!existentes.has(chave)){await FF.add(FF.col(db,'oradores'),o);existentes.add(chave);novos++;}}
+      const existentes=new Set(oradores.map(chaveIdentidadeOrador));let novos=0;
+      for(const o of lista){const chave=chaveIdentidadeOrador(o);if(o.nome&&!existentes.has(chave)){await FF.add(FF.col(db,'oradores'),o);existentes.add(chave);novos++;}}
       await loadOradores();toast('✓ '+novos+' oradores importados; '+(lista.length-novos)+' duplicados ignorados.',5000);
     }
   }catch(e){toast('Não foi possível importar a lista: '+e.message,5000);}
@@ -64,9 +64,9 @@ async function startImportXlsx(){
   const addLog=m=>{log.textContent+=m+'\n';log.scrollTop=log.scrollHeight;};
   try{
     if(importMode==='oradores'){
-      const existentes=new Set(oradores.map(o=>(o.nome+'|'+(o.cong||'')).toLocaleLowerCase('pt-BR')));let novos=0;
+      const existentes=new Set(oradores.map(chaveIdentidadeOrador));let novos=0;
       for(let i=0;i<xlsxParsed.length;i++){
-        const o=xlsxParsed[i],chave=(o.nome+'|'+o.cong).toLocaleLowerCase('pt-BR');
+        const o=xlsxParsed[i],chave=chaveIdentidadeOrador(o);
         if(!existentes.has(chave)){await FF.add(FF.col(db,'oradores'),o);existentes.add(chave);novos++;}
         bar.style.width=Math.round((i+1)/xlsxParsed.length*100)+'%';
       }
@@ -77,21 +77,20 @@ async function startImportXlsx(){
     const hoje=new Date().toISOString().slice(0,10);
     const registrosHistorico=xlsxParsed.filter(p=>p.data&&(p.nome||p.temaNum||p.tema));
     const validos=registrosHistorico.filter(p=>p.nome&&!ehSist(p.nome));
-    const chavesDisc=new Set(discursos.map(d=>[d.data,(d.nome||'').toLocaleLowerCase('pt-BR'),d.temaNum||''].join('|')));
-    const novosDisc=registrosHistorico.filter(p=>!chavesDisc.has([p.data,(p.nome||'').toLocaleLowerCase('pt-BR'),p.temaNum||''].join('|')));
+    const chavesDisc=new Set(discursos.map(d=>[d.data,normalizarTexto(d.nome),d.temaNum||''].join('|')));
+    const novosDisc=registrosHistorico.filter(p=>!chavesDisc.has([p.data,normalizarTexto(p.nome),p.temaNum||''].join('|')));
     addLog('Registros lidos: '+xlsxParsed.length+'.');
     addLog('Itens novos no histórico: '+novosDisc.length+'. Já existentes: '+(registrosHistorico.length-novosDisc.length)+'.');
     for(let i=0;i<novosDisc.length;i++){await FF.add(FF.col(db,'discursos'),novosDisc[i]);bar.style.width=Math.round((i+1)/Math.max(novosDisc.length,1)*55)+'%';}
 
-    const chaveOrador=o=>((o.nome||'').trim()+'|'+(o.cong||o.congregacao||'').trim()).toLocaleLowerCase('pt-BR');
     const resumo=new Map();
     validos.forEach(p=>{
-      const k=chaveOrador(p),atual=resumo.get(k)||{nome:p.nome,cong:p.congregacao||'',tel:'',ultimoDiscurso:''};
+      const k=chaveIdentidadeOrador(p),atual=resumo.get(k)||{nome:p.nome,cong:p.congregacao||'',tel:'',ultimoDiscurso:''};
       if(p.telefone)atual.tel=p.telefone;
       if(p.data&&p.data<=hoje&&p.data>atual.ultimoDiscurso)atual.ultimoDiscurso=p.data;
       resumo.set(k,atual);
     });
-    const cadastrados=new Map(oradores.map(o=>[chaveOrador(o),o]));let criados=0,atualizados=0;
+    const cadastrados=new Map(oradores.map(o=>[chaveIdentidadeOrador(o),o]));let criados=0,atualizados=0;
     for(const [k,o] of resumo){
       const existente=cadastrados.get(k);
       if(!existente){await FF.add(FF.col(db,'oradores'),{nome:o.nome,cong:o.cong,tel:o.tel,ultimoDiscurso:o.ultimoDiscurso||'',nota:0,obs:''});criados++;}
@@ -122,5 +121,4 @@ async function exportXlsx(tipo){
   const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Dados');XLSX.writeFile(wb,fn);
   toast('◈ Exportado!');closeM('mExport');
 }
-
 

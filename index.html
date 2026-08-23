@@ -202,10 +202,10 @@
       <div id="homeSentinela"></div>
     </div>
   </section>
-  <section class="calendar-card">
-    <div class="calendar-head"><div><div class="section-label">Calendário mensal</div><h2 id="calendarTitle"></h2></div><div class="calendar-nav"><button class="icon-btn" onclick="mudarMes(-1)"><i data-lucide="chevron-left"></i></button><button class="btn bo bs" onclick="irMesAtual()">Hoje</button><button class="icon-btn" onclick="mudarMes(1)"><i data-lucide="chevron-right"></i></button></div></div>
-    <div class="calendar-weekdays"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
-    <div id="homeCalendar" class="calendar-grid"><div class="skeleton skeleton-calendar"></div></div>
+  <section class="calendar-card agenda-card">
+    <div class="calendar-head"><div><div class="section-label">Agenda de discursos</div><h2 id="calendarTitle"></h2></div><div class="calendar-nav"><button class="icon-btn" onclick="mudarMes(-1)" title="Mês anterior"><i data-lucide="chevron-left"></i></button><button class="btn bo bs" onclick="irMesAtual()">Mês atual</button><button class="icon-btn" onclick="mudarMes(1)" title="Próximo mês"><i data-lucide="chevron-right"></i></button></div></div>
+    <div class="agenda-legend"><span><i class="status-dot ready"></i> Completo</span><span><i class="status-dot pending"></i> Pendente</span><span><i class="status-dot special"></i> Evento especial</span></div>
+    <div id="homeCalendar" class="agenda-list"><div class="skeleton skeleton-calendar"></div></div>
   </section>
 </div>
 <div class="page" id="page-programa">
