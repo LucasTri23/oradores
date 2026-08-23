@@ -1320,7 +1320,8 @@ function resetImportModal(mode){
   document.querySelector('#mImportXlsx .modal-title').textContent=mode==='oradores'?'📂 Importar primeira lista de oradores':'📂 Importar histórico e programação';
   document.getElementById('xlsxInfo').textContent=mode==='oradores'?'Colunas aceitas: Nome, Congregação, Telefone, Último Discurso, Nota e Observação.':'Colunas aceitas: Data, Orador, Congregação, Telefone, Nº Tema e Tema.';
   document.getElementById('impLogXlsx').textContent='Selecione um arquivo...';document.getElementById('impBarXlsx').style.width='0';
-  const b=document.getElementById('btnImportXlsx');if(b){b.disabled=true;b.style.opacity='.4';}openM('mImportXlsx');
+  document.getElementById('impBtnsXlsx').innerHTML='<button class="btn bp" id="btnImportXlsx" onclick="startImportXlsx()" disabled style="opacity:.4">▶ Importar</button><button class="btn bo" onclick="closeM(\'mImportXlsx\')">Cancelar</button>';
+  openM('mImportXlsx');
 }
 function openImportOradores(){resetImportModal('oradores');}
 function openImportHistorico(){resetImportModal('historico');}
@@ -1355,8 +1356,20 @@ function excelDate(v){if(!v)return'';if(v instanceof Date)return v.toISOString()
 async function onXlsxSelect(){
   const file=document.getElementById('xlsxFile').files[0];if(!file)return;
   try{await ensureXlsx();const wb=XLSX.read(await file.arrayBuffer(),{cellDates:true});const raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
-    xlsxParsed=raw.map(row=>{const r={};Object.entries(row).forEach(([k,v])=>r[normKey(k)]=v);if(importMode==='oradores')return{nome:String(r.nome||r.orador||'').trim(),cong:String(r.congregacao||r.cong||'').trim(),tel:String(r.telefone||r.whatsapp||r.tel||'').trim(),ultimoDiscurso:excelDate(r.ultimodiscurso||r.ultima||''),nota:Number(r.nota)||0,obs:String(r.observacao||r.obs||'').trim()};return{data:excelDate(r.data),nome:String(r.orador||r.nome||'').trim(),congregacao:String(r.congregacao||r.cong||'').trim(),telefone:String(r.telefone||r.whatsapp||'').trim(),temaNum:Number(r.ntema||r.numerotema||r.temanum)||null,tema:String(r.tema||'').trim()};}).filter(x=>importMode==='oradores'?x.nome:x.data);
-    document.getElementById('xlsxInfo').textContent=xlsxParsed.length+' registros encontrados em '+file.name;const b=document.getElementById('btnImportXlsx');b.disabled=!xlsxParsed.length;b.style.opacity=xlsxParsed.length?'1':'.4';
+    const cabecalhos=raw.length?Object.keys(raw[0]).map(normKey):[];
+    if(cabecalhos.includes('nome')&&cabecalhos.includes('ultimodiscurso')&&!cabecalhos.includes('data'))importMode='oradores';
+    else if(cabecalhos.includes('data'))importMode='historico';
+    document.querySelector('#mImportXlsx .modal-title').textContent=importMode==='oradores'?'📂 Importar lista de oradores':'📂 Importar histórico e programação';
+    xlsxParsed=raw.map(row=>{
+      const r={};Object.entries(row).forEach(([k,v])=>r[normKey(k)]=v);
+      if(importMode==='oradores')return{nome:String(r.nome||r.orador||'').trim(),cong:String(r.congregacao||r.cong||'').trim(),tel:String(r.telefone||r.whatsapp||r.tel||'').trim(),ultimoDiscurso:excelDate(r.ultimodiscurso||r.ultima||''),nota:Number(r.nota)||0,obs:String(r.observacao||r.obs||'').trim()};
+      const temaOriginal=String(r.tema||'').trim();
+      const temaComNumero=temaOriginal.match(/^\s*(\d{1,3})\s*[-–—.:]\s*(.+)$/);
+      return{data:excelDate(r.data),nome:String(r.orador||r.nome||'').trim(),congregacao:String(r.congregacao||r.cong||'').trim(),telefone:String(r.telefone||r.whatsapp||r.tel||'').trim(),temaNum:Number(r.ntema||r.numerotema||r.temanum)||(temaComNumero?Number(temaComNumero[1]):null),tema:temaComNumero?temaComNumero[2].trim():temaOriginal};
+    }).filter(x=>importMode==='oradores'?x.nome:x.data);
+    const aba=wb.SheetNames[0];
+    document.getElementById('xlsxInfo').textContent=xlsxParsed.length+' registros encontrados em '+file.name+' (aba '+aba+')';
+    const b=document.getElementById('btnImportXlsx');if(b){b.disabled=!xlsxParsed.length;b.style.opacity=xlsxParsed.length?'1':'.4';}
   }catch(e){xlsxParsed=null;document.getElementById('xlsxInfo').textContent='Erro ao ler: '+e.message;}
 }
 async function startImportXlsx(){
@@ -1371,8 +1384,10 @@ async function startImportXlsx(){
       aL('✓ '+novos+' oradores importados; '+(xlsxParsed.length-novos)+' duplicados ignorados.');await loadOradores();btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';toast('✓ Lista de oradores importada!');return;
     }
     const hoje=new Date().toISOString().slice(0,10);
-    const comOr=xlsxParsed.filter(p=>p.nome&&!ehSist(p.nome));
-    const fut=xlsxParsed.filter(p=>p.data>=hoje);
+    const chavesDisc=new Set(discursos.map(d=>[d.data,(d.nome||'').toLowerCase(),d.temaNum||''].join('|')));
+    const comOr=xlsxParsed.filter(p=>p.nome&&!ehSist(p.nome)&&!chavesDisc.has([p.data,(p.nome||'').toLowerCase(),p.temaNum||''].join('|')));
+    const datasPrograma=new Set(programa.map(p=>p.data));
+    const fut=xlsxParsed.filter(p=>p.data>=hoje&&!datasPrograma.has(p.data));
     aL('► '+comOr.length+' discursos...');
     for(let i=0;i<comOr.length;i++){await FF.add(FF.col(db,'discursos'),comOr[i]);bar.style.width=Math.round((i+1)/comOr.length*60)+'%';}
     aL('✓ Discursos');aL('► '+fut.length+' datas futuras...');
