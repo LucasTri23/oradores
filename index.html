@@ -368,7 +368,7 @@ function updateThemeButton(){const b=document.getElementById('themeBtn');if(b)b.
 
 async function loadAll(){
   await Promise.all([loadConfig(),loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas(),loadPrograma(),loadDiscursantes()]);
-  renderHome();renderTemas();renderAnalytics();
+  renderHome();renderPrograma();renderOradores();renderTemas();renderAnalytics();
 }
 
 // NAV
@@ -717,8 +717,14 @@ async function loadPrograma(){
 function renderPrograma(){
   const hoje=new Date().toISOString().slice(0,10);
   const q=(document.getElementById('buscaHist')?.value||'').toLowerCase();
-  // Show past entries sorted by date desc
-  let hist=[...programa].filter(p=>p.data&&p.data<hoje);
+  // Une a programação manual ao histórico importado e remove repetições.
+  const unicos=new Map();
+  [...programa,...discursos].forEach(p=>{
+    if(!p.data)return;
+    const chave=[p.data,(p.nome||'').trim().toLocaleLowerCase('pt-BR'),p.temaNum||'',p.semDiscurso?'sem':''].join('|');
+    if(!unicos.has(chave))unicos.set(chave,p);
+  });
+  let hist=[...unicos.values()].filter(p=>p.data<hoje);
   if(q) hist=hist.filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.congregacao||'').toLowerCase().includes(q)||(p.data||'').includes(q)||String(p.temaNum||'').includes(q)||(p.tema||'').toLowerCase().includes(q));
   hist.sort((a,b)=>b.data>a.data?1:-1);
   const div=document.getElementById('listaPrograma');
@@ -733,7 +739,7 @@ function renderPrograma(){
     h+='<div style="flex:1;min-width:0">';
     if(nT) h+='<span class="badge bpur" style="margin-bottom:2px;display:inline-block">Nº '+nT+'</span> ';
     h+='<div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(nomeT||'<em style="color:var(--whi3)">Tema não definido</em>')+'</div>';
-    h+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+(temOr?p.nome+' · '+(p.congregacao||'—'):'—')+'</div>';
+    h+='<div style="font-size:11px;color:var(--whi3);margin-top:2px">'+(temOr?p.nome+' · '+(p.congregacao||'—'):(p.nome||p.motivo||'—'))+'</div>';
     h+='</div></div>';
     return h;
   }).join('');
@@ -1415,11 +1421,12 @@ async function startImportXlsx(){
     }
 
     const hoje=new Date().toISOString().slice(0,10);
-    const validos=xlsxParsed.filter(p=>p.nome&&!ehSist(p.nome));
+    const registrosHistorico=xlsxParsed.filter(p=>p.data&&(p.nome||p.temaNum||p.tema));
+    const validos=registrosHistorico.filter(p=>p.nome&&!ehSist(p.nome));
     const chavesDisc=new Set(discursos.map(d=>[d.data,(d.nome||'').toLocaleLowerCase('pt-BR'),d.temaNum||''].join('|')));
-    const novosDisc=validos.filter(p=>!chavesDisc.has([p.data,(p.nome||'').toLocaleLowerCase('pt-BR'),p.temaNum||''].join('|')));
+    const novosDisc=registrosHistorico.filter(p=>!chavesDisc.has([p.data,(p.nome||'').toLocaleLowerCase('pt-BR'),p.temaNum||''].join('|')));
     addLog('Registros lidos: '+xlsxParsed.length+'.');
-    addLog('Discursos novos: '+novosDisc.length+'. Já existentes: '+(validos.length-novosDisc.length)+'.');
+    addLog('Itens novos no histórico: '+novosDisc.length+'. Já existentes: '+(registrosHistorico.length-novosDisc.length)+'.');
     for(let i=0;i<novosDisc.length;i++){await FF.add(FF.col(db,'discursos'),novosDisc[i]);bar.style.width=Math.round((i+1)/Math.max(novosDisc.length,1)*55)+'%';}
 
     const chaveOrador=o=>((o.nome||'').trim()+'|'+(o.cong||o.congregacao||'').trim()).toLocaleLowerCase('pt-BR');
