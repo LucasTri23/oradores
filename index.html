@@ -7,23 +7,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';</script>
 </head>
 <body>
 <script src="data.js"></script>
 <div id="setup">
   <div class="setup-box">
     <div class="setup-logo">◈ Bom Jesus Oradores</div>
-    <div class="setup-sub">Acesso seguro para a equipe</div>
-    <div class="setup-step">1 — Supabase</div>
-    <div class="setup-hint">A URL e a chave pública podem vir automaticamente da Vercel. No primeiro acesso local, informe os dados em Settings → API do Supabase.</div>
-    <div class="g2">
-      <div class="field"><label>Project URL</label><input id="sUrl" placeholder="https://xxxx.supabase.co"></div>
-      <div class="field"><label>Publishable / anon key</label><input id="sAnon" type="password" placeholder="sb_publishable_..."></div>
-    </div>
-    <div class="setup-step">2 — Entrar</div>
-    <div class="setup-hint">Cada conta Google possui programação, histórico, configurações e oradores separados.</div>
+    <div class="setup-sub">Sua programação de discursos, simples e organizada</div>
+    <div class="setup-hint" style="text-align:center;margin:18px 0">Cada conta possui programação, histórico, configurações e oradores separados.</div>
     <div id="setupErr"></div>
-    <button class="btn bp" style="width:100%;justify-content:center;margin-top:6px;padding:11px;font-size:13px" onclick="doSetup()">Entrar com Google →</button>
+    <button class="btn bp" style="width:100%;justify-content:center;margin-top:6px;padding:11px;font-size:13px" onclick="doSetup()">Entrar com Google</button>
   </div>
 </div>
 <div id="toast"></div>
@@ -175,6 +169,7 @@
 <header>
   <div class="logo">◈ Bom Jesus <span>Oradores</span></div>
   <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn bo bs" id="themeBtn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
     <button class="btn bo bs" onclick="compartilharProgramacao()" title="Enviar programação a um grupo do WhatsApp">💬 Grupo</button>
     <button class="btn bo bs" onclick="openImportHistorico()" title="Importar histórico">📂</button>
     <button class="btn bo bs" onclick="openM('mExport')" title="Exportar Excel">📤</button>
@@ -351,20 +346,20 @@ async function loadSupabase(cfgSb){
 }
 async function checkSetup(){
   renderHome();renderTemas();renderMensagens();
+  updateThemeButton();
   const c=await getPublicConfig();
-  if(!c)return;
-  document.getElementById('sUrl').value=c.url;document.getElementById('sAnon').value=c.key;
+  if(!c)return showSetupError('O acesso ainda não foi configurado. Configure SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY na Vercel.');
   try{await loadSupabase(c);const{data}=await supabase.auth.getSession();if(data.session){currentUser=data.session.user;document.getElementById('setup').style.display='none';await loadAll();await checkSharedImport();}}
   catch(e){showSetupError(e.message);}
 }
 function showSetupError(msg){const e=document.getElementById('setupErr');e.textContent=msg;e.style.display='block';}
 async function doSetup(){
-  const url=document.getElementById('sUrl').value.trim(),key=document.getElementById('sAnon').value.trim();
-  if(!url||!key)return showSetupError('Preencha a URL e a chave pública do Supabase.');
-  try{localStorage.setItem('bj_supabase',JSON.stringify({url,key}));await loadSupabase({url,key});const{error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href}});if(error)throw error;}
+  try{if(!supabase){const c=await getPublicConfig();if(!c)throw new Error('Supabase não configurado na Vercel.');await loadSupabase(c);}const{error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href}});if(error)throw error;}
   catch(e){showSetupError('Não foi possível entrar: '+e.message);}
 }
 async function logout(){if(supabase)await supabase.auth.signOut();currentUser=null;document.getElementById('setup').style.display='flex';}
+function toggleTheme(){const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('bj_theme',next);updateThemeButton();}
+function updateThemeButton(){const b=document.getElementById('themeBtn');if(b)b.textContent=document.documentElement.dataset.theme==='dark'?'☀️':'🌙';}
 
 async function loadAll(){
   await Promise.all([loadConfig(),loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas(),loadPrograma(),loadDiscursantes()]);
@@ -485,7 +480,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   // Border color
   let bg,brd;
   if(isEspecial){bg='rgba(245,158,11,.06)';brd='rgba(245,158,11,.35)';}
-  else if(isCurrent){bg='linear-gradient(135deg,rgba(124,58,237,.18),rgba(124,58,237,.04))';brd='rgba(124,58,237,.45)';}
+  else if(isCurrent){bg='linear-gradient(135deg,rgba(37,99,235,.16),rgba(37,99,235,.04))';brd='rgba(37,99,235,.42)';}
   else if(temOr){bg='var(--surf)';brd='var(--border)';}
   else if(temDados){bg='var(--surf)';brd='rgba(239,68,68,.35)';}
   else{bg='rgba(255,255,255,.02)';brd='rgba(239,68,68,.22)';}
@@ -1517,7 +1512,7 @@ function renderMinha(){
   lista.forEach(d=>{
     const temProx=d.proxSaida&&d.proxSaida>=hoje;
     const card=document.createElement('div');
-    card.style.cssText='background:var(--surf);border:1px solid '+(temProx?'rgba(124,58,237,.35)':'var(--border)')+';border-radius:10px;padding:13px 15px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px';
+    card.style.cssText='background:var(--surf);border:1px solid '+(temProx?'rgba(37,99,235,.35)':'var(--border)')+';border-radius:10px;padding:13px 15px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px';
     // Info
     const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
     const nm=document.createElement('div');nm.style.cssText='font-weight:700;font-size:14px;color:var(--whi)';nm.textContent=d.nome||'—';

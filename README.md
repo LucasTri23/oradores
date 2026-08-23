@@ -17,4 +17,4 @@ Cada usuário começa com dados separados. Em **Oradores → Compartilhar lista*
 
 ## Uso local
 
-Sirva a pasta por HTTP (não abra apenas o arquivo `index.html`). Na tela inicial, informe a URL e a chave pública do Supabase; elas ficam salvas somente nesse navegador.
+Use `vercel dev` com as variáveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` configuradas no ambiente. As credenciais técnicas não aparecem na interface; o usuário vê somente **Entrar com Google**.
