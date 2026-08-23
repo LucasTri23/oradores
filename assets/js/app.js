@@ -18,9 +18,16 @@ function updateUserHeader(){
   document.getElementById('userName').textContent=name.split(' ')[0];document.getElementById('userEmail').textContent=currentUser.email||'';
   const avatar=document.getElementById('userAvatar');avatar.src=meta.avatar_url||meta.picture||'';avatar.style.display=avatar.src?'block':'none';
 }
+function updateBranding(){
+  const congregation=String(cfg.cong||'Minha Congregação').trim()||'Minha Congregação';
+  document.title='Oradores — '+congregation;
+  ['headerCongName','sidebarCongName'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.textContent='— '+congregation;
+  });
+}
 function toggleUserMenu(force){const pop=document.getElementById('accountPopover');if(pop)pop.classList.toggle('open',typeof force==='boolean'?force:!pop.classList.contains('open'));}
 document.addEventListener('click',e=>{if(!e.target.closest('.user-menu')&&!e.target.closest('.account-popover'))toggleUserMenu(false);});
-window.addEventListener('DOMContentLoaded',()=>{if(window.lucide)lucide.createIcons();});
+window.addEventListener('DOMContentLoaded',()=>{updateBranding();if(window.lucide)lucide.createIcons();});
 
 async function loadAll(){
   await Promise.all([loadConfig(),loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas(),loadPrograma(),loadDiscursantes()]);

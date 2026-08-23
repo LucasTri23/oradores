@@ -65,6 +65,7 @@ async function loadConfig(){
     if(lt||lb)salvarConfigTemas();
   }
   renderMensagens();
+  updateBranding();
   document.getElementById('cfgNome').value=cfg.cong;document.getElementById('cfgEnd').value=cfg.end;document.getElementById('cfgHor').value=cfg.hor;document.getElementById('cfgDia').value=String(cfg.dia);
   document.getElementById('cfgGemini').value=localStorage.getItem('bj_gem')||'';
 }
@@ -83,7 +84,7 @@ function saveConfig(){
   cfg.dia=Number(document.getElementById('cfgDia').value);
   const gem=document.getElementById('cfgGemini').value.trim();if(gem)localStorage.setItem('bj_gem',gem);else localStorage.removeItem('bj_gem');
   if(db)FF.set(FF.doc(db,'config','app'),cfg);
-  renderMensagens();renderHome();toast('✓ Salvo!');
+  updateBranding();renderMensagens();renderHome();toast('✓ Salvo!');
 }
 
 // MINHA CONGREGAÇÃO — DISCURSANTES
@@ -365,5 +366,4 @@ function mostrarPickerMsg(sem){
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 }
-
 

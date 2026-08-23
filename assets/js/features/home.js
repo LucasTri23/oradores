@@ -192,6 +192,23 @@ function isoLocal(date){return date.getFullYear()+'-'+String(date.getMonth()+1).
 function mudarMes(delta){mesAtivo=new Date(mesAtivo.getFullYear(),mesAtivo.getMonth()+delta,1);renderHome();}
 function irMesAtual(){mesAtivo=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderHome();}
 
+function completarDadosPrograma(registro={}){
+  if(!registro.nome)return registro;
+  const cadastrado=oradores.find(o=>normalizarTexto(o.nome)===normalizarTexto(registro.nome));
+  return {...registro,congregacao:registro.congregacao||cadastrado?.cong||'',telefone:registro.telefone||cadastrado?.tel||''};
+}
+
+function obterPendenciasPrograma(registro={}){
+  registro=completarDadosPrograma(registro);
+  if(registro.semDiscurso)return [];
+  const faltas=[];
+  if(!String(registro.nome||'').trim())faltas.push('orador');
+  if(!registro.temaNum&&!String(registro.tema||'').trim())faltas.push('tema');
+  if(registro.nome&&!String(registro.congregacao||'').trim())faltas.push('congregação');
+  if(registro.nome&&!String(registro.telefone||'').trim())faltas.push('telefone');
+  return faltas;
+}
+
 function renderHome(){
   const hoje=new Date().toISOString().slice(0,10),byDate={};
   discursos.forEach(p=>{if(p.data)byDate[p.data]={...p,_origem:'discurso'};});
@@ -204,8 +221,15 @@ function renderHome(){
 
   const ano=mesAtivo.getFullYear(),mes=mesAtivo.getMonth();
   const diasReuniao=allMeetingDays(ano).filter(iso=>Number(iso.slice(5,7))===mes+1);
-  const pendencias=diasReuniao.filter(data=>data>=hoje&&!byDate[data]?.semDiscurso&&(!byDate[data]?.nome||!byDate[data]?.temaNum)).length;
+  const futuras=diasReuniao.filter(data=>data>=hoje);
+  const listasPendencias=futuras.map(data=>obterPendenciasPrograma(byDate[data]||{}));
+  const pendencias=listasPendencias.filter(lista=>lista.length).length;
   const pending=document.getElementById('pendingCount');if(pending)pending.textContent=pendencias;
+  const details=document.getElementById('pendingDetails');
+  if(details){
+    const totais={};listasPendencias.flat().forEach(item=>totais[item]=(totais[item]||0)+1);
+    details.textContent=pendencias?Object.entries(totais).map(([item,total])=>total+' sem '+item).join(' · '):'Tudo preenchido';
+  }
   renderCalendar(byDate);
   renderSentinelaChip();
   if(window.lucide)lucide.createIcons();
@@ -218,11 +242,10 @@ function renderCalendar(byDate){
   grid.innerHTML='';
   const datas=allMeetingDays(ano).filter(iso=>Number(iso.slice(5,7))===mes+1);
   datas.forEach(iso=>{
-    const registro=byDate[iso]||{data:iso},especial=!!registro.semDiscurso;
+    const registro=completarDadosPrograma(byDate[iso]||{data:iso}),especial=!!registro.semDiscurso;
     const apenasHistorico=registro._origem==='discurso';
-    const completo=especial||!!(registro.nome&&registro.temaNum),pendente=!completo;
+    const faltas=obterPendenciasPrograma(registro),completo=especial||faltas.length===0,pendente=!completo;
     const tema=registro.temaNum?(TL[registro.temaNum]||registro.tema||'Tema não encontrado'):(registro.tema||'');
-    const faltas=[];if(!especial&&!registro.nome)faltas.push('orador');if(!especial&&!registro.temaNum)faltas.push('tema');
     const row=document.createElement('article');
     row.className='agenda-row '+(especial?'is-special':completo?'is-ready':'is-pending')+(iso<hoje?' is-past':'')+(iso===hoje?' is-today':'');
     row.onclick=()=>apenasHistorico?irTab('programa'):editarAgend(JSON.stringify(registro));
@@ -234,7 +257,7 @@ function renderCalendar(byDate){
     if(especial){const speaker=document.createElement('div');speaker.className='agenda-speaker';speaker.textContent=registro.motivo||'Sem discurso nesta data';const meta=document.createElement('div');meta.className='agenda-meta';meta.textContent='Evento especial';info.appendChild(speaker);info.appendChild(meta);}
     else{
       const speaker=document.createElement('div');speaker.className='agenda-speaker'+(!registro.nome?' missing':'');speaker.textContent=registro.nome||'Orador ainda não definido';
-      const meta=document.createElement('div');meta.className='agenda-meta';meta.textContent=registro.nome?(registro.congregacao||'Congregação não informada'):'Clique para preencher a programação';
+      const meta=document.createElement('div');meta.className='agenda-meta';meta.textContent=registro.nome?[registro.congregacao||'Congregação não informada',registro.telefone||'Telefone não informado'].join(' · '):'Clique para preencher a programação';
       info.appendChild(speaker);info.appendChild(meta);
     }
 
@@ -248,7 +271,7 @@ function renderCalendar(byDate){
     action.onclick=e=>{e.stopPropagation();apenasHistorico?irTab('programa'):editarAgend(JSON.stringify(registro));};
 
     const status=document.createElement('div');status.className='agenda-state';
-    status.innerHTML=especial?'<i class="status-dot special"></i><span>Especial</span>':completo?'<i class="status-dot ready"></i><span>Completo</span>':'<i class="status-dot pending"></i><span>Falta '+faltas.join(' e ')+'</span>';
+    status.innerHTML=especial?'<i class="status-dot special"></i><span>Especial</span>':completo?'<i class="status-dot ready"></i><span>Completo</span>':'<i class="status-dot pending"></i><span>Falta: '+faltas.join(', ')+'</span>';
     row.appendChild(date);row.appendChild(info);row.appendChild(topic);row.appendChild(status);row.appendChild(action);grid.appendChild(row);
   });
 }
