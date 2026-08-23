@@ -13,23 +13,17 @@
 <div id="setup">
   <div class="setup-box">
     <div class="setup-logo">◈ Bom Jesus Oradores</div>
-    <div class="setup-sub">Configure o acesso antes de entrar</div>
-    <div class="setup-step">1 — Firebase</div>
-    <div class="setup-hint">Acesse <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → projeto → ⚙️ Configurações → Seus apps → Web → SDK setup.</div>
+    <div class="setup-sub">Acesso seguro para a equipe</div>
+    <div class="setup-step">1 — Supabase</div>
+    <div class="setup-hint">A URL e a chave pública podem vir automaticamente da Vercel. No primeiro acesso local, informe os dados em Settings → API do Supabase.</div>
     <div class="g2">
-      <div class="field"><label>API Key</label><input id="sApiKey" placeholder="AIzaSy..."></div>
-      <div class="field"><label>Project ID</label><input id="sProjId" placeholder="meu-projeto-id"></div>
+      <div class="field"><label>Project URL</label><input id="sUrl" placeholder="https://xxxx.supabase.co"></div>
+      <div class="field"><label>Publishable / anon key</label><input id="sAnon" type="password" placeholder="sb_publishable_..."></div>
     </div>
-    <div class="g2">
-      <div class="field"><label>Auth Domain</label><input id="sAuth" placeholder="projeto.firebaseapp.com"></div>
-      <div class="field"><label>App ID</label><input id="sAppId" placeholder="1:123:web:abc..."></div>
-    </div>
-    <hr>
-    <div class="setup-step">2 — Gemini AI <span style="font-size:10px;color:var(--whi3);font-weight:400">(opcional)</span></div>
-    <div class="setup-hint">Chave gratuita em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></div>
-    <div class="field"><label>Gemini API Key</label><input id="sGemini" placeholder="AIzaSy..."></div>
+    <div class="setup-step">2 — Entrar</div>
+    <div class="setup-hint">Cada conta Google possui programação, histórico, configurações e oradores separados.</div>
     <div id="setupErr"></div>
-    <button class="btn bp" style="width:100%;justify-content:center;margin-top:6px;padding:11px;font-size:13px" onclick="doSetup()">Entrar no sistema →</button>
+    <button class="btn bp" style="width:100%;justify-content:center;margin-top:6px;padding:11px;font-size:13px" onclick="doSetup()">Entrar com Google →</button>
   </div>
 </div>
 <div id="toast"></div>
@@ -50,7 +44,7 @@
     <div class="modal-title" id="mAgendTit">Inserir na Programação</div>
     <input type="hidden" id="agId">
     <div class="g2">
-      <div class="field"><label>Data (sábado)</label><input type="date" id="agData"></div>
+      <div class="field"><label id="agDataLabel">Data do discurso</label><input type="date" id="agData"></div>
       <div class="field"><label>Nº do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema()"></div>
     </div>
     <div id="agTemaDesc" style="font-size:11px;color:var(--pur3);margin:-6px 0 10px;min-height:13px"></div>
@@ -86,7 +80,7 @@
     <div id="agCamposSemDisc" style="display:none">
       <div class="field"><label>Motivo</label><input id="agMotivo" placeholder="Ex: Assembleia Regional, Congresso..."></div>
     </div>
-    <div class="brow"><button class="btn bp" onclick="saveAgend()">Salvar</button><button class="btn bo" onclick="closeM('mAgend')">Cancelar</button></div>
+    <div class="brow"><button class="btn bp" onclick="saveAgend()">Salvar</button><button class="btn bo" onclick="closeM('mAgend')">Cancelar</button><button class="btn bo" id="btnDelAgend" style="display:none;color:var(--red)" onclick="delAgendAtual()">Excluir discurso</button></div>
   </div>
 </div>
 <!-- MODAL ORADOR -->
@@ -181,7 +175,8 @@
 <header>
   <div class="logo">◈ Bom Jesus <span>Oradores</span></div>
   <div style="display:flex;gap:8px;align-items:center">
-    <button class="btn bo bs" onclick="openM('mImportXlsx')" title="Importar planilha">📂</button>
+    <button class="btn bo bs" onclick="compartilharProgramacao()" title="Enviar programação a um grupo do WhatsApp">💬 Grupo</button>
+    <button class="btn bo bs" onclick="openImportHistorico()" title="Importar histórico">📂</button>
     <button class="btn bo bs" onclick="openM('mExport')" title="Exportar Excel">📤</button>
     <div class="ai-btn" onclick="toggleAI()">◈ IA</div>
   </div>
@@ -203,6 +198,7 @@
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
     <span style="font-size:11px;color:var(--whi3);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Ano:</span>
     <div id="anoFilterBar" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <button class="btn bo bs" onclick="addAno()">+ Ano</button>
   </div>
   <div id="homeWeekCard"></div>
 </div>
@@ -232,7 +228,7 @@
 <div class="page" id="page-oradores">
   <div class="panel-head">
     <div class="panel-title" style="margin:0">Oradores</div>
-    <div class="brow-r"><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
+    <div class="brow-r"><button class="btn bo bs" onclick="compartilharOradores()">🔗 Compartilhar lista</button><button class="btn bo bs" onclick="openImportOradores()">📂 Importar lista</button><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
   </div>
   <input id="buscaOr" placeholder="🔍 Buscar por nome ou congregação..." oninput="renderOradores()" style="margin-bottom:8px">
   <div class="filter-bar" style="margin-bottom:10px">
@@ -297,6 +293,8 @@
     </div>
     <div class="field"><label>Endereço</label><input id="cfgEnd" value="R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG"></div>
     <button class="btn bp" onclick="saveConfig()">Salvar</button>
+    <div class="field" style="margin-top:12px"><label>Dia dos discursos</label><select id="cfgDia"><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
+    <div class="field"><label>Gemini API Key (opcional)</label><input id="cfgGemini" type="password" placeholder="AIzaSy..."></div>
   </div>
   <div class="card">
     <div class="slabel" style="margin-bottom:10px">Mensagens pré-prontas (WhatsApp)</div>
@@ -312,56 +310,61 @@
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn bo" onclick="openM('mExport')">📤 Exportar Excel</button>
       <button class="btn bo" onclick="if(confirm('Limpar configurações?')){localStorage.clear();location.reload()}">⚙️ Redefinir</button>
+      <button class="btn bo" onclick="logout()">Sair</button>
     </div>
   </div>
 </div>
 </main>
 <script>
 // STATE
-let db=null,FF=null,oradores=[],discursos=[],sugestoes=[],sentinelas=[],programa=[];
+let db=null,FF=null,supabase=null,currentUser=null,oradores=[],discursos=[],sugestoes=[],sentinelas=[],programa=[];
 let notaAtual=0,temaFiltro='todos',orSort='az';
 let bloqueados=new Set();
-let cfg={cong:'Congregação Bom Jesus',end:'R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG',hor:'19:00'};
+let cfg={cong:'Congregação Bom Jesus',end:'R. Amazonas, nº 121 — Bom Jesus 1, Matozinhos, MG',hor:'19:00',dia:6};
 let mensagens=[
   {id:1,titulo:'Convite padrão',texto:'Olá {orador}, tudo bem?\n\nGostaríamos de convidá-lo para proferir o discurso público na nossa congregação:\n\n📖 Tema: {tema}\n📅 Data: {data}\n🏠 Congregação: {cong}\n📍 Endereço: {end}\n\nAguardamos sua confirmação. 🙏'},
   {id:2,titulo:'Lembrete',texto:'Olá {orador}! Passando para lembrar do discurso público:\n\n📖 {tema}\n📅 {data}\n📍 {cong}\n\nObrigado! 🙏'},
 ];
 let TL={...TEMAS}; // temasLocal — updatable copy
 
-// SETUP
-function checkSetup(){
-  const fb=localStorage.getItem('bj_fb');
+// SUPABASE + AUTENTICAÇÃO
+async function getPublicConfig(){
+  const saved=JSON.parse(localStorage.getItem('bj_supabase')||'null');
+  if(saved?.url&&saved?.key)return saved;
+  try{const r=await fetch('/api/config');if(r.ok){const c=await r.json();if(c.url&&c.key)return c;}}catch(e){}
+  return null;
+}
+async function loadSupabase(cfgSb){
+  const mod=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+  supabase=mod.createClient(cfgSb.url,cfgSb.key);
+  const wrapDoc=row=>({id:row.id,data:()=>row.data,exists:true});
+  FF={
+    col:(_,name)=>name,doc:(_,collection,id)=>({collection,id}),ts:()=>new Date().toISOString(),
+    gets:async collection=>{const{data,error}=await supabase.from('app_records').select('id,data').eq('collection',collection);if(error)throw error;return{docs:(data||[]).map(wrapDoc)};},
+    get:async ref=>{const{data,error}=await supabase.from('app_records').select('id,data').eq('collection',ref.collection).eq('id',ref.id).maybeSingle();if(error)throw error;return data?wrapDoc(data):{exists:false,data:()=>null};},
+    add:async(collection,payload)=>{const{data,error}=await supabase.from('app_records').insert({collection,data:payload}).select('id').single();if(error)throw error;return{id:data.id};},
+    set:async(ref,payload)=>{const{error}=await supabase.from('app_records').upsert({id:ref.id,collection:ref.collection,data:payload,owner_id:currentUser.id},{onConflict:'owner_id,collection,id'});if(error)throw error;},
+    upd:async(ref,patch)=>{const old=await FF.get(ref);if(!old.exists)throw new Error('Registro não encontrado');await FF.set(ref,{...old.data(),...patch});},
+    del:async ref=>{const{error}=await supabase.from('app_records').delete().eq('collection',ref.collection).eq('id',ref.id);if(error)throw error;}
+  };
+  db={provider:'supabase'};
+}
+async function checkSetup(){
   renderHome();renderTemas();renderMensagens();
-  if(fb){document.getElementById('setup').style.display='none';initFB(JSON.parse(fb));}
+  const c=await getPublicConfig();
+  if(!c)return;
+  document.getElementById('sUrl').value=c.url;document.getElementById('sAnon').value=c.key;
+  try{await loadSupabase(c);const{data}=await supabase.auth.getSession();if(data.session){currentUser=data.session.user;document.getElementById('setup').style.display='none';await loadAll();await checkSharedImport();}}
+  catch(e){showSetupError(e.message);}
 }
-
+function showSetupError(msg){const e=document.getElementById('setupErr');e.textContent=msg;e.style.display='block';}
 async function doSetup(){
-  const key=document.getElementById('sApiKey').value.trim();
-  const pid=document.getElementById('sProjId').value.trim();
-  const err=document.getElementById('setupErr');
-  if(!key||!pid){err.textContent='Preencha pelo menos API Key e Project ID.';err.style.display='block';return;}
-  err.style.display='none';
-  const auth=document.getElementById('sAuth').value.trim();
-  const appid=document.getElementById('sAppId').value.trim();
-  const gem=document.getElementById('sGemini').value.trim();
-  const fbcfg={apiKey:key,authDomain:auth||pid+'.firebaseapp.com',projectId:pid,appId:appid};
-  localStorage.setItem('bj_fb',JSON.stringify(fbcfg));
-  if(gem)localStorage.setItem('bj_gem',gem);
-  document.getElementById('setup').style.display='none';
-  initFB(fbcfg);
+  const url=document.getElementById('sUrl').value.trim(),key=document.getElementById('sAnon').value.trim();
+  if(!url||!key)return showSetupError('Preencha a URL e a chave pública do Supabase.');
+  try{localStorage.setItem('bj_supabase',JSON.stringify({url,key}));await loadSupabase({url,key});const{error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.href}});if(error)throw error;}
+  catch(e){showSetupError('Não foi possível entrar: '+e.message);}
 }
-
-async function initFB(fbCfg){
-  try{
-    const{initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const F=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    const app=getApps().length?getApps()[0]:initializeApp(fbCfg);
-    db=F.getFirestore(app);
-    FF={col:F.collection,doc:F.doc,set:F.setDoc,get:F.getDoc,gets:F.getDocs,upd:F.updateDoc,del:F.deleteDoc,add:F.addDoc,ts:F.serverTimestamp};
-    await loadAll();
-    toast('◈ Firebase conectado!');
-  }catch(e){toast('Erro: '+e.message);console.error(e);}
-}
+async function logout(){if(supabase)await supabase.auth.signOut();currentUser=null;document.getElementById('setup').style.display='flex';}
 
 async function loadAll(){
   await Promise.all([loadConfig(),loadOradores(),loadDiscursos(),loadSugestoes(),loadSentinelas(),loadPrograma(),loadDiscursantes()]);
@@ -435,10 +438,9 @@ function getUltimoDiscurso(o){
 }
 function ehSist(nome){if(!nome)return true;const s=['CONGRESSO','ASSEMBLEIA','CELEBRAÇÃO','VISITA','REUNIÃO','DISCURSO ESPECIAL','TRANSIÇÃO','STREAM'];return s.some(x=>nome.toUpperCase().includes(x));}
 function nextSab(){
-  // Returns the current or upcoming Saturday
   const d=new Date();d.setHours(12,0,0,0);
-  const dow=d.getDay(); // 0=Sun, 6=Sat
-  const diff=dow===6?0:(6-dow);
+  const target=Number(cfg.dia)===0?0:6,dow=d.getDay();
+  const diff=(target-dow+7)%7;
   d.setDate(d.getDate()+diff);
   return d.toISOString().slice(0,10);
 }
@@ -593,16 +595,28 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   eb.style.cssText='position:absolute;top:7px;right:7px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:11px;padding:3px 6px;border-radius:4px';
   eb.textContent='✏️';eb.onclick=function(){editarAgend(semJson);};
   el.appendChild(eb);
+  if(sem.id){
+    const dbtn=document.createElement('button');
+    dbtn.style.cssText='position:absolute;top:7px;right:35px;background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:3px 6px;border-radius:4px';
+    dbtn.textContent='🗑';dbtn.title='Excluir discurso';dbtn.onclick=function(){delAgend(sem.id,sem.data);};el.appendChild(dbtn);
+  }
 
   return el;
 }
-let anoAtivo=new Date().getFullYear();
+let anoAtivo=new Date().getFullYear(),anosExtras=new Set();
+function addAno(){
+  const sugerido=Math.max(new Date().getFullYear(),anoAtivo,...programa.map(p=>+(p.data||'0').slice(0,4)),...anosExtras)+1;
+  const valor=prompt('Qual ano deseja adicionar?',sugerido);if(!valor)return;
+  const ano=+valor;if(!Number.isInteger(ano)||ano<2000||ano>2200)return toast('Informe um ano válido.');
+  anosExtras.add(ano);anoAtivo=ano;initAnoFilter();renderHome();
+}
 
 function initAnoFilter(){
   const anos=new Set();
   const hoje=new Date().getFullYear();
   [hoje,hoje+1,hoje+2].forEach(a=>anos.add(a));
   programa.forEach(p=>{if(p.data)anos.add(parseInt(p.data.slice(0,4)));});
+  anosExtras.forEach(a=>anos.add(a));
   const sorted=[...anos].sort();
   const bar=document.getElementById('anoFilterBar');
   if(!bar)return;
@@ -623,11 +637,11 @@ function setAno(a){
   renderHome();
 }
 
-function allSaturdays(year){
+function allMeetingDays(year){
   const sats=[];
   let d=new Date(year,0,1);
-  // find first saturday
-  while(d.getDay()!==6)d.setDate(d.getDate()+1);
+  const target=Number(cfg.dia)===0?0:6;
+  while(d.getDay()!==target)d.setDate(d.getDate()+1);
   while(d.getFullYear()===year){
     sats.push(d.toISOString().slice(0,10));
     d.setDate(d.getDate()+7);
@@ -639,7 +653,7 @@ function renderHome(){
   const hoje=new Date().toISOString().slice(0,10);
   const byDate={};
   programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
-  const sats=allSaturdays(anoAtivo);
+  const sats=allMeetingDays(anoAtivo);
   const destaque=currentOrNextProg();
   const div=document.getElementById('homeWeekCard');
   div.innerHTML='';
@@ -648,7 +662,7 @@ function renderHome(){
   if(!futures.length){
     const emp=document.createElement('div');
     emp.style.cssText='text-align:center;padding:28px;color:var(--whi3)';
-    emp.textContent='Sem sábados futuros neste ano.';
+    emp.textContent='Sem '+(Number(cfg.dia)===0?'domingos':'sábados')+' futuros neste ano.';
     div.appendChild(emp);
   } else {
     futures.forEach((data,i)=>{
@@ -696,7 +710,7 @@ function renderSentinelaChip(){
 async function loadPrograma(){
   if(!db){renderPrograma();return;}
   const s=await FF.gets(FF.col(db,'programa'));
-  if(s.docs.length>0) programa=s.docs.map(d=>({id:d.id,...d.data()}));
+  programa=s.docs.map(d=>({id:d.id,...d.data()}));
   renderPrograma();renderHome();
 }
 
@@ -730,6 +744,7 @@ function openNovoAgend(){
   preencherModalAgend({});
   document.getElementById('agData').value=nextSab();
   document.getElementById('mAgendTit').textContent='Inserir na Programação';
+  document.getElementById('agDataLabel').textContent='Data ('+(Number(cfg.dia)===0?'domingo':'sábado')+')';
   openM('mAgend');
 }
 function editarAgend(jsonOrEnc){
@@ -737,6 +752,7 @@ function editarAgend(jsonOrEnc){
   try{p=JSON.parse(jsonOrEnc);}catch(e){p=JSON.parse(decodeURIComponent(jsonOrEnc));}
   preencherModalAgend(p);
   document.getElementById('mAgendTit').textContent='Editar — '+fD(p.data);
+  document.getElementById('agDataLabel').textContent='Data ('+(Number(cfg.dia)===0?'domingo':'sábado')+')';
   openM('mAgend');
 }
 function switchOradorTab(tab){
@@ -748,6 +764,7 @@ function switchOradorTab(tab){
 }
 function preencherModalAgend(p){
   document.getElementById('agId').value=p.id||'';
+  document.getElementById('btnDelAgend').style.display=p.id?'inline-flex':'none';
   document.getElementById('agData').value=p.data||'';
   document.getElementById('agTema').value=p.temaNum||'';
   document.getElementById('agObs').value=p.obs||'';
@@ -794,7 +811,7 @@ function onAgOradorSel(){
   if(v){const o=oradores.find(x=>x.id===v);if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}}
 }
 async function saveAgend(){
-  if(!db)return toast('Firebase não conectado!');
+  if(!db)return toast('Supabase não conectado!');
   const idField=document.getElementById('agId').value.trim();
   const data_val=document.getElementById('agData').value;
   if(!data_val)return toast('Informe a data!');
@@ -827,7 +844,7 @@ async function saveAgend(){
     obs:isSemDisc?'':document.getElementById('agObs').value.trim(),
     motivo:isSemDisc?document.getElementById('agMotivo').value.trim():''
   };
-  // Resolve ID: use field, or find existing Firebase doc for this date
+  // Resolve o ID pelo campo ou por um registro existente na mesma data.
   let resolvedId=idField;
   if(!resolvedId){
     const snap=await FF.gets(FF.col(db,'programa'));
@@ -856,9 +873,26 @@ async function saveAgend(){
   }
   closeM('mAgend');renderHome();toast('✓ Salvo!');
 }
+async function delAgendAtual(){
+  const id=document.getElementById('agId').value,data=document.getElementById('agData').value;
+  if(id)await delAgend(id,data,true);
+}
+async function delAgend(id,data,closeModal=false){
+  if(!id||!confirm('Excluir este discurso da programação?'))return;
+  await FF.del(FF.doc(db,'programa',id));programa=programa.filter(p=>p.id!==id);
+  if(closeModal)closeM('mAgend');renderHome();renderPrograma();renderTemas();toast('Discurso excluído.');
+}
 
 // WA
 function abrirWADir(tel){window.open('https://wa.me/55'+tel.replace(/\D/g,''),'_blank');}
+function compartilharProgramacao(){
+  const hoje=new Date().toISOString().slice(0,10);
+  const itens=[...programa].filter(p=>p.data>=hoje).sort((a,b)=>a.data.localeCompare(b.data)).slice(0,8);
+  if(!itens.length)return toast('Não há discursos futuros para compartilhar.');
+  const linhas=itens.map(p=>'📅 '+fD(p.data)+' — '+(p.semDiscurso?(p.motivo||'Sem discurso'):(p.nome||'Orador a definir')+(p.temaNum?' | Tema '+p.temaNum:'')));
+  const texto='*Programação de discursos — '+cfg.cong+'*\n\n'+linhas.join('\n');
+  window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank');
+}
 
 
 // TEMAS
@@ -872,7 +906,9 @@ function renderTemas(){
   entries.forEach(({n,t})=>{
     const bloqueado=bloqueados.has(n);
     const editado=TEMAS[n]&&t!==TEMAS[n]&&!bloqueado;
-    const u=discursos.filter(d=>d.temaNum==n).length;
+    const usosTema=[...discursos,...programa.filter(p=>p.data&&p.data<=new Date().toISOString().slice(0,10)&&!p.semDiscurso)]
+      .filter(d=>d.temaNum==n).filter((d,i,a)=>a.findIndex(x=>x.data===d.data&&x.temaNum==d.temaNum)===i);
+    const u=usosTema.length;
     if(!bloqueado){
       if(temaFiltro==='0'&&u>0)return;
       if(temaFiltro==='1'&&u!==1)return;
@@ -891,7 +927,7 @@ function renderTemas(){
     row.appendChild(numEl);
     // Info
     const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
-    const ult=discursos.filter(d=>d.temaNum==n).sort((a,b)=>b.data>a.data?1:-1)[0]?.data;
+    const ult=[...usosTema].sort((a,b)=>(b.data||'').localeCompare(a.data||''))[0]?.data;
     const tEl=document.createElement('div');
     tEl.style.cssText='font-size:13px;'+(bloqueado?'color:var(--red);text-decoration:line-through':'');
     tEl.textContent=t;
@@ -1008,7 +1044,7 @@ function editOrador(id){
   notaAtual=o.nota||0;rStars(notaAtual);document.getElementById('mOradorTit').textContent='Editar Orador';openM('mOrador');
 }
 async function saveOrador(){
-  if(!db)return toast('Firebase não conectado!');
+  if(!db)return toast('Supabase não conectado!');
   const id=document.getElementById('oId').value;
   const data={nome:document.getElementById('oNome').value.trim(),cong:document.getElementById('oCong').value.trim(),tel:document.getElementById('oTel').value.trim(),ultimoDiscurso:document.getElementById('oUlt').value,obs:document.getElementById('oObs').value.trim(),nota:notaAtual};
   if(!data.nome)return toast('Informe o nome!');
@@ -1090,7 +1126,7 @@ function renderSugestoes(){
 function onSugNum(){const n=parseInt(document.getElementById('sNum').value);document.getElementById('sNumName').textContent=n&&TL[n]?TL[n]:'';}
 function abrirNovaSug(){['sNome','sNum','sDesc'].forEach(id=>document.getElementById(id).value='');document.getElementById('sData').value=new Date().toISOString().slice(0,10);document.getElementById('sNumName').textContent='';openM('mSug');}
 async function saveSug(){
-  if(!db)return toast('Firebase não conectado!');
+  if(!db)return toast('Supabase não conectado!');
   const nome=document.getElementById('sNome').value.trim();
   const num=parseInt(document.getElementById('sNum').value)||null;
   const desc=document.getElementById('sDesc').value.trim();
@@ -1176,7 +1212,7 @@ function renderSentinelas(){
   });
 }
 async function saveSentinela(){
-  if(!db)return toast('Firebase não conectado!');
+  if(!db)return toast('Supabase não conectado!');
   const tema=document.getElementById('sentTema').value.trim();
   const data=document.getElementById('sentData').value;
   if(!tema)return toast('Informe o tema!');
@@ -1278,12 +1314,62 @@ async function autoFillSentinelaTab(){
 }
 
 // IMPORT EMBUTIDO
+let xlsxParsed=null,importMode='historico';
+function resetImportModal(mode){
+  importMode=mode;xlsxParsed=null;document.getElementById('xlsxFile').value='';
+  document.querySelector('#mImportXlsx .modal-title').textContent=mode==='oradores'?'📂 Importar primeira lista de oradores':'📂 Importar histórico e programação';
+  document.getElementById('xlsxInfo').textContent=mode==='oradores'?'Colunas aceitas: Nome, Congregação, Telefone, Último Discurso, Nota e Observação.':'Colunas aceitas: Data, Orador, Congregação, Telefone, Nº Tema e Tema.';
+  document.getElementById('impLogXlsx').textContent='Selecione um arquivo...';document.getElementById('impBarXlsx').style.width='0';
+  const b=document.getElementById('btnImportXlsx');if(b){b.disabled=true;b.style.opacity='.4';}openM('mImportXlsx');
+}
+function openImportOradores(){resetImportModal('oradores');}
+function openImportHistorico(){resetImportModal('historico');}
+async function compartilharOradores(){
+  if(!supabase||!currentUser)return toast('Entre com Google primeiro.');
+  if(!oradores.length)return toast('Não há oradores para compartilhar.');
+  if(!confirm('Gerar um link com nome, congregação, telefone e demais dados dos '+oradores.length+' oradores? O link expira em 7 dias.'))return;
+  try{
+    const copia=oradores.map(({id,...o})=>o);
+    const{data,error}=await supabase.from('speaker_shares').insert({payload:copia}).select('token').single();if(error)throw error;
+    const link=location.origin+location.pathname+'?import='+encodeURIComponent(data.token);
+    if(navigator.share){await navigator.share({title:'Lista de oradores',text:'Abra o link, entre com Google e importe a lista de oradores:',url:link});}
+    else{await navigator.clipboard.writeText(link);toast('✓ Link copiado! Ele expira em 7 dias.',4500);}
+  }catch(e){if(e.name!=='AbortError')toast('Erro ao compartilhar: '+e.message,5000);}
+}
+async function checkSharedImport(){
+  const token=new URLSearchParams(location.search).get('import');if(!token||!supabase||!currentUser)return;
+  try{
+    const{data,error}=await supabase.rpc('get_shared_speakers',{share_token:token});if(error)throw error;
+    const lista=Array.isArray(data)?data:[];if(!lista.length)throw new Error('Este link expirou ou não existe.');
+    if(confirm('Esta lista compartilhada contém '+lista.length+' oradores. Deseja copiar para sua conta?')){
+      const existentes=new Set(oradores.map(o=>(o.nome+'|'+(o.cong||'')).toLowerCase()));let novos=0;
+      for(const o of lista){const chave=((o.nome||'')+'|'+(o.cong||'')).toLowerCase();if(o.nome&&!existentes.has(chave)){await FF.add(FF.col(db,'oradores'),o);existentes.add(chave);novos++;}}
+      await loadOradores();toast('✓ '+novos+' oradores importados; '+(lista.length-novos)+' duplicados ignorados.',5000);
+    }
+  }catch(e){toast('Não foi possível importar a lista: '+e.message,5000);}
+  finally{history.replaceState({},'',location.pathname+location.hash);}
+}
+async function ensureXlsx(){if(window.XLSX)return;await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+function normKey(k){return String(k||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+function excelDate(v){if(!v)return'';if(v instanceof Date)return v.toISOString().slice(0,10);if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`:'';}const s=String(v).trim();const m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:s.slice(0,10);}
+async function onXlsxSelect(){
+  const file=document.getElementById('xlsxFile').files[0];if(!file)return;
+  try{await ensureXlsx();const wb=XLSX.read(await file.arrayBuffer(),{cellDates:true});const raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    xlsxParsed=raw.map(row=>{const r={};Object.entries(row).forEach(([k,v])=>r[normKey(k)]=v);if(importMode==='oradores')return{nome:String(r.nome||r.orador||'').trim(),cong:String(r.congregacao||r.cong||'').trim(),tel:String(r.telefone||r.whatsapp||r.tel||'').trim(),ultimoDiscurso:excelDate(r.ultimodiscurso||r.ultima||''),nota:Number(r.nota)||0,obs:String(r.observacao||r.obs||'').trim()};return{data:excelDate(r.data),nome:String(r.orador||r.nome||'').trim(),congregacao:String(r.congregacao||r.cong||'').trim(),telefone:String(r.telefone||r.whatsapp||'').trim(),temaNum:Number(r.ntema||r.numerotema||r.temanum)||null,tema:String(r.tema||'').trim()};}).filter(x=>importMode==='oradores'?x.nome:x.data);
+    document.getElementById('xlsxInfo').textContent=xlsxParsed.length+' registros encontrados em '+file.name;const b=document.getElementById('btnImportXlsx');b.disabled=!xlsxParsed.length;b.style.opacity=xlsxParsed.length?'1':'.4';
+  }catch(e){xlsxParsed=null;document.getElementById('xlsxInfo').textContent='Erro ao ler: '+e.message;}
+}
 async function startImportXlsx(){
   if(!db||!xlsxParsed)return;
   const bar=document.getElementById('impBarXlsx'),log=document.getElementById('impLogXlsx'),btns=document.getElementById('impBtnsXlsx');
   btns.innerHTML='<div class="spin" style="margin:4px 0"></div>';log.innerHTML='';
   const aL=m=>{log.innerHTML+=m+'\n';log.scrollTop=log.scrollHeight;};
   try{
+    if(importMode==='oradores'){
+      const existentes=new Set(oradores.map(o=>(o.nome+'|'+(o.cong||'')).toLowerCase()));let novos=0;
+      for(let i=0;i<xlsxParsed.length;i++){const o=xlsxParsed[i],chave=(o.nome+'|'+o.cong).toLowerCase();if(!existentes.has(chave)){await FF.add(FF.col(db,'oradores'),o);existentes.add(chave);novos++;}bar.style.width=Math.round((i+1)/xlsxParsed.length*100)+'%';}
+      aL('✓ '+novos+' oradores importados; '+(xlsxParsed.length-novos)+' duplicados ignorados.');await loadOradores();btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';toast('✓ Lista de oradores importada!');return;
+    }
     const hoje=new Date().toISOString().slice(0,10);
     const comOr=xlsxParsed.filter(p=>p.nome&&!ehSist(p.nome));
     const fut=xlsxParsed.filter(p=>p.data>=hoje);
@@ -1345,6 +1431,7 @@ async function loadConfig(){
     if(d.cong)cfg.cong=d.cong;
     if(d.end)cfg.end=d.end;
     if(d.hor)cfg.hor=d.hor;
+    if(d.dia===0||d.dia===6)cfg.dia=d.dia;
   } else {
     // migração única do localStorage
     const lc=localStorage.getItem('bj_cfg');
@@ -1373,6 +1460,8 @@ async function loadConfig(){
     if(lt||lb)salvarConfigTemas();
   }
   renderMensagens();
+  document.getElementById('cfgNome').value=cfg.cong;document.getElementById('cfgEnd').value=cfg.end;document.getElementById('cfgHor').value=cfg.hor;document.getElementById('cfgDia').value=String(cfg.dia);
+  document.getElementById('cfgGemini').value=localStorage.getItem('bj_gem')||'';
 }
 
 function salvarConfigTemas(){
@@ -1386,8 +1475,10 @@ function saveConfig(){
   cfg.cong=document.getElementById('cfgNome').value;
   cfg.end=document.getElementById('cfgEnd').value;
   cfg.hor=document.getElementById('cfgHor').value;
+  cfg.dia=Number(document.getElementById('cfgDia').value);
+  const gem=document.getElementById('cfgGemini').value.trim();if(gem)localStorage.setItem('bj_gem',gem);else localStorage.removeItem('bj_gem');
   if(db)FF.set(FF.doc(db,'config','app'),cfg);
-  renderMensagens();toast('✓ Salvo!');
+  renderMensagens();renderHome();toast('✓ Salvo!');
 }
 
 // MINHA CONGREGAÇÃO — DISCURSANTES
@@ -1534,7 +1625,7 @@ function editDiscursante(id){
 }
 
 async function saveDiscursante(){
-  if(!db)return toast('Firebase não conectado!');
+  if(!db)return toast('Supabase não conectado!');
   const id=document.getElementById('dcId').value.trim();
   const oradorId=document.getElementById('dcOradorId').value.trim();
   const selV=document.getElementById('dcSelect').value;
