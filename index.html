@@ -1372,7 +1372,7 @@ async function onXlsxSelect(){
     const b=document.getElementById('btnImportXlsx');if(b){b.disabled=!xlsxParsed.length;b.style.opacity=xlsxParsed.length?'1':'.4';}
   }catch(e){xlsxParsed=null;document.getElementById('xlsxInfo').textContent='Erro ao ler: '+e.message;}
 }
-async function startImportXlsx(){
+async function startImportXlsxLegacy(){
   if(!db||!xlsxParsed)return;
   const bar=document.getElementById('impBarXlsx'),log=document.getElementById('impLogXlsx'),btns=document.getElementById('impBtnsXlsx');
   btns.innerHTML='<div class="spin" style="margin:4px 0"></div>';log.innerHTML='';
@@ -1395,6 +1395,60 @@ async function startImportXlsx(){
     bar.style.width='100%';aL('✓ Programação\n◈ Concluído!');
     await loadAll();btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';toast('◈ Planilha importada!');
   }catch(e){aL('✗ ERRO: '+e.message);btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';}
+}
+
+async function startImportXlsx(){
+  if(!db||!xlsxParsed)return;
+  const bar=document.getElementById('impBarXlsx'),log=document.getElementById('impLogXlsx'),btns=document.getElementById('impBtnsXlsx');
+  btns.innerHTML='<div class="spin" style="margin:4px 0"></div>';log.textContent='';
+  const addLog=m=>{log.textContent+=m+'\n';log.scrollTop=log.scrollHeight;};
+  try{
+    if(importMode==='oradores'){
+      const existentes=new Set(oradores.map(o=>(o.nome+'|'+(o.cong||'')).toLocaleLowerCase('pt-BR')));let novos=0;
+      for(let i=0;i<xlsxParsed.length;i++){
+        const o=xlsxParsed[i],chave=(o.nome+'|'+o.cong).toLocaleLowerCase('pt-BR');
+        if(!existentes.has(chave)){await FF.add(FF.col(db,'oradores'),o);existentes.add(chave);novos++;}
+        bar.style.width=Math.round((i+1)/xlsxParsed.length*100)+'%';
+      }
+      addLog('OK: '+novos+' oradores importados.');addLog('Ignorados por duplicidade: '+(xlsxParsed.length-novos)+'.');
+      await loadOradores();btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';toast('Lista de oradores importada!');return;
+    }
+
+    const hoje=new Date().toISOString().slice(0,10);
+    const validos=xlsxParsed.filter(p=>p.nome&&!ehSist(p.nome));
+    const chavesDisc=new Set(discursos.map(d=>[d.data,(d.nome||'').toLocaleLowerCase('pt-BR'),d.temaNum||''].join('|')));
+    const novosDisc=validos.filter(p=>!chavesDisc.has([p.data,(p.nome||'').toLocaleLowerCase('pt-BR'),p.temaNum||''].join('|')));
+    addLog('Registros lidos: '+xlsxParsed.length+'.');
+    addLog('Discursos novos: '+novosDisc.length+'. Já existentes: '+(validos.length-novosDisc.length)+'.');
+    for(let i=0;i<novosDisc.length;i++){await FF.add(FF.col(db,'discursos'),novosDisc[i]);bar.style.width=Math.round((i+1)/Math.max(novosDisc.length,1)*55)+'%';}
+
+    const chaveOrador=o=>((o.nome||'').trim()+'|'+(o.cong||o.congregacao||'').trim()).toLocaleLowerCase('pt-BR');
+    const resumo=new Map();
+    validos.forEach(p=>{
+      const k=chaveOrador(p),atual=resumo.get(k)||{nome:p.nome,cong:p.congregacao||'',tel:'',ultimoDiscurso:''};
+      if(p.telefone)atual.tel=p.telefone;
+      if(p.data&&p.data<=hoje&&p.data>atual.ultimoDiscurso)atual.ultimoDiscurso=p.data;
+      resumo.set(k,atual);
+    });
+    const cadastrados=new Map(oradores.map(o=>[chaveOrador(o),o]));let criados=0,atualizados=0;
+    for(const [k,o] of resumo){
+      const existente=cadastrados.get(k);
+      if(!existente){await FF.add(FF.col(db,'oradores'),{nome:o.nome,cong:o.cong,tel:o.tel,ultimoDiscurso:o.ultimoDiscurso||'',nota:0,obs:''});criados++;}
+      else{
+        const patch={};if(!existente.tel&&o.tel)patch.tel=o.tel;
+        if(o.ultimoDiscurso&&(!existente.ultimoDiscurso||o.ultimoDiscurso>existente.ultimoDiscurso))patch.ultimoDiscurso=o.ultimoDiscurso;
+        if(Object.keys(patch).length){await FF.upd(FF.doc(db,'oradores',existente.id),patch);atualizados++;}
+      }
+    }
+    bar.style.width='80%';addLog('Oradores criados: '+criados+'. Atualizados: '+atualizados+'.');
+
+    const datasPrograma=new Set(programa.map(p=>p.data));
+    const futurasTodas=xlsxParsed.filter(p=>p.data>=hoje),futuras=futurasTodas.filter(p=>!datasPrograma.has(p.data));
+    for(let i=0;i<futuras.length;i++){await FF.add(FF.col(db,'programa'),futuras[i]);bar.style.width=80+Math.round((i+1)/Math.max(futuras.length,1)*20)+'%';}
+    addLog('Datas futuras novas: '+futuras.length+'. Já existentes: '+(futurasTodas.length-futuras.length)+'.');
+    bar.style.width='100%';addLog('Concluído: histórico, oradores e temas sincronizados.');
+    await loadAll();btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';toast('Planilha importada!');
+  }catch(e){addLog('ERRO: '+e.message);btns.innerHTML='<button class="btn bo" onclick="closeM(\'mImportXlsx\')">Fechar</button>';}
 }
 
 // EXPORT EXCEL
