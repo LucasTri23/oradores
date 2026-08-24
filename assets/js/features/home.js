@@ -91,7 +91,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
         const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
         const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(wa);
         const group=document.createElement('button');group.className='btn bo bs';group.innerHTML='<i data-lucide="users"></i> Enviar para grupo';group.onclick=function(){abrirMsgGrupo(semJson);};btnWrap.appendChild(group);
-        const edit=document.createElement('button');edit.className='btn bo bs';edit.innerHTML='<i data-lucide="user-round-pen"></i> Trocar orador';edit.onclick=function(){editarAgend(semJson);};btnWrap.appendChild(edit);
+        const edit=document.createElement('button');edit.className='btn bo bs';edit.innerHTML='<i data-lucide="pencil"></i> Editar';edit.onclick=function(){editarAgend(semJson);};btnWrap.appendChild(edit);
         el.appendChild(btnWrap);
       } else {
         // Small card: botão compacto ao lado do tema já renderizado acima
