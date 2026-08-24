@@ -186,7 +186,6 @@
   <div class="logo"><img src="assets/images/oradores-speaker-logo.png" alt=""><span>Oradores <small id="headerCongName">— Minha Congregação</small></span></div>
   <div class="header-actions">
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="moon"></i></button>
-    <button class="icon-btn optional-action" onclick="compartilharProgramacao()" title="Compartilhar programação"><i data-lucide="message-circle"></i></button>
     <button class="icon-btn optional-action" onclick="openImportHistorico()" title="Importar histórico"><i data-lucide="folder-up"></i></button>
     <button class="icon-btn optional-action" onclick="openM('mExport')" title="Exportar Excel"><i data-lucide="download"></i></button>
     <button class="icon-btn optional-action" onclick="toggleAI()" title="Assistente"><i data-lucide="sparkles"></i></button>
@@ -212,7 +211,7 @@
     <div class="week-focus"><div class="section-label">Próximo discurso</div><div id="homeWeekCard"><div class="skeleton skeleton-card"></div></div></div>
     <div class="dashboard-side">
       <div class="summary-card" id="pendingCard"><div class="summary-icon"><i data-lucide="triangle-alert"></i></div><div><strong id="pendingCount">0</strong><span>Pendências no mês</span><small id="pendingDetails">Tudo preenchido</small></div></div>
-      <div class="quick-card"><div class="section-label">Ações rápidas</div><div class="quick-actions"><button onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar histórico</button><button onclick="compartilharProgramacao()"><i data-lucide="share-2"></i> Compartilhar</button><button onclick="irTab('oradores')"><i data-lucide="users"></i> Oradores</button></div></div>
+      <div class="quick-card quick-card-desktop"><div class="section-label">Ações rápidas</div><div class="quick-actions"><button onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar histórico</button><button onclick="compartilharProgramacao()"><i data-lucide="share-2"></i> Compartilhar</button><button onclick="irTab('oradores')"><i data-lucide="users"></i> Oradores</button></div></div>
     </div>
   </section>
   <section class="calendar-card agenda-card">
@@ -220,6 +219,7 @@
     <div class="agenda-legend"><span><i class="status-dot ready"></i> Completo</span><span><i class="status-dot pending"></i> Pendente</span><span><i class="status-dot special"></i> Evento especial</span></div>
     <div id="homeCalendar" class="agenda-list"><div class="skeleton skeleton-calendar"></div></div>
   </section>
+  <div class="quick-card quick-card-mobile"><div class="section-label">Ações rápidas</div><div class="quick-actions"><button onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar histórico</button><button onclick="compartilharProgramacao()"><i data-lucide="share-2"></i> Compartilhar</button><button onclick="irTab('oradores')"><i data-lucide="users"></i> Oradores</button></div></div>
 </div>
 <div class="page" id="page-programa">
   <div class="panel-head">
