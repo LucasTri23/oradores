@@ -86,6 +86,7 @@ function preencherModalAgend(p){
     sel.appendChild(opt);
   });
   const matched=p.nome&&oradores.find(o=>o.nome===p.nome);
+  document.getElementById('agOradorBusca').value='';document.getElementById('agOradorSugestoes').classList.remove('open');
   if(p.nome&&!matched){
     // Has name but not in database — show "Novo" tab with data
     switchOradorTab('novo');
@@ -94,6 +95,7 @@ function preencherModalAgend(p){
     document.getElementById('agTel').value=p.telefone||'';
   } else {
     switchOradorTab('cadastrado');
+    document.getElementById('agOradorBusca').value=matched?(matched.nome+' — '+(matched.cong||'Sem congregação')):'';
     document.getElementById('agNome').value='';
     document.getElementById('agCong').value='';
     document.getElementById('agTel').value='';
@@ -125,6 +127,32 @@ function onAgOradorSel(){
   const v=document.getElementById('agOradorSel').value;
   if(v){const o=oradores.find(x=>x.id===v);if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}}
 }
+let agSugestaoAtiva=-1;
+function onAgOradorBusca(preservarSelecao=false){
+  const input=document.getElementById('agOradorBusca'),box=document.getElementById('agOradorSugestoes'),query=normalizarTexto(input.value);
+  if(!preservarSelecao)document.getElementById('agOradorSel').value='';agSugestaoAtiva=-1;
+  const lista=[...oradores].filter(o=>!query||normalizarTexto((o.nome||'')+' '+(o.cong||'')).includes(query)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR',{sensitivity:'base'})).slice(0,10);
+  box.innerHTML='';
+  if(!lista.length){const empty=document.createElement('div');empty.className='speaker-empty';empty.textContent='Nenhum orador encontrado';box.appendChild(empty);box.classList.add('open');return;}
+  lista.forEach(o=>{
+    const button=document.createElement('button');button.type='button';button.className='speaker-suggestion';button.dataset.id=o.id;
+    const name=document.createElement('strong');name.textContent=o.nome;
+    const meta=document.createElement('span');meta.textContent=(o.cong||'Sem congregação')+(o.tel?' · '+o.tel:'');
+    button.appendChild(name);button.appendChild(meta);button.onmousedown=e=>{e.preventDefault();selecionarAgOrador(o.id);};box.appendChild(button);
+  });
+  box.classList.add('open');
+}
+function selecionarAgOrador(id){
+  const o=oradores.find(x=>x.id===id);if(!o)return;
+  document.getElementById('agOradorSel').value=id;document.getElementById('agOradorBusca').value=o.nome+' — '+(o.cong||'Sem congregação');document.getElementById('agOradorSugestoes').classList.remove('open');onAgOradorSel();
+}
+function limparAgOrador(){document.getElementById('agOradorBusca').value='';document.getElementById('agOradorSel').value='';document.getElementById('agNome').value='';document.getElementById('agCong').value='';document.getElementById('agTel').value='';onAgOradorBusca();document.getElementById('agOradorBusca').focus();}
+function onAgOradorBuscaKey(event){
+  const box=document.getElementById('agOradorSugestoes'),items=[...box.querySelectorAll('.speaker-suggestion')];if(!items.length)return;
+  if(event.key==='ArrowDown'){event.preventDefault();agSugestaoAtiva=Math.min(agSugestaoAtiva+1,items.length-1);}else if(event.key==='ArrowUp'){event.preventDefault();agSugestaoAtiva=Math.max(agSugestaoAtiva-1,0);}else if(event.key==='Enter'&&agSugestaoAtiva>=0){event.preventDefault();selecionarAgOrador(items[agSugestaoAtiva].dataset.id);return;}else if(event.key==='Escape'){box.classList.remove('open');return;}else return;
+  items.forEach((item,i)=>item.classList.toggle('active',i===agSugestaoAtiva));items[agSugestaoAtiva]?.scrollIntoView({block:'nearest'});
+}
+document.addEventListener('click',event=>{if(!event.target.closest('.speaker-combobox'))document.getElementById('agOradorSugestoes')?.classList.remove('open');});
 async function saveAgend(){
   if(!db)return toast('Supabase não conectado!');
   const idField=document.getElementById('agId').value.trim();
@@ -132,6 +160,7 @@ async function saveAgend(){
   if(!data_val)return toast('Informe a data!');
   const isCadTab=document.getElementById('agTabCadastrado').style.display!=='none';
   const selV=document.getElementById('agOradorSel').value;
+  if(isCadTab&&!selV&&document.getElementById('agOradorBusca').value.trim())return toast('Escolha um orador nas sugestões.');
   let nome='',cong='',tel='';
   if(isCadTab&&selV){
     const o=oradores.find(x=>x.id===selV);

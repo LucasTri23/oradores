@@ -37,7 +37,7 @@
 <!-- MODAL AGENDAMENTO -->
 <div class="mbg" id="mAgend">
   <div class="modal">
-    <div class="modal-title" id="mAgendTit">Inserir na Programação</div>
+    <div class="modal-title modal-title-actions"><span id="mAgendTit">Inserir na Programação</span><button class="modal-delete" id="btnDelAgend" style="display:none" onclick="delAgendAtual()" type="button"><i data-lucide="trash-2"></i><span>Excluir</span></button></div>
     <input type="hidden" id="agId">
     <div class="g2">
       <div class="field"><label id="agDataLabel">Data do discurso</label><input type="date" id="agData"></div>
@@ -51,7 +51,13 @@
         <div class="fchip" id="tabNovo" onclick="switchOradorTab('novo')" style="flex:1;text-align:center">➕ Novo / Manual</div>
       </div>
       <div id="agTabCadastrado">
-        <select id="agOradorSel" onchange="onAgOradorSel()">
+        <div class="speaker-combobox">
+          <i data-lucide="search"></i>
+          <input id="agOradorBusca" autocomplete="off" placeholder="Digite o nome ou a congregação..." oninput="onAgOradorBusca()" onfocus="onAgOradorBusca(true)" onkeydown="onAgOradorBuscaKey(event)">
+          <button type="button" class="speaker-clear" onclick="limparAgOrador()" title="Limpar"><i data-lucide="x"></i></button>
+          <div id="agOradorSugestoes" class="speaker-suggestions"></div>
+        </div>
+        <select id="agOradorSel" onchange="onAgOradorSel()" hidden>
           <option value="">— Selecionar orador —</option>
         </select>
       </div>
@@ -84,7 +90,7 @@
       <div class="field"><label>Motivo</label><input id="agMotivo" placeholder="Ex: Assembleia Regional, Congresso..."></div>
       <div class="field color-field"><label>Cor do cartão sem discurso</label><input type="color" id="agSemDiscursoCor" value="#f59e0b"><span id="agSemDiscursoCorHex">#F59E0B</span></div>
     </div>
-    <div class="brow"><button class="btn bp" onclick="saveAgend()">Salvar</button><button class="btn bo" onclick="closeM('mAgend')">Cancelar</button><button class="btn bo" id="btnDelAgend" style="display:none;color:var(--red)" onclick="delAgendAtual()">Excluir discurso</button></div>
+    <div class="brow"><button class="btn bp" onclick="saveAgend()">Salvar</button><button class="btn bo" onclick="closeM('mAgend')">Cancelar</button></div>
   </div>
 </div>
 <!-- MODAL ORADOR -->
