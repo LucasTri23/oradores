@@ -69,7 +69,11 @@ function preencherModalAgend(p){
   document.getElementById('agMotivo').value=p.motivo||'';
   document.getElementById('agCadastrar').checked=false;
   document.getElementById('agSemDiscurso').checked=!!(p.semDiscurso);
+  document.getElementById('agEspecial').checked=!!p.especial;
+  document.getElementById('agEspecialTitulo').value=p.especialTitulo||'';
+  document.getElementById('agEspecialCor').value=/^#[0-9a-f]{6}$/i.test(p.especialCor||'')?p.especialCor:'#7c3aed';
   onAgSemDiscurso();
+  onAgEspecial();
   onAgTema();
   // Populate select
   const sel=document.getElementById('agOradorSel');
@@ -102,6 +106,13 @@ function onAgSemDiscurso(){
   document.getElementById('agTabNovo').style.display='none';
   document.getElementById('tabCadastrado').style.display=chk?'none':'flex';
   document.getElementById('tabNovo').style.display=chk?'none':'flex';
+  document.getElementById('agEspecialBox').style.display=chk?'none':'block';
+}
+function onAgEspecial(){
+  const checked=document.getElementById('agEspecial').checked,color=document.getElementById('agEspecialCor');
+  document.getElementById('agEspecialCampos').style.display=checked?'grid':'none';
+  document.getElementById('agEspecialCorHex').textContent=color.value.toUpperCase();
+  color.oninput=()=>document.getElementById('agEspecialCorHex').textContent=color.value.toUpperCase();
 }
 function onAgTema(){const n=parseInt(document.getElementById('agTema').value);document.getElementById('agTemaDesc').textContent=n&&TL[n]?TL[n]:'';}
 function onAgOradorSel(){
@@ -132,6 +143,7 @@ async function saveAgend(){
     }
   }
   const isSemDisc=document.getElementById('agSemDiscurso').checked;
+  const isEspecial=!isSemDisc&&document.getElementById('agEspecial').checked;
   const entry={
     data:data_val,
     semDiscurso:isSemDisc||false,
@@ -140,7 +152,10 @@ async function saveAgend(){
     congregacao:isSemDisc?'':cong,
     telefone:isSemDisc?'':tel,
     obs:isSemDisc?'':document.getElementById('agObs').value.trim(),
-    motivo:isSemDisc?document.getElementById('agMotivo').value.trim():''
+    motivo:isSemDisc?document.getElementById('agMotivo').value.trim():'',
+    especial:isEspecial,
+    especialTitulo:isEspecial?document.getElementById('agEspecialTitulo').value.trim():'',
+    especialCor:isEspecial?document.getElementById('agEspecialCor').value:'#7c3aed'
   };
   // Resolve o ID pelo campo ou por um registro existente na mesma data.
   let resolvedId=idField;
@@ -191,6 +206,5 @@ function compartilharProgramacao(){
   const texto='*Programação de discursos — '+cfg.cong+'*\n\n'+linhas.join('\n');
   window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank');
 }
-
 
 

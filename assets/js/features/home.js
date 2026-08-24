@@ -1,4 +1,5 @@
 // HOME
+function corEspecial(valor){return /^#[0-9a-f]{6}$/i.test(valor||'')?valor:'#7c3aed';}
 function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const nT=sem.temaNum;
   const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'';
@@ -6,8 +7,9 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   // Look up telefone from oradores if missing in programa entry
   let tel=sem.telefone||'';
   let congregacao=sem.congregacao||'';
+  let orCad=null;
   if(sem.nome){
-    const orCad=oradores.find(o=>o.nome===sem.nome);
+    orCad=oradores.find(o=>o.nome===sem.nome);
     if(orCad){
       if(orCad.tel)tel=orCad.tel;
       if(orCad.cong)congregacao=orCad.cong;
@@ -17,12 +19,14 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const semJson=JSON.stringify(semComTel);
   const temDados=!!(sem.nome||sem.temaNum||sem.tema);
   const isSemDisc=!!(sem.semDiscurso);
-  const isEspecial=isSemDisc||(sem.motivo&&sem.motivo.trim().length>0);
+  const isEspecial=!!sem.especial;
+  const specialColor=corEspecial(sem.especialCor);
   const isLarge=isCurrent||isFirst;
 
   // Border color
   let bg,brd;
-  if(isEspecial){bg='rgba(245,158,11,.06)';brd='rgba(245,158,11,.35)';}
+  if(isSemDisc){bg='rgba(245,158,11,.06)';brd='rgba(245,158,11,.35)';}
+  else if(isEspecial){bg=specialColor+'18';brd=specialColor;}
   else if(isCurrent){bg='linear-gradient(135deg,rgba(37,99,235,.16),rgba(37,99,235,.04))';brd='rgba(37,99,235,.42)';}
   else if(temOr){bg='var(--surf)';brd='var(--border)';}
   else if(temDados){bg='var(--surf)';brd='rgba(239,68,68,.35)';}
@@ -33,11 +37,11 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
 
   // Date label
   const dateEl=document.createElement('div');
-  dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isCurrent?'var(--pur3)':isEspecial?'var(--amber)':'var(--whi2)')+';margin-bottom:'+(isLarge?'6px':'3px');
+  dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isEspecial?specialColor:isCurrent?'var(--pur3)':isSemDisc?'var(--amber)':'var(--whi2)')+';margin-bottom:'+(isLarge?'6px':'3px');
   dateEl.textContent='📅 '+fDSem(sem.data);
   el.appendChild(dateEl);
 
-  if(isEspecial){
+  if(isSemDisc){
     // Yellow special date
     const lbl=document.createElement('div');
     lbl.style.cssText='font-size:'+(isLarge?'15px':'13px')+';font-weight:700;color:var(--amber)';
@@ -55,6 +59,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
     row.appendChild(lbl);row.appendChild(btn);
     el.appendChild(row);
   } else {
+    if(isEspecial){const badge=document.createElement('div');badge.className='special-badge';badge.style.cssText='color:'+specialColor+';border-color:'+specialColor+'55;background:'+specialColor+'14';const icon=document.createElement('i');icon.dataset.lucide='sparkles';const label=document.createElement('span');label.textContent=sem.especialTitulo||'Discurso especial';badge.appendChild(icon);badge.appendChild(label);el.appendChild(badge);}
     // ORADOR é o foco principal — tema vem abaixo com destaque
     if(temOr){
       // Nome do orador — GRANDE em todos os cards
@@ -84,6 +89,9 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
       if(isLarge){
         const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
         const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(wa);
+        const group=document.createElement('button');group.className='btn bo bs';group.innerHTML='<i data-lucide="users"></i> Enviar para grupo';group.onclick=function(){abrirMsgGrupo(semJson);};btnWrap.appendChild(group);
+        const edit=document.createElement('button');edit.className='btn bo bs';edit.innerHTML='<i data-lucide="user-round-pen"></i> Trocar orador';edit.onclick=function(){editarAgend(semJson);};btnWrap.appendChild(edit);
+        if(orCad){const editContact=document.createElement('button');editContact.className='btn bo bs';editContact.innerHTML='<i data-lucide="contact-round"></i> Editar cadastro';editContact.onclick=function(){editOrador(orCad.id);};btnWrap.appendChild(editContact);}
         el.appendChild(btnWrap);
       } else {
         // Small card: botão compacto ao lado do tema já renderizado acima
@@ -108,7 +116,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
 
   // Tema d'A Sentinela desta semana — mostra se já souber (salvo ou já buscado antes),
   // senão busca em segundo plano no jw.org e só aparece se/quando achar (não polui o card com "carregando").
-  if(!isEspecial){
+  if(!isSemDisc){
     const salvo=sentinelas.find(s=>s.data===sem.data);
     if(salvo){
       const sentEl=document.createElement('div');
@@ -131,11 +139,11 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   // Edit button (future only)
   const eb=document.createElement('button');
   eb.style.cssText='position:absolute;top:7px;right:7px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:11px;padding:3px 6px;border-radius:4px';
-  eb.textContent='✏️';eb.onclick=function(){editarAgend(semJson);};
+  eb.textContent='Editar';eb.title='Editar programação e trocar orador';eb.style.cssText+='border:1px solid var(--border);background:var(--surf);font-weight:600';eb.onclick=function(){editarAgend(semJson);};
   el.appendChild(eb);
   if(sem.id){
     const dbtn=document.createElement('button');
-    dbtn.style.cssText='position:absolute;top:7px;right:35px;background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:3px 6px;border-radius:4px';
+    dbtn.style.cssText='position:absolute;top:7px;right:66px;background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:3px 6px;border-radius:4px';
     dbtn.textContent='🗑';dbtn.title='Excluir discurso';dbtn.onclick=function(){delAgend(sem.id,sem.data);};el.appendChild(dbtn);
   }
 
@@ -242,19 +250,20 @@ function renderCalendar(byDate){
   grid.innerHTML='';
   const datas=allMeetingDays(ano).filter(iso=>Number(iso.slice(5,7))===mes+1);
   datas.forEach(iso=>{
-    const registro=completarDadosPrograma(byDate[iso]||{data:iso}),especial=!!registro.semDiscurso;
+    const registro=completarDadosPrograma(byDate[iso]||{data:iso}),semDiscurso=!!registro.semDiscurso,especial=!!registro.especial,visualEspecial=semDiscurso||especial;
     const apenasHistorico=registro._origem==='discurso';
-    const faltas=obterPendenciasPrograma(registro),completo=especial||faltas.length===0,pendente=!completo;
+    const faltas=obterPendenciasPrograma(registro),completo=semDiscurso||faltas.length===0,pendente=!completo;
     const tema=registro.temaNum?(TL[registro.temaNum]||registro.tema||'Tema não encontrado'):(registro.tema||'');
     const row=document.createElement('article');
-    row.className='agenda-row '+(especial?'is-special':completo?'is-ready':'is-pending')+(iso<hoje?' is-past':'')+(iso===hoje?' is-today':'');
+    row.className='agenda-row '+(visualEspecial?'is-special':completo?'is-ready':'is-pending')+(iso<hoje?' is-past':'')+(iso===hoje?' is-today':'');
+    if(especial){const color=corEspecial(registro.especialCor);row.style.borderLeftColor=color;row.style.background=color+'0d';}
     row.onclick=()=>apenasHistorico?irTab('programa'):editarAgend(JSON.stringify(registro));
 
     const date=document.createElement('div');date.className='agenda-date';
     date.innerHTML='<strong>'+iso.slice(8,10)+'</strong><span>'+new Date(iso+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')+'</span>';
 
     const info=document.createElement('div');info.className='agenda-info';
-    if(especial){const speaker=document.createElement('div');speaker.className='agenda-speaker';speaker.textContent=registro.motivo||'Sem discurso nesta data';const meta=document.createElement('div');meta.className='agenda-meta';meta.textContent='Evento especial';info.appendChild(speaker);info.appendChild(meta);}
+    if(semDiscurso){const speaker=document.createElement('div');speaker.className='agenda-speaker';speaker.textContent=registro.motivo||'Sem discurso nesta data';const meta=document.createElement('div');meta.className='agenda-meta';meta.textContent='Evento especial';info.appendChild(speaker);info.appendChild(meta);}
     else{
       const speaker=document.createElement('div');speaker.className='agenda-speaker'+(!registro.nome?' missing':'');speaker.textContent=registro.nome||'Orador ainda não definido';
       const meta=document.createElement('div');meta.className='agenda-meta';meta.textContent=registro.nome?[registro.congregacao||'Congregação não informada',registro.telefone||'Telefone não informado'].join(' · '):'Clique para preencher a programação';
@@ -262,7 +271,7 @@ function renderCalendar(byDate){
     }
 
     const topic=document.createElement('div');topic.className='agenda-topic';
-    if(especial)topic.innerHTML='<span class="agenda-status special">Evento</span>';
+    if(semDiscurso)topic.innerHTML='<span class="agenda-status special">Evento</span>';
     else if(tema){const number=document.createElement('span');number.className='topic-number';number.textContent='Tema '+registro.temaNum;const topicName=document.createElement('strong');topicName.textContent=tema;topic.appendChild(number);topic.appendChild(topicName);}
     else topic.innerHTML='<span class="agenda-status pending">Tema pendente</span>';
 
@@ -271,7 +280,10 @@ function renderCalendar(byDate){
     action.onclick=e=>{e.stopPropagation();apenasHistorico?irTab('programa'):editarAgend(JSON.stringify(registro));};
 
     const status=document.createElement('div');status.className='agenda-state';
-    status.innerHTML=especial?'<i class="status-dot special"></i><span>Especial</span>':completo?'<i class="status-dot ready"></i><span>Completo</span>':'<i class="status-dot pending"></i><span>Falta: '+faltas.join(', ')+'</span>';
+    if(semDiscurso)status.innerHTML='<i class="status-dot special"></i><span>Sem discurso</span>';
+    else if(pendente)status.innerHTML='<i class="status-dot pending"></i><span>Falta: '+faltas.join(', ')+'</span>';
+    else if(especial){status.innerHTML='<i class="status-dot"></i><span></span>';status.querySelector('i').style.background=corEspecial(registro.especialCor);status.querySelector('span').textContent=registro.especialTitulo||'Especial';}
+    else status.innerHTML='<i class="status-dot ready"></i><span>Completo</span>';
     row.appendChild(date);row.appendChild(info);row.appendChild(topic);row.appendChild(status);row.appendChild(action);grid.appendChild(row);
   });
 }

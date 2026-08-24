@@ -31,3 +31,10 @@ Cada usuário começa com dados separados. Em **Oradores → Compartilhar lista*
 ## Uso local
 
 Use `vercel dev` com as variáveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` configuradas no ambiente. As credenciais técnicas não aparecem na interface; o usuário vê somente **Entrar com Google**.
+# Acesso compartilhado
+
+Depois de atualizar o projeto, execute novamente todo o arquivo `supabase.sql` no SQL Editor do Supabase. Ele preserva os registros existentes, cria uma equipe para o usuário atual e ativa as políticas de acesso compartilhado.
+
+Em **Configurações > Equipe da congregação**, o proprietário pode criar um convite de uso único, válido por 24 horas. A pessoa convidada abre o link, entra com Google e passa a acessar a mesma programação, histórico, configurações e lista de oradores. O proprietário pode revogar o acesso na mesma tela.
+
+Para grupos do WhatsApp, configure o modelo em **Configurações > Mensagem para grupo**. Na Home, use **Enviar para grupo** e escolha o grupo dentro do WhatsApp. Por segurança, o navegador não recebe a lista de grupos nem seleciona um destinatário automaticamente.

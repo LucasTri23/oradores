@@ -19,24 +19,24 @@ async function loadSupabase(config){
     doc:(_,collection,id)=>({collection,id}),
     ts:()=>new Date().toISOString(),
     gets:async collection=>{
-      const{data,error}=await supabase.from('app_records').select('id,data').eq('collection',collection);
+      const{data,error}=await supabase.from('app_records').select('id,data').eq('workspace_id',activeWorkspaceId).eq('collection',collection);
       if(error)throw error;
       return{docs:(data||[]).map(wrapDoc)};
     },
     get:async ref=>{
-      const{data,error}=await supabase.from('app_records').select('id,data').eq('collection',ref.collection).eq('id',ref.id).maybeSingle();
+      const{data,error}=await supabase.from('app_records').select('id,data').eq('workspace_id',activeWorkspaceId).eq('collection',ref.collection).eq('id',ref.id).maybeSingle();
       if(error)throw error;
       return data?wrapDoc(data):{exists:false,data:()=>null};
     },
     add:async(collection,payload)=>{
-      const{data,error}=await supabase.from('app_records').insert({collection,data:payload}).select('id').single();
+      const{data,error}=await supabase.from('app_records').insert({workspace_id:activeWorkspaceId,collection,data:payload}).select('id').single();
       if(error)throw error;
       return{id:data.id};
     },
     set:async(ref,payload)=>{
       const{error}=await supabase.from('app_records').upsert(
-        {id:ref.id,collection:ref.collection,data:payload,owner_id:currentUser.id},
-        {onConflict:'owner_id,collection,id'}
+        {id:ref.id,workspace_id:activeWorkspaceId,collection:ref.collection,data:payload,owner_id:currentUser.id},
+        {onConflict:'workspace_id,collection,id'}
       );
       if(error)throw error;
     },
@@ -46,7 +46,7 @@ async function loadSupabase(config){
       await FF.set(ref,{...old.data(),...patch});
     },
     del:async ref=>{
-      const{error}=await supabase.from('app_records').delete().eq('collection',ref.collection).eq('id',ref.id);
+      const{error}=await supabase.from('app_records').delete().eq('workspace_id',activeWorkspaceId).eq('collection',ref.collection).eq('id',ref.id);
       if(error)throw error;
     }
   };
@@ -62,9 +62,12 @@ async function checkSetup(){
     const{data}=await supabase.auth.getSession();
     if(data.session){
       currentUser=data.session.user;
+      await initializeWorkspace();
+      await checkTeamInvite();
       updateUserHeader();
       document.getElementById('setup').style.display='none';
       await loadAll();
+      await renderTeamPanel();
       await checkSharedImport();
     }
   }catch(error){showSetupError(error.message);}

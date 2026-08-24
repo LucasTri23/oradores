@@ -1,8 +1,8 @@
 // STATE
-let db=null,FF=null,supabase=null,currentUser=null,oradores=[],discursos=[],sugestoes=[],sentinelas=[],programa=[];
+let db=null,FF=null,supabase=null,currentUser=null,activeWorkspaceId=null,oradores=[],discursos=[],sugestoes=[],sentinelas=[],programa=[];
 let notaAtual=0,temaFiltro='todos',orSort='az';
 let bloqueados=new Set();
-let cfg={cong:'Minha Congregação',end:'',hor:'19:00',dia:6};
+let cfg={cong:'Minha Congregação',end:'',hor:'19:00',dia:6,groupMsg:'Próximo discurso público:\n\nOrador: {orador}\nTema: {tema}\nData: {data}\nCongregação: {minha_cong}'};
 let mensagens=[
   {id:1,titulo:'Convite padrão',texto:'Olá {orador}, tudo bem?\n\nGostaríamos de convidá-lo para proferir o discurso público na nossa congregação:\n\n📖 Tema: {tema}\n📅 Data: {data}\n🏠 Congregação: {cong}\n📍 Endereço: {end}\n\nAguardamos sua confirmação. 🙏'},
   {id:2,titulo:'Lembrete',texto:'Olá {orador}! Passando para lembrar do discurso público:\n\n📖 {tema}\n📅 {data}\n📍 {cong}\n\nObrigado! 🙏'},

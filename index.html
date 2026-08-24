@@ -70,6 +70,13 @@
         <span>Sem discurso nesta data (assembleia, congresso, etc.)</span>
       </label>
     </div>
+    <div class="special-editor" id="agEspecialBox">
+      <label class="special-check"><input type="checkbox" id="agEspecial" onchange="onAgEspecial()"><span><strong>Discurso especial</strong><small>Destacar este discurso com uma cor personalizada</small></span></label>
+      <div id="agEspecialCampos" class="special-fields" style="display:none">
+        <div class="field"><label>Nome do destaque</label><input id="agEspecialTitulo" placeholder="Ex: Visita do superintendente"></div>
+        <div class="field color-field"><label>Cor do cartão</label><input type="color" id="agEspecialCor" value="#7c3aed"><span id="agEspecialCorHex">#7C3AED</span></div>
+      </div>
+    </div>
     <div id="agCamposNormais">
       <div class="field"><label>Observação</label><input id="agObs" placeholder="Ex: Discurso especial..."></div>
     </div>
@@ -320,6 +327,26 @@
       <button class="btn bo" onclick="logout()">Sair</button>
     </div>
   </div>
+  <div class="card team-card">
+    <div class="slabel">Equipe da congregação</div>
+    <h3>Compartilhar este sistema</h3>
+    <p>Crie um convite seguro para outra pessoa trabalhar na mesma programação e lista de oradores. O link dura 24 horas e só pode ser usado uma vez.</p>
+    <div id="teamStatus" class="team-status">Carregando equipe...</div>
+    <button class="btn bp" onclick="createTeamInvite()"><i data-lucide="user-plus"></i> Criar link de convite</button>
+  </div>
+  <div class="card team-card">
+    <div class="slabel">Mensagem para grupo do WhatsApp</div>
+    <h3>Como enviar para um grupo</h3>
+    <div class="field"><label>Modelo da mensagem do grupo</label><textarea id="cfgGroupMsg" rows="6" placeholder="Próximo discurso público..."></textarea></div>
+    <button class="btn bp bs" onclick="saveConfig()">Salvar modelo</button>
+    <ol class="setup-steps">
+      <li>Abra a Home e localize o cartão do próximo discurso.</li>
+      <li>Toque em <strong>Enviar para grupo</strong>.</li>
+      <li>O WhatsApp abrirá com a mensagem pronta.</li>
+      <li>Escolha o grupo desejado e confirme o envio.</li>
+    </ol>
+    <p class="privacy-note">O grupo é escolhido dentro do WhatsApp. O site não lê participantes nem guarda informações do grupo.</p>
+  </div>
 </div>
 </main>
 <script src="assets/js/supabase-client.js"></script>
@@ -330,6 +357,7 @@
 <script src="assets/js/features/insights.js"></script>
 <script src="assets/js/features/transfer.js"></script>
 <script src="assets/js/features/settings.js"></script>
+<script src="assets/js/features/team.js"></script>
 <script src="assets/js/features/init.js"></script>
 </body>
 </html>
