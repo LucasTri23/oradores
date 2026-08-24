@@ -147,7 +147,7 @@ async function registrarSentinelaAuto(data,tema){
     const ref=await FF.add(FF.col(db,'sentinela'),{tema,data,criadoEm:FF.ts()});
     sentinelas.push({id:ref.id,tema,data});
     sentinelas.sort((a,b)=>b.data>a.data?1:-1);
-    if(document.getElementById('page-sentinela')?.classList.contains('active'))renderSentinelas();
+    if(document.getElementById('sentLista'))renderSentinelas();
   }catch(e){/* Firestore indisponível — o tema já aparece na tela mesmo sem salvar */}
   finally{_salvandoSentinela.delete(data);}
 }
@@ -268,4 +268,9 @@ async function autoFillSentinelaTab(){
     registrarSentinelaAuto(dataAlvo,titulo);
   }
 }
-
+function abrirConfigSentinela(){
+  irTab('config');
+  const details=document.getElementById('sentinelaConfig');if(!details)return;
+  details.open=true;autoFillSentinelaTab();
+  setTimeout(()=>details.scrollIntoView({behavior:'smooth',block:'start'}),80);
+}

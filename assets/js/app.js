@@ -47,7 +47,6 @@ function irTab(p){
   if(p==='sugestoes')renderSugestoes();
   if(p==='temas')renderTemas();
   if(p==='programa')renderPrograma();
-  if(p==='sentinela')autoFillSentinelaTab();
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>irTab(t.dataset.p)));
 

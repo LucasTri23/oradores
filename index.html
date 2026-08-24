@@ -203,7 +203,6 @@
   <div class="tab" data-p="sugestoes"><i data-lucide="lightbulb"></i><span>Sugestões</span></div>
   <div class="tab" data-p="minha"><i data-lucide="send"></i><span>Minha Cong.</span></div>
   <div class="tab" data-p="analytics"><i data-lucide="chart-no-axes-column"></i><span>Análise</span></div>
-  <div class="tab" data-p="sentinela"><i data-lucide="library"></i><span>Sentinela</span></div>
   <div class="tab" data-p="config"><i data-lucide="settings"></i><span>Config</span></div>
 </nav>
 <main>
@@ -212,9 +211,8 @@
   <section class="dashboard-grid">
     <div class="week-focus"><div class="section-label">Próximo discurso</div><div id="homeWeekCard"><div class="skeleton skeleton-card"></div></div></div>
     <div class="dashboard-side">
-      <div class="summary-card"><div class="summary-icon"><i data-lucide="triangle-alert"></i></div><div><strong id="pendingCount">0</strong><span>Pendências no mês</span><small id="pendingDetails">Tudo preenchido</small></div></div>
+      <div class="summary-card" id="pendingCard"><div class="summary-icon"><i data-lucide="triangle-alert"></i></div><div><strong id="pendingCount">0</strong><span>Pendências no mês</span><small id="pendingDetails">Tudo preenchido</small></div></div>
       <div class="quick-card"><div class="section-label">Ações rápidas</div><div class="quick-actions"><button onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar histórico</button><button onclick="compartilharProgramacao()"><i data-lucide="share-2"></i> Compartilhar</button><button onclick="irTab('oradores')"><i data-lucide="users"></i> Oradores</button></div></div>
-      <div id="homeSentinela"></div>
     </div>
   </section>
   <section class="calendar-card agenda-card">
@@ -293,21 +291,6 @@
     <div id="rankCongs"></div>
   </div>
 </div>
-<div class="page" id="page-sentinela">
-  <div class="panel-title">Tema A Sentinela</div>
-  <div class="card">
-    <div class="g2">
-      <div class="field"><label>Tema</label><input id="sentTema" placeholder="Cole o tema aqui..."></div>
-      <div class="field"><label>Data da edição</label><input type="date" id="sentData"></div>
-    </div>
-    <div class="brow">
-      <button class="btn bp" onclick="saveSentinela()">Salvar</button>
-      <button class="btn bo" onclick="buscarSentinelaJW()">🔄 Buscar do jw.org</button>
-    </div>
-    <div style="font-size:11px;color:var(--whi3);margin-top:8px;line-height:1.5">Busca automática pelo site oficial jw.org. Se a data acima estiver vazia, usa o próximo sábado. Se não encontrar, preencha manualmente.</div>
-  </div>
-  <div class="card"><div class="slabel">Histórico</div><div id="sentLista"><div class="skeleton-list"><i></i><i></i><i></i></div></div></div>
-</div>
 <div class="page" id="page-config">
   <div class="panel-title">Configurações</div>
   <div class="card">
@@ -321,6 +304,15 @@
     <div class="field" style="margin-top:12px"><label>Dia dos discursos</label><select id="cfgDia"><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
     <div class="field"><label>Gemini API Key (opcional)</label><input id="cfgGemini" type="password" placeholder="AIzaSy..."></div>
   </div>
+  <details class="card settings-details" id="sentinelaConfig">
+    <summary><span><i data-lucide="library"></i><strong>Correção manual da Sentinela</strong></span><small>Use somente se a busca automática falhar</small><i data-lucide="chevron-down" class="details-chevron"></i></summary>
+    <div class="settings-details-body">
+      <p>O tema é buscado automaticamente no jw.org. Aqui você pode corrigir ou cadastrar manualmente uma exceção.</p>
+      <div class="g2"><div class="field"><label>Tema</label><input id="sentTema" placeholder="Cole o tema aqui..."></div><div class="field"><label>Data da edição</label><input type="date" id="sentData"></div></div>
+      <div class="brow"><button class="btn bp" onclick="saveSentinela()">Salvar</button><button class="btn bo" onclick="buscarSentinelaJW()"><i data-lucide="refresh-cw"></i> Buscar novamente</button></div>
+      <div class="settings-history"><div class="slabel">Temas salvos manualmente</div><div id="sentLista"><div class="skeleton-list"><i></i><i></i></div></div></div>
+    </div>
+  </details>
   <div class="card">
     <div class="slabel" style="margin-bottom:10px">Mensagens pré-prontas (WhatsApp)</div>
     <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6">Use as variáveis: <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{tema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{numtema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{data}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{minha_cong}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong_orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code></p>

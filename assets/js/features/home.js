@@ -92,7 +92,6 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
         const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(wa);
         const group=document.createElement('button');group.className='btn bo bs';group.innerHTML='<i data-lucide="users"></i> Enviar para grupo';group.onclick=function(){abrirMsgGrupo(semJson);};btnWrap.appendChild(group);
         const edit=document.createElement('button');edit.className='btn bo bs';edit.innerHTML='<i data-lucide="user-round-pen"></i> Trocar orador';edit.onclick=function(){editarAgend(semJson);};btnWrap.appendChild(edit);
-        if(orCad){const editContact=document.createElement('button');editContact.className='btn bo bs';editContact.innerHTML='<i data-lucide="contact-round"></i> Editar cadastro';editContact.onclick=function(){editOrador(orCad.id);};btnWrap.appendChild(editContact);}
         el.appendChild(btnWrap);
       } else {
         // Small card: botão compacto ao lado do tema já renderizado acima
@@ -135,17 +134,6 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
         }
       });
     }
-  }
-
-  // Edit button (future only)
-  const eb=document.createElement('button');
-  eb.style.cssText='position:absolute;top:7px;right:7px;background:none;border:none;cursor:pointer;color:var(--whi3);font-size:11px;padding:3px 6px;border-radius:4px';
-  eb.textContent='Editar';eb.title='Editar programação e trocar orador';eb.style.cssText+='border:1px solid var(--border);background:var(--surf);font-weight:600';eb.onclick=function(){editarAgend(semJson);};
-  el.appendChild(eb);
-  if(sem.id){
-    const dbtn=document.createElement('button');
-    dbtn.style.cssText='position:absolute;top:7px;right:66px;background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:3px 6px;border-radius:4px';
-    dbtn.textContent='🗑';dbtn.title='Excluir discurso';dbtn.onclick=function(){delAgend(sem.id,sem.data);};el.appendChild(dbtn);
   }
 
   return el;
@@ -234,6 +222,7 @@ function renderHome(){
   const listasPendencias=futuras.map(data=>obterPendenciasPrograma(byDate[data]||{}));
   const pendencias=listasPendencias.filter(lista=>lista.length).length;
   const pending=document.getElementById('pendingCount');if(pending)pending.textContent=pendencias;
+  document.getElementById('pendingCard')?.classList.toggle('is-clear',pendencias===0);
   const details=document.getElementById('pendingDetails');
   if(details){
     const totais={};listasPendencias.flat().forEach(item=>totais[item]=(totais[item]||0)+1);
@@ -313,7 +302,7 @@ function renderSentinelaChip(){
       registrarSentinelaAuto(alvo,titulo);
     } else {
       const sc2=document.createElement('div');sc2.className='sentchip';sc2.style.cssText='opacity:.4;cursor:pointer';
-      sc2.textContent='📖 Não encontrei automaticamente — toque para preencher manual';sc2.onclick=function(){irTab('sentinela');};
+      sc2.textContent='📖 Não encontrei automaticamente — toque para corrigir em Configurações';sc2.onclick=abrirConfigSentinela;
       sd.appendChild(sc2);
     }
   });
