@@ -41,7 +41,7 @@
     <input type="hidden" id="agId">
     <div class="g2">
       <div class="field"><label id="agDataLabel">Data do discurso</label><input type="date" id="agData"></div>
-      <div class="field"><label>Nº do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema()"></div>
+      <div class="field" id="agTemaField"><label>Nº do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema()"></div>
     </div>
     <div id="agTemaDesc" style="font-size:11px;color:var(--pur3);margin:-6px 0 10px;min-height:13px"></div>
     <div class="field">
@@ -73,7 +73,7 @@
     <div class="special-editor" id="agEspecialBox">
       <label class="special-check"><input type="checkbox" id="agEspecial" onchange="onAgEspecial()"><span><strong>Discurso especial</strong><small>Destacar este discurso com uma cor personalizada</small></span></label>
       <div id="agEspecialCampos" class="special-fields" style="display:none">
-        <div class="field"><label>Nome do destaque</label><input id="agEspecialTitulo" placeholder="Ex: Visita do superintendente"></div>
+        <div class="field"><label>Nome do discurso especial</label><input id="agEspecialTitulo" placeholder="Digite o tema completo do discurso"></div>
         <div class="field color-field"><label>Cor do cartão</label><input type="color" id="agEspecialCor" value="#7c3aed"><span id="agEspecialCorHex">#7C3AED</span></div>
       </div>
     </div>

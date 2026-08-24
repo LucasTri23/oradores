@@ -59,7 +59,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
     row.appendChild(lbl);row.appendChild(btn);
     el.appendChild(row);
   } else {
-    if(isEspecial){const badge=document.createElement('div');badge.className='special-badge';badge.style.cssText='color:'+specialColor+';border-color:'+specialColor+'55;background:'+specialColor+'14';const icon=document.createElement('i');icon.dataset.lucide='sparkles';const label=document.createElement('span');label.textContent=sem.especialTitulo||'Discurso especial';badge.appendChild(icon);badge.appendChild(label);el.appendChild(badge);}
+    if(isEspecial){const badge=document.createElement('div');badge.className='special-badge';badge.style.cssText='color:'+specialColor+';border-color:'+specialColor+'55;background:'+specialColor+'14';const icon=document.createElement('i');icon.dataset.lucide='sparkles';const label=document.createElement('span');label.textContent='Discurso especial';badge.appendChild(icon);badge.appendChild(label);el.appendChild(badge);}
     // ORADOR é o foco principal — tema vem abaixo com destaque
     if(temOr){
       // Nome do orador — GRANDE em todos os cards
@@ -272,7 +272,7 @@ function renderCalendar(byDate){
 
     const topic=document.createElement('div');topic.className='agenda-topic';
     if(semDiscurso)topic.innerHTML='<span class="agenda-status special">Evento</span>';
-    else if(tema){const number=document.createElement('span');number.className='topic-number';number.textContent='Tema '+registro.temaNum;const topicName=document.createElement('strong');topicName.textContent=tema;topic.appendChild(number);topic.appendChild(topicName);}
+    else if(tema){if(registro.temaNum){const number=document.createElement('span');number.className='topic-number';number.textContent='Tema '+registro.temaNum;topic.appendChild(number);}else if(especial){const number=document.createElement('span');number.className='topic-number';number.textContent='Discurso especial';number.style.color=corEspecial(registro.especialCor);topic.appendChild(number);}const topicName=document.createElement('strong');topicName.textContent=tema;topic.appendChild(topicName);}
     else topic.innerHTML='<span class="agenda-status pending">Tema pendente</span>';
 
     const action=document.createElement('button');action.className='agenda-action';action.type='button';

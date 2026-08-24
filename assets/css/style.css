@@ -32,6 +32,11 @@ main{max-width:900px;margin:0 auto;padding:20px 18px}
 label{display:block;font-size:11px;color:var(--whi3);margin-bottom:4px;font-weight:500}
 input,select,textarea{width:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:7px;color:var(--whi);font-family:'Inter',sans-serif;font-size:13px;padding:9px 11px;outline:none;transition:border-color .18s;-webkit-appearance:none}
 input:focus,select:focus,textarea:focus{border-color:var(--pur)}
+input[type="checkbox"]{appearance:none!important;-webkit-appearance:none!important;width:22px!important;height:22px!important;min-width:22px;margin:0;padding:0;border:1px solid var(--border2);border-radius:7px;background:var(--bg);display:inline-grid;place-items:center;cursor:pointer;transition:background .16s,border-color .16s,box-shadow .16s}
+input[type="checkbox"]:after{content:'✓';color:#fff;font:800 15px/1 Inter,sans-serif;opacity:0;transform:scale(.55);transition:opacity .14s,transform .14s}
+input[type="checkbox"]:checked{background:var(--pur);border-color:var(--pur);box-shadow:0 0 0 3px var(--pur-dim)}
+input[type="checkbox"]:checked:after{opacity:1;transform:scale(1)}
+input[type="checkbox"]:focus-visible{outline:2px solid var(--pur2);outline-offset:2px}
 input[type="color"]{width:54px;height:38px;padding:3px;cursor:pointer;-webkit-appearance:auto}.special-editor{border:1px solid var(--border);background:var(--surf2);border-radius:10px;padding:12px;margin-bottom:14px}.special-check{display:flex;align-items:center;gap:9px;cursor:pointer}.special-check input{width:auto;margin:0}.special-check span{display:flex;flex-direction:column;gap:2px}.special-check small{font-size:10px;color:var(--whi3);font-weight:400}.special-fields{grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.special-fields .field{margin:0}.color-field{min-width:120px}.color-field>div,.color-field{align-items:flex-start}.color-field span{font:600 10px monospace;color:var(--whi3);margin-left:6px}@media(max-width:520px){.special-fields{grid-template-columns:1fr}.color-field{display:flex;align-items:center;flex-wrap:wrap}.color-field label{width:100%}}
 input::placeholder,textarea::placeholder{color:var(--whi3)}
 select option{background:var(--surf2)}
