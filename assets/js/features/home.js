@@ -21,11 +21,12 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const isSemDisc=!!(sem.semDiscurso);
   const isEspecial=!!sem.especial;
   const specialColor=corEspecial(sem.especialCor);
+  const noSpeechColor=corEspecial(sem.semDiscursoCor||'#f59e0b');
   const isLarge=isCurrent||isFirst;
 
   // Border color
   let bg,brd;
-  if(isSemDisc){bg='rgba(245,158,11,.06)';brd='rgba(245,158,11,.35)';}
+  if(isSemDisc){bg=noSpeechColor+'18';brd=noSpeechColor;}
   else if(isEspecial){bg=specialColor+'18';brd=specialColor;}
   else if(isCurrent){bg='linear-gradient(135deg,rgba(37,99,235,.16),rgba(37,99,235,.04))';brd='rgba(37,99,235,.42)';}
   else if(temOr){bg='var(--surf)';brd='var(--border)';}
@@ -37,14 +38,14 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
 
   // Date label
   const dateEl=document.createElement('div');
-  dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isEspecial?specialColor:isCurrent?'var(--pur3)':isSemDisc?'var(--amber)':'var(--whi2)')+';margin-bottom:'+(isLarge?'6px':'3px');
+  dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isEspecial?specialColor:isSemDisc?noSpeechColor:isCurrent?'var(--pur3)':'var(--whi2)')+';margin-bottom:'+(isLarge?'6px':'3px');
   dateEl.textContent='📅 '+fDSem(sem.data);
   el.appendChild(dateEl);
 
   if(isSemDisc){
     // Yellow special date
     const lbl=document.createElement('div');
-    lbl.style.cssText='font-size:'+(isLarge?'15px':'13px')+';font-weight:700;color:var(--amber)';
+    lbl.style.cssText='font-size:'+(isLarge?'15px':'13px')+';font-weight:700;color:'+noSpeechColor;
     lbl.textContent='🌟 '+(sem.motivo||'Data especial');
     el.appendChild(lbl);
   } else if(!temDados){
@@ -256,7 +257,7 @@ function renderCalendar(byDate){
     const tema=registro.temaNum?(TL[registro.temaNum]||registro.tema||'Tema não encontrado'):(registro.tema||'');
     const row=document.createElement('article');
     row.className='agenda-row '+(visualEspecial?'is-special':completo?'is-ready':'is-pending')+(iso<hoje?' is-past':'')+(iso===hoje?' is-today':'');
-    if(especial){const color=corEspecial(registro.especialCor);row.style.borderLeftColor=color;row.style.background=color+'0d';}
+    if(especial||semDiscurso){const color=corEspecial(especial?registro.especialCor:(registro.semDiscursoCor||'#f59e0b'));row.style.borderLeftColor=color;row.style.background=color+'0d';}
     row.onclick=()=>apenasHistorico?irTab('programa'):editarAgend(JSON.stringify(registro));
 
     const date=document.createElement('div');date.className='agenda-date';
@@ -280,7 +281,7 @@ function renderCalendar(byDate){
     action.onclick=e=>{e.stopPropagation();apenasHistorico?irTab('programa'):editarAgend(JSON.stringify(registro));};
 
     const status=document.createElement('div');status.className='agenda-state';
-    if(semDiscurso)status.innerHTML='<i class="status-dot special"></i><span>Sem discurso</span>';
+    if(semDiscurso){status.innerHTML='<i class="status-dot"></i><span>Sem discurso</span>';status.querySelector('i').style.background=corEspecial(registro.semDiscursoCor||'#f59e0b');}
     else if(pendente)status.innerHTML='<i class="status-dot pending"></i><span>Falta: '+faltas.join(', ')+'</span>';
     else if(especial){status.innerHTML='<i class="status-dot"></i><span></span>';status.querySelector('i').style.background=corEspecial(registro.especialCor);status.querySelector('span').textContent=registro.especialTitulo||'Especial';}
     else status.innerHTML='<i class="status-dot ready"></i><span>Completo</span>';

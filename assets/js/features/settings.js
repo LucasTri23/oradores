@@ -46,10 +46,10 @@ async function loadConfig(){
   // Mensagens
   const msgsDoc=await FF.get(FF.doc(db,'config','mensagens'));
   if(msgsDoc.exists&&msgsDoc.data().lista){
-    mensagens=msgsDoc.data().lista;
+    mensagens=msgsDoc.data().lista.map(m=>({...m,tipo:m.tipo||(String(m.titulo||'').toLowerCase().includes('convite')?'convite':'geral')}));
   } else {
     const lm=localStorage.getItem('bj_msgs');
-    if(lm){mensagens=JSON.parse(lm);FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});}
+    if(lm){mensagens=JSON.parse(lm).map(m=>({...m,tipo:m.tipo||(String(m.titulo||'').toLowerCase().includes('convite')?'convite':'geral')}));FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});}
   }
   // Temas (overrides + bloqueados)
   const temasDoc=await FF.get(FF.doc(db,'config','temas'));
@@ -286,6 +286,8 @@ function renderMensagens(){
     del.className='btn bo bs';del.style.cssText='color:var(--red);opacity:.7;flex-shrink:0';del.textContent='✕';
     del.onclick=function(){if(confirm('Remover esta mensagem?')){mensagens.splice(i,1);saveMensagens();renderMensagens();}};
     head.appendChild(inp);head.appendChild(del);
+    const type=document.createElement('select');type.style.cssText='width:auto;min-width:130px;font-size:11px';type.innerHTML='<option value="geral">Mensagem comum</option><option value="convite">Convite</option>';type.value=m.tipo||'geral';type.onchange=function(){mensagens[i].tipo=this.value;saveMensagens();};
+    head.insertBefore(type,del);
     const ta=document.createElement('textarea');
     ta.value=m.texto;ta.rows=4;ta.placeholder='Texto da mensagem...';ta.style.cssText='font-size:12px;line-height:1.6';
     ta.oninput=function(){mensagens[i].texto=this.value;saveMensagens();};
@@ -295,7 +297,7 @@ function renderMensagens(){
 }
 
 function addMsg(){
-  mensagens.push({id:Date.now(),titulo:'Nova mensagem',texto:'Olá {orador}!\n\n📖 Tema: {tema}\n📅 Data: {data}\n📍 {cong}\n\n🙏'});
+  mensagens.push({id:Date.now(),tipo:'geral',titulo:'Nova mensagem',texto:'Olá {orador}!\n\n📖 Tema: {tema}\n📅 Data: {data}\n📍 {cong}\n\n🙏'});
   saveMensagens();renderMensagens();
 }
 
@@ -319,6 +321,55 @@ function buildMsg(template,sem){
     .replace(/{cong_orador}/g,sem.congregacao||'—')
     .replace(/{cong}/g,cfg.cong) // mantido por compatibilidade com mensagens antigas — sempre foi a MINHA congregação
     .replace(/{end}/g,cfg.end);
+}
+
+function abrirWhatsAppOrador(orador,mensagem,agenda={}){
+  const sem={...agenda,nome:orador.nome,congregacao:orador.cong||'',telefone:orador.tel||''};
+  const tel=String(orador.tel||'').replace(/\D/g,'');
+  window.open('https://wa.me/55'+tel+'?text='+encodeURIComponent(buildMsg(mensagem.texto,sem)),'_blank','noopener');
+}
+
+function criarModalEscolha(titulo){
+  document.getElementById('mOradorMensagem')?.remove();
+  const overlay=document.createElement('div');overlay.id='mOradorMensagem';overlay.className='choice-overlay';overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+  const modal=document.createElement('div');modal.className='choice-modal';
+  const head=document.createElement('div');head.className='choice-title';head.textContent=titulo;modal.appendChild(head);
+  overlay.appendChild(modal);document.body.appendChild(overlay);return{overlay,modal};
+}
+
+function abrirMensagensOrador(oradorId){
+  const orador=oradores.find(o=>o.id===oradorId);if(!orador)return;
+  if(!orador.tel)return toast('Este orador não possui WhatsApp cadastrado.');
+  if(!mensagens.length)return toast('Crie uma mensagem em Configurações.');
+  const{overlay,modal}=criarModalEscolha('Mensagem para '+orador.nome);
+  const hint=document.createElement('p');hint.className='choice-hint';hint.textContent='Escolha o modelo. Convites pedirão uma data futura que ainda está sem orador.';modal.appendChild(hint);
+  mensagens.forEach(m=>{
+    const button=document.createElement('button');button.className='message-choice';
+    const tag=document.createElement('small');tag.textContent=(m.tipo==='convite'?'Convite':'Mensagem comum');
+    const title=document.createElement('strong');title.textContent=m.titulo||'Sem título';
+    const preview=document.createElement('span');preview.textContent=decodeHtmlEntities(m.texto||'').replace(/\s+/g,' ').slice(0,95);
+    button.appendChild(tag);button.appendChild(title);button.appendChild(preview);
+    button.onclick=()=>{overlay.remove();m.tipo==='convite'?selecionarDataConvite(orador,m):abrirWhatsAppOrador(orador,m,{data:new Date().toISOString().slice(0,10)});};modal.appendChild(button);
+  });
+  const close=document.createElement('button');close.className='btn bo choice-close';close.textContent='Cancelar';close.onclick=()=>overlay.remove();modal.appendChild(close);
+}
+
+function selecionarDataConvite(orador,mensagem){
+  const hoje=new Date().toISOString().slice(0,10),ano=new Date().getFullYear();
+  const ocupadas=new Set(programa.filter(p=>p.nome||p.semDiscurso).map(p=>p.data));
+  const datas=[...allMeetingDays(ano),...allMeetingDays(ano+1)].filter(data=>data>=hoje&&!ocupadas.has(data)).slice(0,30);
+  const{overlay,modal}=criarModalEscolha('Escolha uma data em aberto');
+  const hint=document.createElement('p');hint.className='choice-hint';hint.textContent='A mensagem será preenchida com a data escolhida. O orador só será agendado depois que você confirmar com ele.';modal.appendChild(hint);
+  if(!datas.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Não há datas futuras em aberto.';modal.appendChild(empty);}
+  const list=document.createElement('div');list.className='open-date-list';
+  datas.forEach(data=>{
+    const existente=programa.find(p=>p.data===data)||{};
+    const button=document.createElement('button');button.className='open-date';
+    const date=document.createElement('strong');date.textContent=fDL(data);
+    const topic=document.createElement('span');topic.textContent=existente.temaNum?'Tema '+existente.temaNum+(TL[existente.temaNum]?' — '+TL[existente.temaNum]:''):existente.tema||'Tema ainda não definido';
+    button.appendChild(date);button.appendChild(topic);button.onclick=()=>{abrirWhatsAppOrador(orador,mensagem,{...existente,data});overlay.remove();};list.appendChild(button);
+  });
+  modal.appendChild(list);const close=document.createElement('button');close.className='btn bo choice-close';close.textContent='Cancelar';close.onclick=()=>overlay.remove();modal.appendChild(close);
 }
 
 function abrirMsgPadrao(jsonOrEnc){

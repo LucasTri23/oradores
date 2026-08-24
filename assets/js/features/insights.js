@@ -100,14 +100,30 @@ function renderAnalytics(){
   document.getElementById('rankSem').innerHTML=rank.map(({o,u,m})=>
     '<div class="rank-row"><div><div style="font-size:12px">'+o.nome+'</div><div style="font-size:10px;color:var(--whi3)">'+(o.cong||'—')+'</div></div><span class="badge '+corTempo(u)+'">'+(m>900?'Nunca':(mesesAno(u)||'—'))+'</span></div>'
   ).join('');
-  const cc={};oradores.forEach(o=>{if(o.cong&&o.cong.trim())cc[o.cong]=(cc[o.cong]||0)+1;});
-  const topC=Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,20);
-  document.getElementById('rankCongs').innerHTML='<div style="display:flex;flex-wrap:wrap;margin-top:4px">'
-    +topC.map(([c,n])=>'<div class="cong-chip" onclick="verCong(\''+encodeURIComponent(c)+'\')">'+c+' <strong>'+n+'</strong></div>').join('')+'</div>';
+  renderCongregacoesAnalytics();
+  if(window.lucide)lucide.createIcons();
+}
+function renderCongregacoesAnalytics(){
+  const div=document.getElementById('rankCongs');if(!div)return;
+  const query=normalizarTexto(document.getElementById('buscaCongAnalise')?.value||'');
+  const grupos=new Map();
+  oradores.forEach(o=>{const nome=String(o.cong||'').trim();if(!nome)return;if(!grupos.has(nome))grupos.set(nome,[]);grupos.get(nome).push(o);});
+  const lista=[...grupos.entries()].filter(([cong,itens])=>!query||normalizarTexto(cong).includes(query)||itens.some(o=>normalizarTexto(o.nome).includes(query))).sort(([a],[b])=>a.localeCompare(b,'pt-BR',{sensitivity:'base'}));
+  const count=document.getElementById('congResultCount');if(count)count.textContent=lista.length+' de '+grupos.size+' congregações';
+  div.innerHTML='';
+  if(!lista.length){div.innerHTML='<div class="empty">Nenhuma congregação encontrada.</div>';return;}
+  const grid=document.createElement('div');grid.className='cong-analysis-grid';
+  lista.forEach(([cong,itens])=>{
+    const button=document.createElement('button');button.className='cong-analysis-item';button.onclick=()=>verCong(encodeURIComponent(cong));
+    const name=document.createElement('span');name.textContent=cong;
+    const total=document.createElement('strong');total.textContent=itens.length;
+    button.appendChild(name);button.appendChild(total);grid.appendChild(button);
+  });
+  div.appendChild(grid);
 }
 function verCong(enc){
   const cong=decodeURIComponent(enc);
-  const ors=oradores.filter(o=>o.cong===cong);
+  const ors=oradores.filter(o=>o.cong===cong).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR',{sensitivity:'base'}));
   document.getElementById('mCongTit').textContent=cong+' ('+ors.length+')';
   document.getElementById('mCongLista').innerHTML=ors.length?ors.map(o=>{
     const ultimo=getUltimoDiscurso(o);
@@ -252,5 +268,4 @@ async function autoFillSentinelaTab(){
     registrarSentinelaAuto(dataAlvo,titulo);
   }
 }
-
 

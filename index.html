@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Oradores</title>
-<link rel="icon" type="image/png" href="assets/images/oradores-logo.png">
+<link rel="icon" type="image/png" href="assets/images/oradores-speaker-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
@@ -15,7 +15,7 @@
 <script src="assets/js/data.js"></script>
 <div id="setup">
   <div class="setup-box">
-    <div class="setup-logo"><img src="assets/images/oradores-logo.png" alt=""><span>Oradores</span></div>
+    <div class="setup-logo"><img src="assets/images/oradores-speaker-logo.png" alt=""><span>Oradores</span></div>
     <div class="setup-sub">Sua programação de discursos, simples e organizada</div>
     <div class="setup-hint" style="text-align:center;margin:18px 0">Cada conta possui programação, histórico, configurações e oradores separados.</div>
     <div id="setupErr"></div>
@@ -82,6 +82,7 @@
     </div>
     <div id="agCamposSemDisc" style="display:none">
       <div class="field"><label>Motivo</label><input id="agMotivo" placeholder="Ex: Assembleia Regional, Congresso..."></div>
+      <div class="field color-field"><label>Cor do cartão sem discurso</label><input type="color" id="agSemDiscursoCor" value="#f59e0b"><span id="agSemDiscursoCorHex">#F59E0B</span></div>
     </div>
     <div class="brow"><button class="btn bp" onclick="saveAgend()">Salvar</button><button class="btn bo" onclick="closeM('mAgend')">Cancelar</button><button class="btn bo" id="btnDelAgend" style="display:none;color:var(--red)" onclick="delAgendAtual()">Excluir discurso</button></div>
   </div>
@@ -176,7 +177,7 @@
 </div>
 <!-- APP -->
 <header>
-  <div class="logo"><img src="assets/images/oradores-logo.png" alt=""><span>Oradores <small id="headerCongName">— Minha Congregação</small></span></div>
+  <div class="logo"><img src="assets/images/oradores-speaker-logo.png" alt=""><span>Oradores <small id="headerCongName">— Minha Congregação</small></span></div>
   <div class="header-actions">
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="moon"></i></button>
     <button class="icon-btn optional-action" onclick="compartilharProgramacao()" title="Compartilhar programação"><i data-lucide="message-circle"></i></button>
@@ -188,7 +189,7 @@
   </div>
 </header>
 <nav>
-  <div class="nav-brand"><img src="assets/images/oradores-logo.png" alt=""><span>Oradores <small id="sidebarCongName">— Minha Congregação</small></span></div>
+  <div class="nav-brand"><img src="assets/images/oradores-speaker-logo.png" alt=""><span>Oradores <small id="sidebarCongName">— Minha Congregação</small></span></div>
   <div class="tab active" data-p="home"><i data-lucide="house"></i><span>Home</span></div>
   <div class="tab" data-p="programa"><i data-lucide="history"></i><span>Histórico</span></div>
   <div class="tab" data-p="temas"><i data-lucide="book-open"></i><span>Temas</span></div>
@@ -206,7 +207,7 @@
     <div class="week-focus"><div class="section-label">Próximo discurso</div><div id="homeWeekCard"><div class="skeleton skeleton-card"></div></div></div>
     <div class="dashboard-side">
       <div class="summary-card"><div class="summary-icon"><i data-lucide="triangle-alert"></i></div><div><strong id="pendingCount">0</strong><span>Pendências no mês</span><small id="pendingDetails">Tudo preenchido</small></div></div>
-      <div class="quick-card"><div class="section-label">Ações rápidas</div><div class="quick-actions"><button onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar</button><button onclick="compartilharProgramacao()"><i data-lucide="share-2"></i> Compartilhar</button><button onclick="irTab('oradores')"><i data-lucide="users"></i> Oradores</button></div></div>
+      <div class="quick-card"><div class="section-label">Ações rápidas</div><div class="quick-actions"><button onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar histórico</button><button onclick="compartilharProgramacao()"><i data-lucide="share-2"></i> Compartilhar</button><button onclick="irTab('oradores')"><i data-lucide="users"></i> Oradores</button></div></div>
       <div id="homeSentinela"></div>
     </div>
   </section>
@@ -220,6 +221,7 @@
   <div class="panel-head">
     <div class="panel-title" style="margin:0">Histórico de Discursos</div>
     <div class="brow-r">
+      <button class="btn bo bs" onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar histórico</button>
       <button class="btn bp bs" onclick="openNovoAgend()">+ Inserir semana</button>
       <button class="btn bo bs" onclick="exportXlsx('historico')">📤 Exportar</button>
     </div>
@@ -280,7 +282,10 @@
     <div class="card"><div class="slabel">Temas mais usados</div><div id="rankTemas"></div></div>
     <div class="card"><div class="slabel">Sem discursar há mais tempo</div><div id="rankSem"></div></div>
   </div>
-  <div class="card" style="margin-top:0"><div class="slabel">Congregações — clique para ver oradores</div><div id="rankCongs"></div></div>
+  <div class="card" style="margin-top:0">
+    <div class="analysis-section-head"><div><div class="slabel">Congregações</div><small id="congResultCount">Clique para ver os oradores</small></div><div class="analysis-search"><i data-lucide="search"></i><input id="buscaCongAnalise" placeholder="Buscar congregação ou orador..." oninput="renderCongregacoesAnalytics()"></div></div>
+    <div id="rankCongs"></div>
+  </div>
 </div>
 <div class="page" id="page-sentinela">
   <div class="panel-title">Tema A Sentinela</div>

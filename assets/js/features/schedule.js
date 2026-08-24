@@ -67,6 +67,7 @@ function preencherModalAgend(p){
   document.getElementById('agTema').value=p.temaNum||'';
   document.getElementById('agObs').value=p.obs||'';
   document.getElementById('agMotivo').value=p.motivo||'';
+  document.getElementById('agSemDiscursoCor').value=/^#[0-9a-f]{6}$/i.test(p.semDiscursoCor||'')?p.semDiscursoCor:'#f59e0b';
   document.getElementById('agCadastrar').checked=false;
   document.getElementById('agSemDiscurso').checked=!!(p.semDiscurso);
   document.getElementById('agEspecial').checked=!!p.especial;
@@ -100,6 +101,7 @@ function preencherModalAgend(p){
 }
 function onAgSemDiscurso(){
   const chk=document.getElementById('agSemDiscurso').checked;
+  const color=document.getElementById('agSemDiscursoCor');
   document.getElementById('agCamposNormais').style.display=chk?'none':'block';
   document.getElementById('agCamposSemDisc').style.display=chk?'block':'none';
   document.getElementById('agTabCadastrado').style.display=chk?'none':'block';
@@ -107,6 +109,8 @@ function onAgSemDiscurso(){
   document.getElementById('tabCadastrado').style.display=chk?'none':'flex';
   document.getElementById('tabNovo').style.display=chk?'none':'flex';
   document.getElementById('agEspecialBox').style.display=chk?'none':'block';
+  document.getElementById('agSemDiscursoCorHex').textContent=color.value.toUpperCase();
+  color.oninput=()=>document.getElementById('agSemDiscursoCorHex').textContent=color.value.toUpperCase();
 }
 function onAgEspecial(){
   const checked=document.getElementById('agEspecial').checked,color=document.getElementById('agEspecialCor');
@@ -158,6 +162,7 @@ async function saveAgend(){
     telefone:isSemDisc?'':tel,
     obs:isSemDisc?'':document.getElementById('agObs').value.trim(),
     motivo:isSemDisc?document.getElementById('agMotivo').value.trim():'',
+    semDiscursoCor:isSemDisc?document.getElementById('agSemDiscursoCor').value:'#f59e0b',
     especial:isEspecial,
     especialTitulo:temaEspecial,
     especialCor:isEspecial?document.getElementById('agEspecialCor').value:'#7c3aed'
@@ -211,4 +216,3 @@ function compartilharProgramacao(){
   const texto='*Programação de discursos — '+cfg.cong+'*\n\n'+linhas.join('\n');
   window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank');
 }
-

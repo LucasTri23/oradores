@@ -132,12 +132,13 @@ function renderOradores(){
     row.innerHTML=ih;
     const btns=document.createElement('div');
     btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
-    if(o.tel){const b=document.createElement('button');b.className='btn bo bs';b.title='WhatsApp';b.textContent='💬';b.onclick=()=>abrirWADir(o.tel);btns.appendChild(b);}
+    if(o.tel){const b=document.createElement('button');b.className='btn bo bs';b.title='Escolher mensagem para WhatsApp';b.innerHTML='<i data-lucide="message-circle-more"></i><span>Mensagem</span>';b.onclick=()=>abrirMensagensOrador(o.id);btns.appendChild(b);}
     const be=document.createElement('button');be.className='btn bo bs';be.title='Editar';be.textContent='✏️';be.onclick=()=>editOrador(o.id);btns.appendChild(be);
     const bd=document.createElement('button');bd.className='btn bo bs';bd.style.cssText='color:var(--red);opacity:.7';bd.title='Excluir';bd.textContent='🗑';bd.onclick=()=>delOrador(o.id);btns.appendChild(bd);
     row.appendChild(btns);
     div.appendChild(row);
   });
+  if(window.lucide)lucide.createIcons();
 }
 function novoOrador(){['oId','oNome','oCong','oTel','oUlt','oObs'].forEach(id=>document.getElementById(id).value='');notaAtual=0;rStars(0);document.getElementById('mOradorTit').textContent='Novo Orador';openM('mOrador');}
 function editOrador(id){
@@ -160,5 +161,4 @@ function rStars(v){document.querySelectorAll('#starsEl .star').forEach(s=>s.clas
 
 // DISCURSOS
 async function loadDiscursos(){if(!db)return;const s=await FF.gets(FF.col(db,'discursos'));discursos=s.docs.map(d=>({id:d.id,...d.data()}));}
-
 
