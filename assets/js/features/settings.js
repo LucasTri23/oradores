@@ -108,16 +108,28 @@ async function loadDiscursantes(){
   renderMinha();
 }
 
+function saidasDiscursante(d){
+  const saidas=Array.isArray(d.saidas)?d.saidas.filter(s=>s&&s.data).map(s=>({...s,id:String(s.id||Date.now()+Math.random())})):[];
+  if(d.proxSaida&&!saidas.some(s=>s.data===d.proxSaida&&String(s.destino||'')===String(d.destino||''))){
+    saidas.push({id:'legacy',data:d.proxSaida,destino:d.destino||'',obs:d.obs||''});
+  }
+  return saidas.sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+}
+
+function proximaSaidaDiscursante(d,hoje=new Date().toISOString().slice(0,10)){
+  return saidasDiscursante(d).find(s=>s.data>=hoje)||null;
+}
+
 function renderMinha(){
   const div=document.getElementById('listaMinha');if(!div)return;
   const hoje=new Date().toISOString().slice(0,10);
   let lista=[...discursantes];
-  if(mcFiltro==='agendado') lista=lista.filter(d=>d.proxSaida&&d.proxSaida>=hoje);
-  if(mcFiltro==='sem') lista=lista.filter(d=>!d.proxSaida||d.proxSaida<hoje);
+  if(mcFiltro==='agendado') lista=lista.filter(d=>proximaSaidaDiscursante(d,hoje));
+  if(mcFiltro==='sem') lista=lista.filter(d=>!proximaSaidaDiscursante(d,hoje));
   lista.sort((a,b)=>{
     // Mais recente primeiro: usa proxSaida se existir, senão ultSaida
-    const da=a.proxSaida||a.ultSaida||'';
-    const db=b.proxSaida||b.ultSaida||'';
+    const da=proximaSaidaDiscursante(a,hoje)?.data||a.ultSaida||'';
+    const db=proximaSaidaDiscursante(b,hoje)?.data||b.ultSaida||'';
     if(da&&db)return db>da?1:-1;
     if(da)return -1;
     if(db)return 1;
@@ -126,22 +138,27 @@ function renderMinha(){
   if(!lista.length){div.innerHTML='<div class="empty"><div class="ico">🏠</div>Nenhum discursante cadastrado</div>';return;}
   div.innerHTML='';
   lista.forEach(d=>{
-    const temProx=d.proxSaida&&d.proxSaida>=hoje;
+    const futuras=saidasDiscursante(d).filter(s=>s.data>=hoje),proxima=futuras[0]||null,temProx=!!proxima;
     const card=document.createElement('div');
     card.style.cssText='background:var(--surf);border:1px solid '+(temProx?'rgba(37,99,235,.35)':'var(--border)')+';border-radius:10px;padding:13px 15px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px';
     // Info
     const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
     const nm=document.createElement('div');nm.style.cssText='font-weight:700;font-size:14px;color:var(--whi)';nm.textContent=d.nome||'—';
     info.appendChild(nm);
-    if(d.destino){
+    if(proxima?.destino){
       const dest=document.createElement('div');dest.style.cssText='font-size:11px;color:var(--pur3);margin-top:1px';
-      dest.textContent='→ '+d.destino;
+      dest.textContent='→ '+proxima.destino;
       info.appendChild(dest);
     }
     if(temProx){
       const prox=document.createElement('div');prox.style.cssText='margin-top:4px';
-      prox.innerHTML='<span class="badge bpur">📅 Próxima: '+fD(d.proxSaida)+'</span>';
+      prox.innerHTML='<span class="badge bpur">📅 Próxima: '+fD(proxima.data)+'</span>';
       info.appendChild(prox);
+    }
+    if(futuras.length>1){
+      const details=document.createElement('details');details.className='outbound-more';
+      const summary=document.createElement('summary');summary.textContent='Ver outros '+(futuras.length-1)+' discursos agendados';details.appendChild(summary);
+      futuras.slice(1).forEach(saida=>{const item=document.createElement('div');item.className='outbound-date';item.innerHTML='<strong>'+fD(saida.data)+'</strong><span>'+(saida.destino||'Destino não informado')+'</span>';details.appendChild(item);});info.appendChild(details);
     }
     if(d.ultSaida){
       const ult=document.createElement('div');ult.style.cssText='font-size:11px;color:var(--whi3);margin-top:3px';
@@ -161,6 +178,8 @@ function renderMinha(){
       const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬';wa.title='WhatsApp';
       wa.onclick=function(){abrirWADir(d.tel);};btns.appendChild(wa);
     }
+    const add=document.createElement('button');add.className='btn bo bs';add.innerHTML='<i data-lucide="calendar-plus"></i><span> Outro</span>';add.title='Adicionar outro discurso';
+    add.onclick=function(){addSaidaDiscursante(d.id);};btns.appendChild(add);
     const ed=document.createElement('button');ed.className='btn bo bs';ed.textContent='✏️';ed.title='Editar';
     ed.onclick=function(){editDiscursante(d.id);};btns.appendChild(ed);
     const dl=document.createElement('button');dl.className='btn bo bs';dl.style.cssText='color:var(--red);opacity:.7';dl.textContent='🗑';
@@ -168,6 +187,7 @@ function renderMinha(){
     card.appendChild(btns);
     div.appendChild(card);
   });
+  if(window.lucide)lucide.createIcons();
 }
 
 function popularSelectDiscursante(selectedId){
@@ -211,6 +231,7 @@ function onDcSelect(){
 function novoDiscursante(){
   document.getElementById('dcId').value='';
   document.getElementById('dcOradorId').value='';
+  document.getElementById('dcSaidaId').value='';
   ['dcUlt','dcProx','dcDest','dcObs'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('dcInfo').style.display='none';
   document.getElementById('mDiscTit').textContent='Novo Discursante';
@@ -220,12 +241,14 @@ function novoDiscursante(){
 
 function editDiscursante(id){
   const d=discursantes.find(x=>x.id===id);if(!d)return;
+  const proxima=proximaSaidaDiscursante(d);
   document.getElementById('dcId').value=id;
   document.getElementById('dcOradorId').value=d.oradorId||'';
+  document.getElementById('dcSaidaId').value=proxima?.id||'';
   document.getElementById('dcUlt').value=d.ultSaida||'';
-  document.getElementById('dcProx').value=d.proxSaida||'';
-  document.getElementById('dcDest').value=d.destino||'';
-  document.getElementById('dcObs').value=d.obs||'';
+  document.getElementById('dcProx').value=proxima?.data||'';
+  document.getElementById('dcDest').value=proxima?.destino||'';
+  document.getElementById('dcObs').value=proxima?.obs||'';
   document.getElementById('mDiscTit').textContent='Editar — '+d.nome;
   popularSelectDiscursante(d.oradorId||null);
   // Show info
@@ -236,21 +259,39 @@ function editDiscursante(id){
   openM('mDiscursante');
 }
 
+function addSaidaDiscursante(id){
+  const d=discursantes.find(x=>x.id===id);if(!d)return;
+  editDiscursante(id);
+  document.getElementById('dcSaidaId').value='';
+  document.getElementById('dcProx').value='';document.getElementById('dcDest').value='';document.getElementById('dcObs').value='';
+  document.getElementById('mDiscTit').textContent='Adicionar discurso — '+d.nome;
+}
+
 async function saveDiscursante(){
   if(!db)return toast('Supabase não conectado!');
   const id=document.getElementById('dcId').value.trim();
+  const saidaId=document.getElementById('dcSaidaId').value.trim();
   const oradorId=document.getElementById('dcOradorId').value.trim();
   const selV=document.getElementById('dcSelect').value;
   const o=oradores.find(x=>x.id===selV);
   if(!o&&!id)return toast('Selecione um irmão!');
   const nome=o?o.nome:(discursantes.find(d=>d.id===id)?.nome||'');
   const tel=o?o.tel||'':'';
+  const existente=discursantes.find(d=>d.id===id),novaData=document.getElementById('dcProx').value||null;
+  let saidas=existente?saidasDiscursante(existente):[];
+  if(novaData){
+    const compromisso={id:saidaId||String(Date.now()),data:novaData,destino:document.getElementById('dcDest').value.trim(),obs:document.getElementById('dcObs').value.trim()};
+    if(saidaId){const pos=saidas.findIndex(s=>s.id===saidaId);if(pos>=0)saidas[pos]=compromisso;else saidas.push(compromisso);}else saidas.push(compromisso);
+  }
+  saidas=saidas.filter((s,i,a)=>a.findIndex(x=>x.id===s.id)===i).sort((a,b)=>a.data.localeCompare(b.data));
+  const proxima=saidas.find(s=>s.data>=new Date().toISOString().slice(0,10))||null;
   const data={
     nome,tel,oradorId:selV||oradorId||'',
     ultSaida:document.getElementById('dcUlt').value||null,
-    proxSaida:document.getElementById('dcProx').value||null,
-    destino:document.getElementById('dcDest').value.trim(),
-    obs:document.getElementById('dcObs').value.trim()
+    proxSaida:proxima?.data||null,
+    destino:proxima?.destino||'',
+    obs:proxima?.obs||'',
+    saidas
   };
   if(id){
     await FF.upd(FF.doc(db,'discursantes',id),data);
