@@ -36,9 +36,15 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const el=document.createElement('div');
   el.style.cssText='background:'+bg+';border:1px solid '+brd+';border-radius:10px;padding:'+(isLarge?'18px':'11px 14px')+';position:relative;margin-bottom:6px';
 
+  if(isLarge){
+    const edit=document.createElement('button');edit.className='week-card-edit';edit.type='button';edit.title='Editar discurso';
+    edit.innerHTML='<i data-lucide="pencil"></i><span>Editar</span>';
+    edit.onclick=function(e){e.stopPropagation();editarAgend(semJson);};el.appendChild(edit);
+  }
+
   // Date label
   const dateEl=document.createElement('div');
-  dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isEspecial?specialColor:isSemDisc?noSpeechColor:isCurrent?'var(--pur3)':'var(--whi2)')+';margin-bottom:'+(isLarge?'6px':'3px');
+  dateEl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+(isEspecial?specialColor:isSemDisc?noSpeechColor:isCurrent?'var(--pur3)':'var(--whi2)')+';margin-bottom:'+(isLarge?'6px':'3px')+(isLarge?';padding-right:68px':'');
   dateEl.textContent='📅 '+fDSem(sem.data);
   el.appendChild(dateEl);
 
@@ -90,8 +96,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
       if(isLarge){
         const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
         const wa=document.createElement('button');wa.className='btn bgn bs';wa.textContent='💬 WhatsApp';wa.onclick=function(){abrirMsgPadrao(semJson);};btnWrap.appendChild(wa);
-        const group=document.createElement('button');group.className='btn bo bs';group.innerHTML='<i data-lucide="users"></i> Enviar para grupo';group.onclick=function(){abrirMsgGrupo(semJson);};btnWrap.appendChild(group);
-        const edit=document.createElement('button');edit.className='btn bo bs';edit.innerHTML='<i data-lucide="pencil"></i> Editar';edit.onclick=function(){editarAgend(semJson);};btnWrap.appendChild(edit);
+        const group=document.createElement('button');group.className='btn bo bs';group.innerHTML='<i data-lucide="share-2"></i> Compartilhar';group.onclick=function(){abrirMsgGrupo(semJson);};btnWrap.appendChild(group);
         el.appendChild(btnWrap);
       } else {
         // Small card: botão compacto ao lado do tema já renderizado acima
@@ -265,16 +270,22 @@ function renderCalendar(byDate){
     else if(tema){if(registro.temaNum){const number=document.createElement('span');number.className='topic-number';number.textContent='Tema '+registro.temaNum;topic.appendChild(number);}else if(especial){const number=document.createElement('span');number.className='topic-number';number.textContent='Discurso especial';number.style.color=corEspecial(registro.especialCor);topic.appendChild(number);}const topicName=document.createElement('strong');topicName.textContent=tema;topic.appendChild(topicName);}
     else topic.innerHTML='<span class="agenda-status pending">Tema pendente</span>';
 
+    const actions=document.createElement('div');actions.className='agenda-actions';
+    if(!semDiscurso&&registro.nome){
+      const message=document.createElement('button');message.className='agenda-action agenda-message';message.type='button';message.title='Escolher mensagem para o orador';
+      message.innerHTML='<i data-lucide="message-circle-more"></i><span>Mensagem</span>';
+      message.onclick=e=>{e.stopPropagation();abrirMensagensAgendamento(JSON.stringify(registro));};actions.appendChild(message);
+    }
     const action=document.createElement('button');action.className='agenda-action';action.type='button';
     action.innerHTML='<i data-lucide="'+(apenasHistorico?'eye':pendente?'circle-plus':'pencil')+'"></i><span>'+(apenasHistorico?'Ver':pendente?'Completar':'Editar')+'</span>';
-    action.onclick=e=>{e.stopPropagation();apenasHistorico?irTab('programa'):editarAgend(JSON.stringify(registro));};
+    action.onclick=e=>{e.stopPropagation();apenasHistorico?irTab('programa'):editarAgend(JSON.stringify(registro));};actions.appendChild(action);
 
     const status=document.createElement('div');status.className='agenda-state';
     if(semDiscurso){status.innerHTML='<i class="status-dot"></i><span>Sem discurso</span>';status.querySelector('i').style.background=corEspecial(registro.semDiscursoCor||'#f59e0b');}
     else if(pendente)status.innerHTML='<i class="status-dot pending"></i><span>Falta: '+faltas.join(', ')+'</span>';
     else if(especial){status.innerHTML='<i class="status-dot"></i><span></span>';status.querySelector('i').style.background=corEspecial(registro.especialCor);status.querySelector('span').textContent=registro.especialTitulo||'Especial';}
     else status.innerHTML='<i class="status-dot ready"></i><span>Completo</span>';
-    row.appendChild(date);row.appendChild(info);row.appendChild(topic);row.appendChild(status);row.appendChild(action);grid.appendChild(row);
+    row.appendChild(date);row.appendChild(info);row.appendChild(topic);row.appendChild(status);row.appendChild(actions);grid.appendChild(row);
   });
 }
 function renderSentinelaChip(){

@@ -385,6 +385,14 @@ function abrirMsgPadrao(jsonOrEnc){
   mostrarPickerMsg(sem);
 }
 
+function abrirMensagensAgendamento(jsonOrEnc){
+  let sem;try{sem=JSON.parse(jsonOrEnc);}catch(e){sem=JSON.parse(decodeURIComponent(jsonOrEnc));}
+  sem=typeof completarDadosPrograma==='function'?completarDadosPrograma(sem):sem;
+  if(!sem.telefone)return toast('Este orador não possui WhatsApp cadastrado.');
+  if(!mensagens.length)return toast('Crie uma mensagem em Configurações.');
+  mostrarPickerMsg(sem);
+}
+
 function mostrarPickerMsg(sem){
   const existing=document.getElementById('mMsgPicker');
   if(existing)existing.remove();
