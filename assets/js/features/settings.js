@@ -46,10 +46,12 @@ async function loadConfig(){
   // Mensagens
   const msgsDoc=await FF.get(FF.doc(db,'config','mensagens'));
   if(msgsDoc.exists&&msgsDoc.data().lista){
-    mensagens=msgsDoc.data().lista.map(m=>({...m,tipo:m.tipo||(String(m.titulo||'').toLowerCase().includes('convite')?'convite':'geral')}));
+    const mensagensSalvas=msgsDoc.data().lista;
+    mensagens=mensagensSalvas.map(m=>({...m,texto:repararEmojisMensagem(m.texto),tipo:m.tipo||(String(m.titulo||'').toLowerCase().includes('convite')?'convite':'geral')}));
+    if(mensagens.some((m,i)=>m.texto!==mensagensSalvas[i]?.texto))await FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});
   } else {
     const lm=localStorage.getItem('bj_msgs');
-    if(lm){mensagens=JSON.parse(lm).map(m=>({...m,tipo:m.tipo||(String(m.titulo||'').toLowerCase().includes('convite')?'convite':'geral')}));FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});}
+    if(lm){mensagens=JSON.parse(lm).map(m=>({...m,texto:repararEmojisMensagem(m.texto),tipo:m.tipo||(String(m.titulo||'').toLowerCase().includes('convite')?'convite':'geral')}));FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});}
   }
   // Temas (overrides + bloqueados)
   const temasDoc=await FF.get(FF.doc(db,'config','temas'));
@@ -307,11 +309,19 @@ function decodeHtmlEntities(str){
   txt.innerHTML=str;
   return txt.value;
 }
+function repararEmojisMensagem(valor){
+  return String(valor||'')
+    .replace(/^[ \t�]*(?=Tema\s*:)/gim,'📖 ')
+    .replace(/^[ \t�]*(?=Data\s*:)/gim,'📅 ')
+    .replace(/^[ \t�]*(?=(?:Congrega(?:ção|cao)|Endere(?:ço|co))\s*:)/gim,'📍 ')
+    .replace(/^[ \t]*�+[ \t]*$/gm,'🙏')
+    .replace(/^[ \t]*�+[ \t]*(?=\S)/gm,'📍 ');
+}
 function buildMsg(template,sem){
   const nT=sem.temaNum;
   const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'—';
   const temaCompleto=nT?('Nº '+nT+' — '+nomeT):nomeT;
-  const tmpl=decodeHtmlEntities(template);
+  const tmpl=repararEmojisMensagem(decodeHtmlEntities(template));
   return tmpl
     .replace(/{orador}/g,sem.nome||'—')
     .replace(/{tema}/g,temaCompleto)
