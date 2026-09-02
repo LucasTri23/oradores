@@ -92,6 +92,9 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
         }
         el.appendChild(tWrap);
       }
+      if(sem.canticoNum){
+        const song=document.createElement('div');song.className='week-song';song.innerHTML='<i data-lucide="music-2"></i><span><strong>Cântico '+sem.canticoNum+'</strong>'+(sem.cantico?' — '+sem.cantico:'')+'</span>';el.appendChild(song);
+      }
       // Botão WA — abre direto no WhatsApp já com a mensagem pronta
       if(isLarge){
         const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:6px;flex-wrap:wrap';

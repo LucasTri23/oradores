@@ -53,8 +53,11 @@ async function removeTeamMember(userId,email){
   toast('Acesso removido.');renderTeamPanel();
 }
 
-function abrirMsgGrupo(jsonOrEnc){
+async function abrirMsgGrupo(jsonOrEnc){
   let sem;try{sem=JSON.parse(jsonOrEnc);}catch(error){sem=JSON.parse(decodeURIComponent(jsonOrEnc));}
+  if(sem.canticoNum&&!sem.cantico&&typeof obterTituloCantico==='function')sem.cantico=await obterTituloCantico(sem.canticoNum);
   const template=cfg.groupMsg||'Próximo discurso público:\n\nOrador: {orador}\nTema: {tema}\nData: {data}\nCongregação: {minha_cong}';
-  window.open('https://wa.me/?text='+encodeURIComponent(buildMsg(template,sem)),'_blank','noopener');
+  let texto=buildMsg(template,sem);
+  if(sem.canticoNum&&!template.includes('{cantico}'))texto+='\nCântico: '+sem.canticoNum+' — '+(sem.cantico||'Título não carregado');
+  window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank','noopener');
 }

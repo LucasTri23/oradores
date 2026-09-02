@@ -41,6 +41,7 @@ function renderPrograma(){
 function openNovoAgend(){
   preencherModalAgend({});
   document.getElementById('agData').value=nextSab();
+  atualizarSugestoesSentinela();
   document.getElementById('mAgendTit').textContent='Inserir na Programação';
   document.getElementById('agDataLabel').textContent='Data ('+(Number(cfg.dia)===0?'domingo':'sábado')+')';
   openM('mAgend');
@@ -51,6 +52,7 @@ function editarAgend(jsonOrEnc){
   preencherModalAgend(p);
   document.getElementById('mAgendTit').textContent='Editar — '+fD(p.data);
   document.getElementById('agDataLabel').textContent='Data ('+(Number(cfg.dia)===0?'domingo':'sábado')+')';
+  atualizarSugestoesSentinela();
   openM('mAgend');
 }
 function switchOradorTab(tab){
@@ -65,6 +67,8 @@ function preencherModalAgend(p){
   document.getElementById('btnDelAgend').style.display=p.id?'inline-flex':'none';
   document.getElementById('agData').value=p.data||'';
   document.getElementById('agTema').value=p.temaNum||'';
+  document.getElementById('agCantico').value=p.canticoNum||'';
+  document.getElementById('agCanticoDesc').textContent=p.cantico||'';
   document.getElementById('agObs').value=p.obs||'';
   document.getElementById('agMotivo').value=p.motivo||'';
   document.getElementById('agSemDiscursoCor').value=/^#[0-9a-f]{6}$/i.test(p.semDiscursoCor||'')?p.semDiscursoCor:'#f59e0b';
@@ -113,6 +117,7 @@ function onAgSemDiscurso(){
   document.getElementById('agEspecialBox').style.display=chk?'none':'block';
   document.getElementById('agSemDiscursoCorHex').textContent=color.value.toUpperCase();
   color.oninput=()=>document.getElementById('agSemDiscursoCorHex').textContent=color.value.toUpperCase();
+  atualizarSugestoesSentinela();
 }
 function onAgEspecial(){
   const checked=document.getElementById('agEspecial').checked,color=document.getElementById('agEspecialCor');
@@ -121,8 +126,59 @@ function onAgEspecial(){
   document.getElementById('agTemaDesc').style.display=checked?'none':'block';
   document.getElementById('agEspecialCorHex').textContent=color.value.toUpperCase();
   color.oninput=()=>document.getElementById('agEspecialCorHex').textContent=color.value.toUpperCase();
+  atualizarSugestoesSentinela();
 }
 function onAgTema(){const n=parseInt(document.getElementById('agTema').value);document.getElementById('agTemaDesc').textContent=n&&TL[n]?TL[n]:'';}
+
+let _canticosJWPromise=null,_sugestaoSentinelaSeq=0;
+function palavrasTema(texto){
+  const stop=new Set(['a','ao','aos','as','com','como','da','das','de','do','dos','e','em','esta','este','eu','na','nas','no','nos','o','os','para','por','que','se','seu','sua','um','uma','voce']);
+  return normalizarTexto(texto).split(/[^a-z0-9]+/).filter(p=>p.length>2&&!stop.has(p));
+}
+function pontuarRelacaoSentinela(sentinela,discurso){
+  const a=palavrasTema(sentinela),b=palavrasTema(discurso);let pontos=0;
+  a.forEach(x=>b.forEach(y=>{if(x===y)pontos+=5;else if(x.length>4&&y.length>4&&(x.startsWith(y.slice(0,5))||y.startsWith(x.slice(0,5))))pontos+=2;}));
+  const grupos=[
+    ['deus','jeova','criador','criacao'],['jesus','cristo','messias','resgate'],['familia','casamento','marido','esposa','filhos','pais'],
+    ['ansiedade','preocupacao','medo','coragem','confianca'],['fe','confiar','confianca','esperanca'],['amor','bondade','perdao','misericordia'],
+    ['oracao','orar'],['biblia','escrituras','verdade','ensino'],['reino','governo','futuro','paraiso'],['morte','ressurreicao','vida'],
+    ['feliz','felicidade','alegria'],['sofrimento','problemas','dificuldades','provas'],['amizade','amigo','companhia'],['jovem','jovens','criancas']
+  ];
+  grupos.forEach(g=>{if(g.some(x=>a.includes(x))&&g.some(x=>b.includes(x)))pontos+=3;});return pontos;
+}
+async function atualizarSugestoesSentinela(){
+  const box=document.getElementById('agSugestoesSentinela');if(!box)return;
+  if(!cfg.sugerirSentinela||document.getElementById('agEspecial')?.checked||document.getElementById('agSemDiscurso')?.checked){box.hidden=true;box.innerHTML='';return;}
+  const data=document.getElementById('agData').value;if(!data){box.hidden=true;return;}
+  const seq=++_sugestaoSentinelaSeq;box.hidden=false;box.innerHTML='<small>Buscando o estudo da Sentinela desta semana...</small>';
+  const salvo=sentinelas.find(s=>s.data===data),temaSentinela=salvo?.tema||await fetchTemaJW(data);if(seq!==_sugestaoSentinelaSeq)return;
+  if(!temaSentinela){box.innerHTML='<small>Não foi possível encontrar o tema da Sentinela desta semana.</small>';return;}
+  const sugestoes=Object.entries(TL).filter(([n,t])=>t&&!bloqueados.has(Number(n))).map(([n,t])=>({n:Number(n),t,p:pontuarRelacaoSentinela(temaSentinela,t)})).filter(x=>x.p>0).sort((a,b)=>b.p-a.p||a.n-b.n).slice(0,5);
+  box.innerHTML='<div class="watchtower-source"><strong>Sentinela:</strong> '+temaSentinela+'</div><div class="watchtower-hint">Sugestões relacionadas — escolha somente se forem adequadas:</div>';
+  const list=document.createElement('div');list.className='watchtower-topic-list';
+  sugestoes.forEach(s=>{const b=document.createElement('button');b.type='button';b.innerHTML='<strong>'+s.n+'</strong><span>'+s.t+'</span>';b.onclick=()=>{document.getElementById('agTema').value=s.n;onAgTema();};list.appendChild(b);});
+  if(!sugestoes.length){const empty=document.createElement('small');empty.textContent='Nenhum discurso apresentou relação clara pelo título.';list.appendChild(empty);}box.appendChild(list);
+}
+function fetchCanticosJW(){
+  if(_canticosJWPromise)return _canticosJWPromise;
+  _canticosJWPromise=(async()=>{
+    try{const salvo=JSON.parse(localStorage.getItem('oradores_canticos_jw')||'null');if(salvo&&Object.keys(salvo).length>100)return salvo;}catch(e){}
+    const mapa={};
+    try{
+      const url='https://www.jw.org/pt/biblioteca/musicas-canticos/cante-de-coracao/';
+      const r=await fetch('https://r.jina.ai/'+url);if(!r.ok)throw new Error('JW indisponível');const texto=await r.text();
+      const re=/^\s*(?:\[)?(\d{1,3})\.\s*([^\]\n]+?)(?:\]\([^)]*\))?\s*(?:Reproduzir)?\s*$/gm;let m;
+      while((m=re.exec(texto))){const titulo=m[2].replace(/\s+Reproduzir\s*$/i,'').trim();if(titulo.length>2)mapa[m[1]]=titulo;}
+      if(Object.keys(mapa).length>50)localStorage.setItem('oradores_canticos_jw',JSON.stringify(mapa));
+    }catch(e){}
+    return mapa;
+  })();return _canticosJWPromise;
+}
+async function obterTituloCantico(numero){if(!numero)return'';const mapa=await fetchCanticosJW();return mapa[String(numero)]||'';}
+async function onAgCantico(){
+  const input=document.getElementById('agCantico'),desc=document.getElementById('agCanticoDesc'),numero=parseInt(input.value);if(!numero){desc.textContent='';return;}
+  desc.textContent='Buscando título no jw.org...';const titulo=await obterTituloCantico(numero);if(parseInt(input.value)!==numero)return;desc.textContent=titulo||'Título não encontrado — confira o número';
+}
 function onAgOradorSel(){
   const v=document.getElementById('agOradorSel').value;
   if(v){const o=oradores.find(x=>x.id===v);if(o){document.getElementById('agNome').value=o.nome;document.getElementById('agCong').value=o.cong||'';document.getElementById('agTel').value=o.tel||'';}}
@@ -181,11 +237,15 @@ async function saveAgend(){
   const isEspecial=!isSemDisc&&document.getElementById('agEspecial').checked;
   const temaEspecial=isEspecial?document.getElementById('agEspecialTitulo').value.trim():'';
   if(isEspecial&&!temaEspecial)return toast('Digite o nome do discurso especial!');
+  const canticoNum=isSemDisc?null:(parseInt(document.getElementById('agCantico').value)||null);
+  const cantico=canticoNum?(document.getElementById('agCanticoDesc').textContent&&!document.getElementById('agCanticoDesc').textContent.includes('Buscando')&&!document.getElementById('agCanticoDesc').textContent.includes('não encontrado')?document.getElementById('agCanticoDesc').textContent:await obterTituloCantico(canticoNum)):'';
   const entry={
     data:data_val,
     semDiscurso:isSemDisc||false,
     temaNum:(isSemDisc||isEspecial)?null:(parseInt(document.getElementById('agTema').value)||null),
     tema:isEspecial?temaEspecial:'',
+    canticoNum,
+    cantico,
     nome:isSemDisc?null:(nome||null),
     congregacao:isSemDisc?'':cong,
     telefone:isSemDisc?'':tel,

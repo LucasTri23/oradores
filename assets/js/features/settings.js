@@ -37,6 +37,7 @@ async function loadConfig(){
     if(d.end)cfg.end=d.end;
     if(d.hor)cfg.hor=d.hor;
     if(d.dia===0||d.dia===6)cfg.dia=d.dia;
+    cfg.sugerirSentinela=!!d.sugerirSentinela;
     if(d.groupMsg)cfg.groupMsg=d.groupMsg;
   } else {
     // migração única do localStorage
@@ -72,6 +73,7 @@ async function loadConfig(){
   document.getElementById('cfgNome').value=cfg.cong;document.getElementById('cfgEnd').value=cfg.end;document.getElementById('cfgHor').value=cfg.hor;document.getElementById('cfgDia').value=String(cfg.dia);
   document.getElementById('cfgGemini').value=localStorage.getItem('bj_gem')||'';
   document.getElementById('cfgGroupMsg').value=cfg.groupMsg||'';
+  document.getElementById('cfgSugerirSentinela').checked=!!cfg.sugerirSentinela;
 }
 
 function salvarConfigTemas(){
@@ -86,6 +88,7 @@ function saveConfig(){
   cfg.end=document.getElementById('cfgEnd').value;
   cfg.hor=document.getElementById('cfgHor').value;
   cfg.dia=Number(document.getElementById('cfgDia').value);
+  cfg.sugerirSentinela=document.getElementById('cfgSugerirSentinela').checked;
   cfg.groupMsg=document.getElementById('cfgGroupMsg').value.trim();
   const gem=document.getElementById('cfgGemini').value.trim();if(gem)localStorage.setItem('bj_gem',gem);else localStorage.removeItem('bj_gem');
   if(db)FF.set(FF.doc(db,'config','app'),cfg);
@@ -362,11 +365,13 @@ function buildMsg(template,sem){
   const nT=sem.temaNum;
   const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'—';
   const temaCompleto=nT?('Nº '+nT+' — '+nomeT):nomeT;
+  const canticoCompleto=sem.canticoNum?(sem.canticoNum+' — '+(sem.cantico||'Título não carregado')):'—';
   const tmpl=repararEmojisMensagem(decodeHtmlEntities(template));
   return tmpl
     .replace(/{orador}/g,sem.nome||'—')
     .replace(/{tema}/g,temaCompleto)
     .replace(/{numtema}/g,nT||'—')
+    .replace(/{cantico}/g,canticoCompleto)
     .replace(/{data}/g,fDL(sem.data))
     .replace(/{minha_cong}/g,cfg.cong)
     .replace(/{cong_orador}/g,sem.congregacao||'—')
