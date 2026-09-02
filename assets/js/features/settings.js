@@ -372,6 +372,7 @@ function buildMsg(template,sem){
     .replace(/{tema}/g,temaCompleto)
     .replace(/{numtema}/g,nT||'—')
     .replace(/{cantico}/g,canticoCompleto)
+    .replace(/{imagens}/g,sem.temImagens?'Terá imagens':'Não terá imagens')
     .replace(/{data}/g,fDL(sem.data))
     .replace(/{minha_cong}/g,cfg.cong)
     .replace(/{cong_orador}/g,sem.congregacao||'—')

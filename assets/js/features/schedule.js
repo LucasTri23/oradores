@@ -63,12 +63,14 @@ function switchOradorTab(tab){
   document.getElementById('tabNovo').classList.toggle('on',!isCad);
 }
 function preencherModalAgend(p){
+  agTemaConfirmadoKey='';clearTimeout(agTemaVerificacaoTimer);
   document.getElementById('agId').value=p.id||'';
   document.getElementById('btnDelAgend').style.display=p.id?'inline-flex':'none';
   document.getElementById('agData').value=p.data||'';
   document.getElementById('agTema').value=p.temaNum||'';
   document.getElementById('agCantico').value=p.canticoNum||'';
   document.getElementById('agCanticoDesc').textContent=p.cantico||'';
+  document.getElementById('agTemImagens').checked=!!p.temImagens;
   document.getElementById('agObs').value=p.obs||'';
   document.getElementById('agMotivo').value=p.motivo||'';
   document.getElementById('agSemDiscursoCor').value=/^#[0-9a-f]{6}$/i.test(p.semDiscursoCor||'')?p.semDiscursoCor:'#f59e0b';
@@ -128,7 +130,28 @@ function onAgEspecial(){
   color.oninput=()=>document.getElementById('agEspecialCorHex').textContent=color.value.toUpperCase();
   atualizarSugestoesSentinela();
 }
-function onAgTema(){const n=parseInt(document.getElementById('agTema').value);document.getElementById('agTemaDesc').textContent=n&&TL[n]?TL[n]:'';}
+let agTemaVerificacaoTimer=null,agTemaConfirmadoKey='';
+function onAgTema(verificar=false){
+  const n=parseInt(document.getElementById('agTema').value);document.getElementById('agTemaDesc').textContent=n&&TL[n]?TL[n]:'';
+  if(!verificar)return;
+  agTemaConfirmadoKey='';clearTimeout(agTemaVerificacaoTimer);
+  if(n)agTemaVerificacaoTimer=setTimeout(()=>verificarUsoTema(n),450);
+}
+function verificarUsoTema(numero){
+  if(!numero||document.getElementById('agSemDiscurso').checked||document.getElementById('agEspecial').checked)return true;
+  const idAtual=document.getElementById('agId').value,dataAtual=document.getElementById('agData').value;
+  const chave=[numero,idAtual,dataAtual].join('|');if(agTemaConfirmadoKey===chave)return true;
+  const hoje=new Date().toISOString().slice(0,10),limite=new Date();limite.setFullYear(limite.getFullYear()-1);const desde=isoLocal(limite);
+  const futuros=programa.filter(p=>Number(p.temaNum)===numero&&p.data>=hoje&&p.id!==idAtual&&!(p.data===dataAtual&&p.id===idAtual)).sort((a,b)=>a.data.localeCompare(b.data));
+  const historico=[...discursos,...programa].filter(p=>Number(p.temaNum)===numero&&p.data>=desde&&p.data<hoje&&p.id!==idAtual).filter((p,i,a)=>a.findIndex(x=>x.data===p.data&&Number(x.temaNum)===numero)===i).sort((a,b)=>b.data.localeCompare(a.data));
+  if(!futuros.length&&!historico.length){agTemaConfirmadoKey=chave;return true;}
+  const avisos=[];
+  if(futuros.length){const p=futuros[0];avisos.push('Este tema já está agendado para '+fD(p.data)+(p.nome?' com '+p.nome:'')+(futuros.length>1?' e em mais '+(futuros.length-1)+' data(s)':'')+'.');}
+  if(historico.length){const p=historico[0];avisos.push('Este tema foi apresentado nos últimos 12 meses, mais recentemente em '+fD(p.data)+(p.nome?' por '+p.nome:'')+'.');}
+  const continuar=confirm(avisos.join('\n\n')+'\n\nDeseja usar este tema mesmo assim?');
+  if(continuar){agTemaConfirmadoKey=chave;return true;}
+  document.getElementById('agTema').value='';document.getElementById('agTemaDesc').textContent='';return false;
+}
 
 let _canticosJWPromise=null,_sugestaoSentinelaSeq=0;
 function palavrasTema(texto){
@@ -156,7 +179,7 @@ async function atualizarSugestoesSentinela(){
   const sugestoes=Object.entries(TL).filter(([n,t])=>t&&!bloqueados.has(Number(n))).map(([n,t])=>({n:Number(n),t,p:pontuarRelacaoSentinela(temaSentinela,t)})).filter(x=>x.p>0).sort((a,b)=>b.p-a.p||a.n-b.n).slice(0,5);
   box.innerHTML='<div class="watchtower-source"><strong>Sentinela:</strong> '+temaSentinela+'</div><div class="watchtower-hint">Sugestões relacionadas — escolha somente se forem adequadas:</div>';
   const list=document.createElement('div');list.className='watchtower-topic-list';
-  sugestoes.forEach(s=>{const b=document.createElement('button');b.type='button';b.innerHTML='<strong>'+s.n+'</strong><span>'+s.t+'</span>';b.onclick=()=>{document.getElementById('agTema').value=s.n;onAgTema();};list.appendChild(b);});
+  sugestoes.forEach(s=>{const b=document.createElement('button');b.type='button';b.innerHTML='<strong>'+s.n+'</strong><span>'+s.t+'</span>';b.onclick=()=>{document.getElementById('agTema').value=s.n;onAgTema(true);};list.appendChild(b);});
   if(!sugestoes.length){const empty=document.createElement('small');empty.textContent='Nenhum discurso apresentou relação clara pelo título.';list.appendChild(empty);}box.appendChild(list);
 }
 function fetchCanticosJW(){
@@ -237,15 +260,18 @@ async function saveAgend(){
   const isEspecial=!isSemDisc&&document.getElementById('agEspecial').checked;
   const temaEspecial=isEspecial?document.getElementById('agEspecialTitulo').value.trim():'';
   if(isEspecial&&!temaEspecial)return toast('Digite o nome do discurso especial!');
+  const temaNumInformado=parseInt(document.getElementById('agTema').value)||null;
+  if(!isSemDisc&&!isEspecial&&temaNumInformado&&!verificarUsoTema(temaNumInformado))return;
   const canticoNum=isSemDisc?null:(parseInt(document.getElementById('agCantico').value)||null);
   const cantico=canticoNum?(document.getElementById('agCanticoDesc').textContent&&!document.getElementById('agCanticoDesc').textContent.includes('Buscando')&&!document.getElementById('agCanticoDesc').textContent.includes('não encontrado')?document.getElementById('agCanticoDesc').textContent:await obterTituloCantico(canticoNum)):'';
   const entry={
     data:data_val,
     semDiscurso:isSemDisc||false,
-    temaNum:(isSemDisc||isEspecial)?null:(parseInt(document.getElementById('agTema').value)||null),
+    temaNum:(isSemDisc||isEspecial)?null:temaNumInformado,
     tema:isEspecial?temaEspecial:'',
     canticoNum,
     cantico,
+    temImagens:!isSemDisc&&document.getElementById('agTemImagens').checked,
     nome:isSemDisc?null:(nome||null),
     congregacao:isSemDisc?'':cong,
     telefone:isSemDisc?'':tel,

@@ -41,7 +41,7 @@
     <input type="hidden" id="agId">
     <div class="g2">
       <div class="field"><label id="agDataLabel">Data do discurso</label><input type="date" id="agData" onchange="atualizarSugestoesSentinela()"></div>
-      <div class="field" id="agTemaField"><label>Nº do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema()"></div>
+      <div class="field" id="agTemaField"><label>Nº do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema(true)"></div>
     </div>
     <div id="agTemaDesc" style="font-size:11px;color:var(--pur3);margin:-6px 0 10px;min-height:13px"></div>
     <div id="agSugestoesSentinela" class="watchtower-suggestions" hidden></div>
@@ -50,6 +50,7 @@
       <input type="number" id="agCantico" min="1" max="200" placeholder="Ex: 56" oninput="onAgCantico()">
       <div id="agCanticoDesc" class="field-help"></div>
     </div>
+    <label class="config-toggle schedule-images"><input type="checkbox" id="agTemImagens"><span><strong>Terá imagens</strong><small>Marque quando serão exibidas imagens durante o discurso.</small></span></label>
     <div class="field">
       <label>Orador</label>
       <div style="display:flex;gap:6px;margin-bottom:6px">
@@ -323,7 +324,7 @@
   </details>
   <div class="card">
     <div class="slabel" style="margin-bottom:10px">Mensagens pré-prontas (WhatsApp)</div>
-    <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6">Use as variáveis: <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{tema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{numtema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cantico}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{data}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{minha_cong}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong_orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code></p>
+    <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6">Use as variáveis: <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{tema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{numtema}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cantico}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{imagens}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{data}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{minha_cong}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong_orador}</code> <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code></p>
     <p style="font-size:11px;color:var(--whi3);margin-bottom:12px;line-height:1.6"><code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{minha_cong}</code> = sua congregação (que convida) · <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{cong_orador}</code> = a congregação do orador · <code style="background:var(--surf3);padding:1px 5px;border-radius:4px">{end}</code> = seu endereço</p>
     <div id="msgsList"></div>
     <div style="margin-top:10px;display:flex;gap:7px">
