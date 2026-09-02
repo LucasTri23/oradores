@@ -137,7 +137,27 @@ function onAgTema(verificar=false){
   agTemaConfirmadoKey='';clearTimeout(agTemaVerificacaoTimer);
   if(n)agTemaVerificacaoTimer=setTimeout(()=>verificarUsoTema(n),450);
 }
-function verificarUsoTema(numero){
+function confirmarTemaRepetido(avisos){
+  document.getElementById('mTemaRepetido')?.remove();
+  return new Promise(resolve=>{
+    const overlay=document.createElement('div');overlay.id='mTemaRepetido';overlay.className='choice-overlay topic-warning-overlay';
+    const modal=document.createElement('div');modal.className='choice-modal topic-warning-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');
+    const icon=document.createElement('div');icon.className='topic-warning-icon';icon.innerHTML='<i data-lucide="history"></i>';
+    const content=document.createElement('div');content.className='topic-warning-content';
+    const title=document.createElement('div');title.className='choice-title';title.textContent='Atenção com este tema';content.appendChild(title);
+    const hint=document.createElement('p');hint.className='choice-hint';hint.textContent='Confira antes de manter este tema na programação.';content.appendChild(hint);
+    const list=document.createElement('div');list.className='topic-warning-list';
+    avisos.forEach(aviso=>{const item=document.createElement('div');item.innerHTML='<i data-lucide="circle-alert"></i><span></span>';item.querySelector('span').textContent=aviso;list.appendChild(item);});content.appendChild(list);
+    const actions=document.createElement('div');actions.className='topic-warning-actions';
+    const change=document.createElement('button');change.type='button';change.className='btn bo';change.innerHTML='<i data-lucide="rotate-ccw"></i> Escolher outro tema';
+    const keep=document.createElement('button');keep.type='button';keep.className='btn bp';keep.innerHTML='<i data-lucide="check"></i> Usar mesmo assim';
+    let esc=null;const close=result=>{if(esc)document.removeEventListener('keydown',esc);overlay.remove();resolve(result);};change.onclick=()=>close(false);keep.onclick=()=>close(true);
+    overlay.onclick=e=>{if(e.target===overlay)close(false);};esc=e=>{if(e.key==='Escape'&&document.body.contains(overlay))close(false);};document.addEventListener('keydown',esc);
+    actions.appendChild(change);actions.appendChild(keep);content.appendChild(actions);modal.appendChild(icon);modal.appendChild(content);overlay.appendChild(modal);document.body.appendChild(overlay);
+    if(window.lucide)lucide.createIcons();setTimeout(()=>keep.focus(),30);
+  });
+}
+async function verificarUsoTema(numero){
   if(!numero||document.getElementById('agSemDiscurso').checked||document.getElementById('agEspecial').checked)return true;
   const idAtual=document.getElementById('agId').value,dataAtual=document.getElementById('agData').value;
   const chave=[numero,idAtual,dataAtual].join('|');if(agTemaConfirmadoKey===chave)return true;
@@ -148,7 +168,7 @@ function verificarUsoTema(numero){
   const avisos=[];
   if(futuros.length){const p=futuros[0];avisos.push('Este tema já está agendado para '+fD(p.data)+(p.nome?' com '+p.nome:'')+(futuros.length>1?' e em mais '+(futuros.length-1)+' data(s)':'')+'.');}
   if(historico.length){const p=historico[0];avisos.push('Este tema foi apresentado nos últimos 12 meses, mais recentemente em '+fD(p.data)+(p.nome?' por '+p.nome:'')+'.');}
-  const continuar=confirm(avisos.join('\n\n')+'\n\nDeseja usar este tema mesmo assim?');
+  const continuar=await confirmarTemaRepetido(avisos);
   if(continuar){agTemaConfirmadoKey=chave;return true;}
   document.getElementById('agTema').value='';document.getElementById('agTemaDesc').textContent='';return false;
 }
@@ -261,7 +281,7 @@ async function saveAgend(){
   const temaEspecial=isEspecial?document.getElementById('agEspecialTitulo').value.trim():'';
   if(isEspecial&&!temaEspecial)return toast('Digite o nome do discurso especial!');
   const temaNumInformado=parseInt(document.getElementById('agTema').value)||null;
-  if(!isSemDisc&&!isEspecial&&temaNumInformado&&!verificarUsoTema(temaNumInformado))return;
+  if(!isSemDisc&&!isEspecial&&temaNumInformado&&!(await verificarUsoTema(temaNumInformado)))return;
   const canticoNum=isSemDisc?null:(parseInt(document.getElementById('agCantico').value)||null);
   const cantico=canticoNum?(document.getElementById('agCanticoDesc').textContent&&!document.getElementById('agCanticoDesc').textContent.includes('Buscando')&&!document.getElementById('agCanticoDesc').textContent.includes('não encontrado')?document.getElementById('agCanticoDesc').textContent:await obterTituloCantico(canticoNum)):'';
   const entry={
