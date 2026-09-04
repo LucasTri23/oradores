@@ -37,6 +37,7 @@ async function loadConfig(){
     if(d.end)cfg.end=d.end;
     if(d.hor)cfg.hor=d.hor;
     if(d.dia===0||d.dia===6)cfg.dia=d.dia;
+    if(d.dia2027===0||d.dia2027===6)cfg.dia2027=d.dia2027;
     cfg.sugerirSentinela=!!d.sugerirSentinela;
     if(d.groupMsg)cfg.groupMsg=d.groupMsg;
   } else {
@@ -71,6 +72,7 @@ async function loadConfig(){
   renderMensagens();
   updateBranding();
   document.getElementById('cfgNome').value=cfg.cong;document.getElementById('cfgEnd').value=cfg.end;document.getElementById('cfgHor').value=cfg.hor;document.getElementById('cfgDia').value=String(cfg.dia);
+  document.getElementById('cfgDia2027').value=cfg.dia2027===0||cfg.dia2027===6?String(cfg.dia2027):'';
   document.getElementById('cfgGemini').value=localStorage.getItem('bj_gem')||'';
   document.getElementById('cfgGroupMsg').value=cfg.groupMsg||'';
   document.getElementById('cfgSugerirSentinela').checked=!!cfg.sugerirSentinela;
@@ -83,16 +85,31 @@ function salvarConfigTemas(){
   FF.set(FF.doc(db,'config','temas'),{overrides,bloqueados:[...bloqueados]});
 }
 
-function saveConfig(){
+async function saveConfig(){
   cfg.cong=document.getElementById('cfgNome').value;
   cfg.end=document.getElementById('cfgEnd').value;
   cfg.hor=document.getElementById('cfgHor').value;
   cfg.dia=Number(document.getElementById('cfgDia').value);
+  const dia2027=document.getElementById('cfgDia2027').value;cfg.dia2027=dia2027===''?null:Number(dia2027);
   cfg.sugerirSentinela=document.getElementById('cfgSugerirSentinela').checked;
   cfg.groupMsg=document.getElementById('cfgGroupMsg').value.trim();
   const gem=document.getElementById('cfgGemini').value.trim();if(gem)localStorage.setItem('bj_gem',gem);else localStorage.removeItem('bj_gem');
-  if(db)FF.set(FF.doc(db,'config','app'),cfg);
+  if(db)await FF.set(FF.doc(db,'config','app'),cfg);
   updateBranding();renderMensagens();renderHome();toast('✓ Salvo!');
+}
+
+function perguntarDiaReuniao2027(){
+  if(!db||cfg.dia2027===0||cfg.dia2027===6||document.getElementById('perguntaDia2027'))return;
+  const overlay=document.createElement('div');overlay.id='perguntaDia2027';overlay.className='choice-overlay';
+  const modal=document.createElement('div');modal.className='choice-modal';
+  modal.innerHTML='<div class="choice-title">Programação de 2027</div><p class="choice-hint">Em qual dia será a reunião no próximo ano? Esta escolha muda somente as datas de 2027; a programação de 2026 continua como está.</p>';
+  const choices=document.createElement('div');choices.className='open-date-list';
+  [[6,'Sábado'],[0,'Domingo']].forEach(([dia,label])=>{const b=document.createElement('button');b.className='open-date';b.innerHTML='<strong>'+label+'</strong><span>Usar '+label.toLowerCase()+' nas semanas de 2027</span>';b.onclick=()=>salvarDiaReuniao2027(dia,overlay);choices.appendChild(b);});
+  modal.appendChild(choices);overlay.appendChild(modal);document.body.appendChild(overlay);
+}
+async function salvarDiaReuniao2027(dia,overlay=document.getElementById('perguntaDia2027')){
+  cfg.dia2027=Number(dia);document.getElementById('cfgDia2027').value=String(cfg.dia2027);
+  await FF.set(FF.doc(db,'config','app'),cfg);overlay?.remove();renderHome();toast('✓ Dia das reuniões de 2027 salvo!');
 }
 
 // MINHA CONGREGAÇÃO — DISCURSANTES

@@ -43,7 +43,7 @@ function openNovoAgend(){
   document.getElementById('agData').value=nextSab();
   atualizarSugestoesSentinela();
   document.getElementById('mAgendTit').textContent='Inserir na Programação';
-  document.getElementById('agDataLabel').textContent='Data ('+(Number(cfg.dia)===0?'domingo':'sábado')+')';
+  document.getElementById('agDataLabel').textContent='Data ('+(diaReuniaoDoAno(Number(nextSab().slice(0,4)))===0?'domingo':'sábado')+')';
   openM('mAgend');
 }
 function editarAgend(jsonOrEnc){
@@ -51,7 +51,7 @@ function editarAgend(jsonOrEnc){
   try{p=JSON.parse(jsonOrEnc);}catch(e){p=JSON.parse(decodeURIComponent(jsonOrEnc));}
   preencherModalAgend(p);
   document.getElementById('mAgendTit').textContent='Editar — '+fD(p.data);
-  document.getElementById('agDataLabel').textContent='Data ('+(Number(cfg.dia)===0?'domingo':'sábado')+')';
+  document.getElementById('agDataLabel').textContent='Data ('+(diaReuniaoDoAno(Number((p.data||nextSab()).slice(0,4)))===0?'domingo':'sábado')+')';
   atualizarSugestoesSentinela();
   openM('mAgend');
 }

@@ -310,7 +310,10 @@
     <div class="field"><label>Endereço</label><input id="cfgEnd" placeholder="Endereço da congregação"></div>
     <label class="config-toggle"><input type="checkbox" id="cfgSugerirSentinela"><span><strong>Sugerir discursos relacionados à Sentinela</strong><small>Ao agendar uma semana, mostra temas públicos relacionados ao estudo daquela data. A escolha continua sendo opcional.</small></span></label>
     <button class="btn bp" onclick="saveConfig()">Salvar</button>
-    <div class="field" style="margin-top:12px"><label>Dia dos discursos</label><select id="cfgDia"><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
+    <div class="g2" style="margin-top:12px">
+      <div class="field"><label>Dia dos discursos (padrão / 2026)</label><select id="cfgDia"><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
+      <div class="field"><label>Dia dos discursos em 2027</label><select id="cfgDia2027"><option value="">Responder depois</option><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
+    </div>
     <div class="field"><label>Gemini API Key (opcional)</label><input id="cfgGemini" type="password" placeholder="AIzaSy..."></div>
   </div>
   <details class="card settings-details" id="sentinelaConfig">
@@ -319,7 +322,7 @@
       <p>O tema é buscado automaticamente no jw.org. Aqui você pode corrigir ou cadastrar manualmente uma exceção.</p>
       <div class="g2"><div class="field"><label>Tema</label><input id="sentTema" placeholder="Cole o tema aqui..."></div><div class="field"><label>Data da edição</label><input type="date" id="sentData"></div></div>
       <div class="brow"><button class="btn bp" onclick="saveSentinela()">Salvar</button><button class="btn bo" onclick="buscarSentinelaJW()"><i data-lucide="refresh-cw"></i> Buscar novamente</button></div>
-      <div class="settings-history"><div class="slabel">Temas salvos manualmente</div><div id="sentLista"><div class="skeleton-list"><i></i><i></i></div></div></div>
+      <div class="settings-history"><div class="slabel">Temas salvos</div><div id="sentLista"><div class="skeleton-list"><i></i><i></i></div></div></div>
     </div>
   </details>
   <div class="card">
@@ -361,15 +364,15 @@
   </div>
 </div>
 </main>
-<script src="assets/js/supabase-client.js?v=20260902-1"></script>
-<script src="assets/js/app.js?v=20260902-1"></script>
-<script src="assets/js/features/home.js?v=20260902-1"></script>
-<script src="assets/js/features/schedule.js?v=20260902-1"></script>
-<script src="assets/js/features/directory.js?v=20260902-1"></script>
-<script src="assets/js/features/insights.js?v=20260902-1"></script>
-<script src="assets/js/features/transfer.js?v=20260902-1"></script>
-<script src="assets/js/features/settings.js?v=20260902-1"></script>
-<script src="assets/js/features/team.js?v=20260902-1"></script>
-<script src="assets/js/features/init.js?v=20260902-1"></script>
+<script src="assets/js/supabase-client.js?v=20260904-1"></script>
+<script src="assets/js/app.js?v=20260904-1"></script>
+<script src="assets/js/features/home.js?v=20260904-1"></script>
+<script src="assets/js/features/schedule.js?v=20260904-1"></script>
+<script src="assets/js/features/directory.js?v=20260904-1"></script>
+<script src="assets/js/features/insights.js?v=20260904-1"></script>
+<script src="assets/js/features/transfer.js?v=20260904-1"></script>
+<script src="assets/js/features/settings.js?v=20260904-1"></script>
+<script src="assets/js/features/team.js?v=20260904-1"></script>
+<script src="assets/js/features/init.js?v=20260904-1"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 let db=null,FF=null,supabase=null,currentUser=null,activeWorkspaceId=null,oradores=[],discursos=[],sugestoes=[],sentinelas=[],programa=[];
 let notaAtual=0,temaFiltro='todos',orSort='az';
 let bloqueados=new Set();
-let cfg={cong:'Minha Congregação',end:'',hor:'19:00',dia:6,sugerirSentinela:false,groupMsg:'Próximo discurso público:\n\nOrador: {orador}\nTema: {tema}\nCântico: {cantico}\nData: {data}\nCongregação: {minha_cong}'};
+let cfg={cong:'Minha Congregação',end:'',hor:'19:00',dia:6,dia2027:null,sugerirSentinela:false,groupMsg:'Próximo discurso público:\n\nOrador: {orador}\nTema: {tema}\nCântico: {cantico}\nData: {data}\nCongregação: {minha_cong}'};
 let mensagens=[
   {id:1,tipo:'convite',titulo:'Convite padrão',texto:'Olá {orador}, tudo bem?\n\nGostaríamos de convidá-lo para proferir o discurso público na nossa congregação:\n\n📖 Tema: {tema}\n📅 Data: {data}\n🏠 Congregação: {cong}\n📍 Endereço: {end}\n\nAguardamos sua confirmação. 🙏'},
   {id:2,tipo:'geral',titulo:'Lembrete',texto:'Olá {orador}! Passando para lembrar do discurso público:\n\n📖 {tema}\n📅 {data}\n📍 {cong}\n\nObrigado! 🙏'},
@@ -114,11 +114,13 @@ function getUltimoDiscurso(o){
 function ehSist(nome){if(!nome)return true;const s=['CONGRESSO','ASSEMBLEIA','CELEBRAÇÃO','VISITA','REUNIÃO','DISCURSO ESPECIAL','TRANSIÇÃO','STREAM'];return s.some(x=>nome.toUpperCase().includes(x));}
 function nextSab(){
   const d=new Date();d.setHours(12,0,0,0);
-  const target=Number(cfg.dia)===0?0:6,dow=d.getDay();
-  const diff=(target-dow+7)%7;
-  d.setDate(d.getDate()+diff);
+  for(let i=0;i<8;i++){
+    if(d.getDay()===diaReuniaoDoAno(d.getFullYear()))break;
+    d.setDate(d.getDate()+1);
+  }
   return d.toISOString().slice(0,10);
 }
+function diaReuniaoDoAno(ano){return ano===2027&&(cfg.dia2027===0||cfg.dia2027===6)?Number(cfg.dia2027):(Number(cfg.dia)===0?0:6);}
 function currentOrNextProg(){
   // Returns the programa entry to highlight: exact saturday match, or closest future
   const sab=nextSab();

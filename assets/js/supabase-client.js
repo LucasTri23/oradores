@@ -67,6 +67,7 @@ async function checkSetup(){
       updateUserHeader();
       document.getElementById('setup').style.display='none';
       await loadAll();
+      perguntarDiaReuniao2027();
       await renderTeamPanel();
       await checkSharedImport();
     }

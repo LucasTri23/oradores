@@ -183,7 +183,7 @@ function setAno(a){
 function allMeetingDays(year){
   const sats=[];
   let d=new Date(year,0,1);
-  const target=Number(cfg.dia)===0?0:6;
+  const target=diaReuniaoDoAno(year);
   while(d.getDay()!==target)d.setDate(d.getDate()+1);
   while(d.getFullYear()===year){
     sats.push(d.toISOString().slice(0,10));

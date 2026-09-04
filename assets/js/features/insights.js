@@ -136,7 +136,20 @@ function verCong(enc){
 }
 
 // SENTINELA
-async function loadSentinelas(){if(!db)return;const s=await FF.gets(FF.col(db,'sentinela'));sentinelas=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.data>a.data?1:-1);renderSentinelas();}
+async function loadSentinelas(){
+  if(!db)return;
+  const s=await FF.gets(FF.col(db,'sentinela')),todos=s.docs.map(d=>({id:d.id,...d.data()}));
+  const porData=new Map();
+  todos.forEach(item=>{const atual=porData.get(item.data);if(!atual||String(item.criadoEm||'')>String(atual.criadoEm||''))porData.set(item.data,item);});
+  for(const [data,item] of porData){
+    if(!data)continue;
+    const id='data-'+data;
+    await FF.set(FF.doc(db,'sentinela',id),{tema:item.tema,data,origem:item.origem||'legado',criadoEm:item.criadoEm||FF.ts()});
+    for(const antigo of todos.filter(x=>x.data===data&&x.id!==id))await FF.del(FF.doc(db,'sentinela',antigo.id));
+    item.id=id;
+  }
+  sentinelas=[...porData.values()].sort((a,b)=>b.data>a.data?1:-1);renderSentinelas();
+}
 // Salva no histórico um tema descoberto automaticamente no jw.org (Home, cards ou aba Sentinela),
 // sem duplicar se essa data já estiver registrada (manual ou automático).
 let _salvandoSentinela=new Set();
@@ -144,8 +157,10 @@ async function registrarSentinelaAuto(data,tema){
   if(!db||sentinelas.find(s=>s.data===data)||_salvandoSentinela.has(data))return;
   _salvandoSentinela.add(data);
   try{
-    const ref=await FF.add(FF.col(db,'sentinela'),{tema,data,criadoEm:FF.ts()});
-    sentinelas.push({id:ref.id,tema,data});
+    const id='data-'+data;
+    const existente=await FF.get(FF.doc(db,'sentinela',id));if(existente.exists)return;
+    await FF.set(FF.doc(db,'sentinela',id),{tema,data,origem:'automatica',criadoEm:FF.ts()});
+    sentinelas.push({id,tema,data,origem:'automatica'});
     sentinelas.sort((a,b)=>b.data>a.data?1:-1);
     if(document.getElementById('sentLista'))renderSentinelas();
   }catch(e){/* Firestore indisponível — o tema já aparece na tela mesmo sem salvar */}
@@ -172,7 +187,8 @@ async function saveSentinela(){
   const tema=document.getElementById('sentTema').value.trim();
   const data=document.getElementById('sentData').value;
   if(!tema)return toast('Informe o tema!');
-  await FF.add(FF.col(db,'sentinela'),{tema,data,criadoEm:FF.ts()});
+  if(!data)return toast('Informe a data!');
+  await FF.set(FF.doc(db,'sentinela','data-'+data),{tema,data,origem:'manual',criadoEm:FF.ts()});
   document.getElementById('sentTema').value='';
   await loadSentinelas();renderHome();toast('✓ Salvo!');
 }
