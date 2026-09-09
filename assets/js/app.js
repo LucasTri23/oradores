@@ -47,6 +47,7 @@ function irTab(p){
   if(p==='sugestoes')renderSugestoes();
   if(p==='temas')renderTemas();
   if(p==='programa')renderPrograma();
+  if(p==='config')renderTrash();
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>irTab(t.dataset.p)));
 
@@ -119,6 +120,11 @@ function nextSab(){
     d.setDate(d.getDate()+1);
   }
   return d.toISOString().slice(0,10);
+}
+function ehDaMinhaCongregacao(orador){
+  if(orador?.minhaCongregacao===true)return true;
+  if(orador?.minhaCongregacao===false)return false;
+  return !!normalizarCongregacao(cfg.cong)&&normalizarCongregacao(orador?.cong||orador?.congregacao)===normalizarCongregacao(cfg.cong);
 }
 function diaReuniaoDoAno(ano){return ano===2027&&(cfg.dia2027===0||cfg.dia2027===6)?Number(cfg.dia2027):(Number(cfg.dia)===0?0:6);}
 function currentOrNextProg(){

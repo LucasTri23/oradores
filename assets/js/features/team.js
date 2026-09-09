@@ -47,7 +47,7 @@ async function renderTeamPanel(){
 }
 
 async function removeTeamMember(userId,email){
-  if(!confirm('Remover o acesso de '+email+'?'))return;
+  if(!(await confirmarModal('Remover acesso','Remover o acesso de '+email+'?','Remover',true)))return;
   const{error}=await supabase.rpc('remove_workspace_member',{target_workspace:activeWorkspaceId,target_user:userId});
   if(error)return toast('Erro ao remover: '+error.message,5000);
   toast('Acesso removido.');renderTeamPanel();

@@ -7,12 +7,13 @@
 <link rel="icon" type="image/png" href="assets/images/oradores-speaker-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260909-1">
+<link rel="stylesheet" href="assets/css/style.css?v=20260909-3">
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <script>document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';</script>
 </head>
 <body>
 <script src="assets/js/data.js?v=20260902-1"></script>
+<script src="assets/js/ui.js?v=20260909-3"></script>
 <div id="setup">
   <div class="setup-box">
     <div class="setup-logo"><img src="assets/images/oradores-speaker-logo.png" alt=""><span>Oradores</span></div>
@@ -80,6 +81,7 @@
       </div>
     </div>
     <div id="agCamposNormais">
+      <div class="field"><label>Status do convite</label><select id="agConfirmacao"><option value="nao_enviado">Convite ainda não enviado</option><option value="aguardando">Aguardando resposta</option><option value="confirmado">Confirmado</option><option value="recusado">Recusado</option><option value="substituir">Precisa substituir</option></select></div>
       <div class="field"><label>Observação</label><input id="agObs" placeholder="Ex: Discurso especial..."></div>
     </div>
     <div id="agCamposSemDisc" style="display:none">
@@ -102,6 +104,7 @@
       <div class="field"><label>WhatsApp</label><input id="oTel" type="tel" placeholder="31 9xxxx-xxxx"></div>
       <div class="field"><label>Último discurso</label><input id="oUlt" type="date"></div>
     </div>
+    <label class="config-toggle"><input type="checkbox" id="oMinhaCong"><span><strong>Este orador pertence à minha congregação</strong><small>Permite compartilhar este cadastro com outras congregações.</small></span></label>
     <div class="field"><label>Nota</label><div class="stars-el" id="starsEl"><span class="star" data-v="1">★</span><span class="star" data-v="2">★</span><span class="star" data-v="3">★</span><span class="star" data-v="4">★</span><span class="star" data-v="5">★</span></div></div>
     <div class="field"><label>Observação</label><textarea id="oObs" placeholder="Anotações..."></textarea></div>
     <div class="brow"><button class="btn bp" onclick="saveOrador()">Salvar</button><button class="btn bo" onclick="closeM('mOrador')">Cancelar</button></div>
@@ -182,6 +185,7 @@
 <header>
   <div class="logo"><img src="assets/images/oradores-speaker-logo.png" alt=""><span>Oradores <small id="headerCongName">— Minha Congregação</small></span></div>
   <div class="header-actions">
+    <button class="icon-btn" id="notificationsBtn" onclick="abrirCentralNotificacoes()" title="Notificações"><i data-lucide="bell"></i><span id="notificationsCount" class="notification-count" hidden>0</span></button>
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="moon"></i></button>
     <button class="icon-btn optional-action" onclick="openImportHistorico()" title="Importar histórico"><i data-lucide="folder-up"></i></button>
     <button class="icon-btn optional-action" onclick="openM('mExport')" title="Exportar Excel"><i data-lucide="download"></i></button>
@@ -210,6 +214,7 @@
       <div class="quick-card quick-card-desktop"><div class="section-label">Ações rápidas</div><div class="quick-actions"><button onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar histórico</button><button onclick="compartilharProgramacao()"><i data-lucide="share-2"></i> Compartilhar</button><button onclick="irTab('oradores')"><i data-lucide="users"></i> Oradores</button></div></div>
     </div>
   </section>
+  <section id="homeNextAction" class="next-action-card"></section>
   <section class="calendar-card agenda-card">
     <div class="calendar-head"><div><div class="section-label">Agenda de discursos</div><h2 id="calendarTitle"></h2></div><div class="calendar-nav"><button class="icon-btn" onclick="mudarMes(-1)" title="Mês anterior"><i data-lucide="chevron-left"></i></button><button class="btn bo bs" onclick="irMesAtual()">Mês atual</button><button class="icon-btn" onclick="mudarMes(1)" title="Próximo mês"><i data-lucide="chevron-right"></i></button></div></div>
     <div class="agenda-legend"><span><i class="status-dot ready"></i> Completo</span><span><i class="status-dot pending"></i> Pendente</span><span><i class="status-dot special"></i> Evento especial</span></div>
@@ -244,7 +249,7 @@
 <div class="page" id="page-oradores">
   <div class="panel-head">
     <div class="panel-title" style="margin:0">Oradores</div>
-    <div class="brow-r"><button class="btn bo bs" onclick="compartilharOradores()"><i data-lucide="share-2"></i> Compartilhar minha congregação</button><button class="btn bo bs" onclick="openImportOradores()">📂 Importar lista</button><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
+    <div class="brow-r"><button class="btn bo bs" onclick="openImportOradores()">📂 Importar lista</button><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
   </div>
   <input id="buscaOr" placeholder="🔍 Buscar por nome ou congregação..." oninput="renderOradores()" style="margin-bottom:8px">
   <div class="filter-bar" style="margin-bottom:10px">
@@ -265,7 +270,7 @@
 <div class="page" id="page-minha">
   <div class="panel-head">
     <div class="panel-title" style="margin:0">Minha Congregação</div>
-    <button class="btn bp bs" onclick="novoDiscursante()">+ Adicionar</button>
+    <div class="brow-r"><button class="btn bo bs" onclick="compartilharOradores()"><i data-lucide="share-2"></i> Compartilhar oradores</button><button class="btn bp bs" onclick="novoDiscursante()">+ Adicionar</button></div>
   </div>
   <p style="font-size:12px;color:var(--whi3);margin-bottom:14px;line-height:1.6">Controle de quando os irmãos da sua congregação saem para discursar em outras congregações.</p>
   <div class="filter-bar" style="margin-bottom:12px">
@@ -325,10 +330,11 @@
     <div class="slabel">Sistema</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn bo" onclick="openM('mExport')">📤 Exportar Excel</button>
-      <button class="btn bo" onclick="if(confirm('Limpar configurações?')){localStorage.clear();location.reload()}">⚙️ Redefinir</button>
+      <button class="btn bo" onclick="redefinirConfiguracoes()">⚙️ Redefinir</button>
       <button class="btn bo" onclick="logout()">Sair</button>
     </div>
   </div>
+  <div class="card"><div class="slabel">Lixeira</div><p class="settings-note">Itens excluídos podem ser recuperados durante 30 dias.</p><div id="trashList"></div><button class="btn bo bs" onclick="renderTrash()"><i data-lucide="refresh-cw"></i> Atualizar lixeira</button></div>
   <div class="card team-card">
     <div class="slabel">Equipe da congregação</div>
     <h3>Compartilhar este sistema</h3>
@@ -352,14 +358,14 @@
 </div>
 </main>
 <script src="assets/js/supabase-client.js?v=20260904-1"></script>
-<script src="assets/js/app.js?v=20260904-1"></script>
-<script src="assets/js/features/home.js?v=20260909-1"></script>
-<script src="assets/js/features/schedule.js?v=20260904-1"></script>
-<script src="assets/js/features/directory.js?v=20260909-2"></script>
-<script src="assets/js/features/insights.js?v=20260909-1"></script>
-<script src="assets/js/features/transfer.js?v=20260909-2"></script>
-<script src="assets/js/features/settings.js?v=20260909-1"></script>
-<script src="assets/js/features/team.js?v=20260904-1"></script>
+<script src="assets/js/app.js?v=20260909-3"></script>
+<script src="assets/js/features/home.js?v=20260909-3"></script>
+<script src="assets/js/features/schedule.js?v=20260909-3"></script>
+<script src="assets/js/features/directory.js?v=20260909-3"></script>
+<script src="assets/js/features/insights.js?v=20260909-3"></script>
+<script src="assets/js/features/transfer.js?v=20260909-3"></script>
+<script src="assets/js/features/settings.js?v=20260909-3"></script>
+<script src="assets/js/features/team.js?v=20260909-3"></script>
 <script src="assets/js/features/init.js?v=20260904-1"></script>
 </body>
 </html>

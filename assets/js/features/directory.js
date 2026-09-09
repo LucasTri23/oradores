@@ -133,7 +133,6 @@ function renderOradores(){
     const btns=document.createElement('div');
     btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
     if(o.tel){const b=document.createElement('button');b.className='btn bo bs';b.title='Escolher mensagem para WhatsApp';b.innerHTML='<i data-lucide="message-circle-more"></i><span>Mensagem</span>';b.onclick=()=>abrirMensagensOrador(o.id);btns.appendChild(b);}
-    if(normalizarCongregacao(o.cong)===normalizarCongregacao(cfg.cong)){const bs=document.createElement('button');bs.className='btn bo bs';bs.title='Compartilhar este orador';bs.setAttribute('aria-label','Compartilhar '+o.nome);bs.innerHTML='<i data-lucide="share-2"></i>';bs.onclick=()=>compartilharOrador(o.id);btns.appendChild(bs);}
     const be=document.createElement('button');be.className='btn bo bs';be.title='Editar';be.textContent='✏️';be.onclick=()=>editOrador(o.id);btns.appendChild(be);
     const bd=document.createElement('button');bd.className='btn bo bs';bd.style.cssText='color:var(--red);opacity:.7';bd.title='Excluir';bd.textContent='🗑';bd.onclick=()=>delOrador(o.id);btns.appendChild(bd);
     row.appendChild(btns);
@@ -141,22 +140,23 @@ function renderOradores(){
   });
   if(window.lucide)lucide.createIcons();
 }
-function novoOrador(){['oId','oNome','oCong','oTel','oUlt','oObs'].forEach(id=>document.getElementById(id).value='');notaAtual=0;rStars(0);document.getElementById('mOradorTit').textContent='Novo Orador';openM('mOrador');}
+function novoOrador(){['oId','oNome','oCong','oTel','oUlt','oObs'].forEach(id=>document.getElementById(id).value='');document.getElementById('oMinhaCong').checked=false;notaAtual=0;rStars(0);document.getElementById('mOradorTit').textContent='Novo Orador';openM('mOrador');}
 function editOrador(id){
   const o=oradores.find(x=>x.id===id);if(!o)return;
   document.getElementById('oId').value=id;document.getElementById('oNome').value=o.nome||'';document.getElementById('oCong').value=o.cong||'';
   document.getElementById('oTel').value=o.tel||'';document.getElementById('oUlt').value=o.ultimoDiscurso||'';document.getElementById('oObs').value=o.obs||'';
+  document.getElementById('oMinhaCong').checked=ehDaMinhaCongregacao(o);
   notaAtual=o.nota||0;rStars(notaAtual);document.getElementById('mOradorTit').textContent='Editar Orador';openM('mOrador');
 }
 async function saveOrador(){
   if(!db)return toast('Supabase não conectado!');
   const id=document.getElementById('oId').value;
-  const data={nome:document.getElementById('oNome').value.trim(),cong:document.getElementById('oCong').value.trim(),tel:document.getElementById('oTel').value.trim(),ultimoDiscurso:document.getElementById('oUlt').value,obs:document.getElementById('oObs').value.trim(),nota:notaAtual};
+  const data={nome:document.getElementById('oNome').value.trim(),cong:document.getElementById('oCong').value.trim(),tel:document.getElementById('oTel').value.trim(),ultimoDiscurso:document.getElementById('oUlt').value,obs:document.getElementById('oObs').value.trim(),nota:notaAtual,minhaCongregacao:document.getElementById('oMinhaCong').checked};
   if(!data.nome)return toast('Informe o nome!');
   if(id)await FF.upd(FF.doc(db,'oradores',id),data);else await FF.add(FF.col(db,'oradores'),data);
   closeM('mOrador');await loadOradores();toast('✓ Salvo!');
 }
-async function delOrador(id){if(!confirm('Excluir?'))return;await FF.del(FF.doc(db,'oradores',id));await loadOradores();toast('Excluído.');}
+async function delOrador(id){if(!(await confirmarModal('Excluir orador','O cadastro irá para a lixeira e poderá ser recuperado por 30 dias.','Excluir',true)))return;await FF.del(FF.doc(db,'oradores',id));await loadOradores();toast('Movido para a lixeira.');}
 document.querySelectorAll('#starsEl .star').forEach(s=>{s.addEventListener('click',()=>{notaAtual=+s.dataset.v;rStars(notaAtual);});s.addEventListener('mouseover',()=>rStars(+s.dataset.v));s.addEventListener('mouseout',()=>rStars(notaAtual));});
 function rStars(v){document.querySelectorAll('#starsEl .star').forEach(s=>s.classList.toggle('on',+s.dataset.v<=v));}
 

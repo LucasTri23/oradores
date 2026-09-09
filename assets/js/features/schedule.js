@@ -72,6 +72,7 @@ function preencherModalAgend(p){
   document.getElementById('agCanticoDesc').textContent=p.cantico||'';
   document.getElementById('agTemImagens').checked=!!p.temImagens;
   document.getElementById('agObs').value=p.obs||'';
+  document.getElementById('agConfirmacao').value=p.confirmacao||'nao_enviado';
   document.getElementById('agMotivo').value=p.motivo||'';
   document.getElementById('agSemDiscursoCor').value=/^#[0-9a-f]{6}$/i.test(p.semDiscursoCor||'')?p.semDiscursoCor:'#f59e0b';
   document.getElementById('agCadastrar').checked=false;
@@ -296,6 +297,7 @@ async function saveAgend(){
     congregacao:isSemDisc?'':cong,
     telefone:isSemDisc?'':tel,
     obs:isSemDisc?'':document.getElementById('agObs').value.trim(),
+    confirmacao:isSemDisc?'':document.getElementById('agConfirmacao').value,
     motivo:isSemDisc?document.getElementById('agMotivo').value.trim():'',
     semDiscursoCor:isSemDisc?document.getElementById('agSemDiscursoCor').value:'#f59e0b',
     especial:isEspecial,
@@ -336,7 +338,7 @@ async function delAgendAtual(){
   if(id)await delAgend(id,data,true);
 }
 async function delAgend(id,data,closeModal=false){
-  if(!id||!confirm('Excluir este discurso da programação?'))return;
+  if(!id||!(await confirmarModal('Excluir discurso','O discurso irá para a lixeira e poderá ser recuperado por 30 dias.','Excluir',true)))return;
   await FF.del(FF.doc(db,'programa',id));programa=programa.filter(p=>p.id!==id);
   if(closeModal)closeM('mAgend');renderHome();renderPrograma();renderTemas();toast('Discurso excluído.');
 }

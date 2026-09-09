@@ -10,31 +10,45 @@ function resetImportModal(mode){
 }
 function openImportOradores(){resetImportModal('oradores');}
 function openImportHistorico(){resetImportModal('historico');}
-function dadosOradorCompartilhavel(o){
-  const{id,...dados}=o;return dados;
+function dadosOradorCompartilhavel(o,opcoes={}){
+  const dados={nome:o.nome,cong:o.cong||'',minhaCongregacao:false};
+  if(opcoes.telefone)dados.tel=o.tel||'';
+  if(opcoes.observacoes)dados.obs=o.obs||'';
+  if(opcoes.avaliacao)dados.nota=o.nota||0;
+  if(o.ultimoDiscurso)dados.ultimoDiscurso=o.ultimoDiscurso;
+  return dados;
 }
-async function gerarLinkOradores(lista,titulo){
+async function gerarLinkOradores(lista,titulo,opcoes){
   if(!supabase||!currentUser)return toast('Entre com Google primeiro.');
   if(!lista.length)return toast('Não há oradores para compartilhar.');
-  const quantidade=lista.length===1?'este orador':'estes '+lista.length+' oradores';
-  if(!confirm('Gerar um link com os dados de '+quantidade+'? O link expira em 7 dias.'))return;
   try{
-    const copia=lista.map(dadosOradorCompartilhavel);
+    const copia=lista.map(o=>dadosOradorCompartilhavel(o,opcoes));
     const{data,error}=await supabase.from('speaker_shares').insert({payload:copia}).select('token').single();if(error)throw error;
     const link=location.origin+location.pathname+'?import='+encodeURIComponent(data.token);
-    if(navigator.share){await navigator.share({title,text:'Abra o link, entre com Google e importe '+(lista.length===1?'este orador':'os oradores')+':',url:link});}
-    else{await navigator.clipboard.writeText(link);toast('✓ Link copiado! Ele expira em 7 dias.',4500);}
+    mostrarLinkCompartilhamento(link,titulo,lista.length);
   }catch(e){if(e.name!=='AbortError')toast('Erro ao compartilhar: '+e.message,5000);}
+}
+function mostrarLinkCompartilhamento(link,titulo,total){
+  document.getElementById('resultadoCompartilhamento')?.remove();const overlay=document.createElement('div');overlay.id='resultadoCompartilhamento';overlay.className='choice-overlay';
+  const modal=document.createElement('div');modal.className='choice-modal';modal.innerHTML='<div class="choice-title">Link pronto</div><p class="choice-hint">'+total+' orador'+(total===1?'':'es')+' selecionado'+(total===1?'':'s')+'. O link expira em 7 dias.</p>';
+  const campo=document.createElement('input');campo.readOnly=true;campo.value=link;modal.appendChild(campo);const actions=document.createElement('div');actions.className='topic-warning-actions';
+  const fechar=document.createElement('button');fechar.className='btn bo';fechar.textContent='Fechar';fechar.onclick=()=>overlay.remove();
+  const copiar=document.createElement('button');copiar.className='btn bo';copiar.textContent='Copiar link';copiar.onclick=async()=>{await navigator.clipboard.writeText(link);copiar.textContent='✓ Copiado';};
+  const enviar=document.createElement('button');enviar.className='btn bp';enviar.innerHTML='<i data-lucide="share-2"></i> Enviar';enviar.onclick=async()=>{if(navigator.share)await navigator.share({title,text:'Abra o link para importar os oradores:',url:link});else{await navigator.clipboard.writeText(link);toast('✓ Link copiado!');}};
+  actions.appendChild(fechar);actions.appendChild(copiar);actions.appendChild(enviar);modal.appendChild(actions);overlay.appendChild(modal);document.body.appendChild(overlay);if(window.lucide)lucide.createIcons();
 }
 async function compartilharOrador(id){
   const orador=oradores.find(o=>o.id===id);if(!orador)return toast('Orador não encontrado.');
-  if(normalizarCongregacao(orador.cong)!==normalizarCongregacao(cfg.cong))return toast('Só é permitido compartilhar oradores da sua congregação.',5000);
-  return gerarLinkOradores([orador],'Orador: '+orador.nome);
+  if(!ehDaMinhaCongregacao(orador))return toast('Só é permitido compartilhar oradores da sua congregação.',5000);
+  return abrirModalCompartilhar([orador]);
 }
 function compartilharOradores(){
-  const congregacao=normalizarCongregacao(cfg.cong),lista=oradores.filter(o=>normalizarCongregacao(o.cong)===congregacao);
+  const congregacao=normalizarCongregacao(cfg.cong),lista=oradores.filter(ehDaMinhaCongregacao);
   if(!congregacao)return toast('Configure primeiro o nome da sua congregação.');
   if(!lista.length)return toast('Nenhum orador cadastrado na congregação "'+cfg.cong+'".',5000);
+  abrirModalCompartilhar(lista);
+}
+function abrirModalCompartilhar(lista){
   document.getElementById('selecionarOradoresShare')?.remove();
   const overlay=document.createElement('div');overlay.id='selecionarOradoresShare';overlay.className='choice-overlay';
   const modal=document.createElement('div');modal.className='choice-modal share-speakers-modal';
@@ -46,17 +60,19 @@ function compartilharOradores(){
   const itens=document.createElement('div');itens.className='share-speakers-list';
   lista.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR')).forEach(o=>{
     const label=document.createElement('label');label.className='share-speaker-option';
-    const input=document.createElement('input');input.type='checkbox';input.value=o.id;
+    const input=document.createElement('input');input.type='checkbox';input.value=o.id;input.checked=lista.length===1;
     const info=document.createElement('span'),nome=document.createElement('strong'),telefone=document.createElement('small');nome.textContent=o.nome;telefone.textContent=o.tel||'Sem telefone';info.appendChild(nome);info.appendChild(telefone);label.appendChild(input);label.appendChild(info);itens.appendChild(label);
   });
   modal.appendChild(itens);
+  const campos=document.createElement('div');campos.className='share-fields';campos.innerHTML='<strong>Informações compartilhadas</strong><small>Nome, congregação e último discurso são incluídos. Escolha os campos opcionais:</small>';
+  [['shareTel','Telefone',true],['shareObs','Observações',false],['shareNota','Avaliação',false]].forEach(([id,texto,checked])=>{const label=document.createElement('label');const input=document.createElement('input');input.type='checkbox';input.id=id;input.checked=checked;label.appendChild(input);label.appendChild(document.createTextNode(texto));campos.appendChild(label);});modal.appendChild(campos);
   const contador=document.createElement('div');contador.className='share-speakers-count';modal.appendChild(contador);
   const actions=document.createElement('div');actions.className='topic-warning-actions';
   const cancelar=document.createElement('button');cancelar.type='button';cancelar.className='btn bo';cancelar.textContent='Cancelar';cancelar.onclick=()=>overlay.remove();
   const compartilhar=document.createElement('button');compartilhar.type='button';compartilhar.className='btn bp';compartilhar.innerHTML='<i data-lucide="share-2"></i> Compartilhar selecionados';
   const atualizar=()=>{const n=itens.querySelectorAll('input:checked').length;contador.textContent=n+' de '+lista.length+' selecionado'+(n===1?'':'s');compartilhar.disabled=n===0;compartilhar.style.opacity=n?'1':'.5';};
   itens.addEventListener('change',atualizar);todos.onclick=()=>{itens.querySelectorAll('input').forEach(i=>i.checked=true);atualizar();};nenhum.onclick=()=>{itens.querySelectorAll('input').forEach(i=>i.checked=false);atualizar();};
-  compartilhar.onclick=async()=>{const ids=new Set([...itens.querySelectorAll('input:checked')].map(i=>i.value)),selecionados=lista.filter(o=>ids.has(o.id));if(!selecionados.length)return;overlay.remove();await gerarLinkOradores(selecionados,'Oradores de '+cfg.cong);};
+  compartilhar.onclick=async()=>{const ids=new Set([...itens.querySelectorAll('input:checked')].map(i=>i.value)),selecionados=lista.filter(o=>ids.has(o.id));if(!selecionados.length)return;const opcoes={telefone:document.getElementById('shareTel').checked,observacoes:document.getElementById('shareObs').checked,avaliacao:document.getElementById('shareNota').checked};overlay.remove();await gerarLinkOradores(selecionados,'Oradores de '+cfg.cong,opcoes);};
   actions.appendChild(cancelar);actions.appendChild(compartilhar);modal.appendChild(actions);overlay.appendChild(modal);document.body.appendChild(overlay);atualizar();if(window.lucide)lucide.createIcons();
 }
 async function checkSharedImport(){
@@ -64,14 +80,27 @@ async function checkSharedImport(){
   try{
     const{data,error}=await supabase.rpc('get_shared_speakers',{share_token:token});if(error)throw error;
     const lista=Array.isArray(data)?data:[];if(!lista.length)throw new Error('Este link expirou ou não existe.');
-    const descricao=lista.length===1?'o orador '+(lista[0].nome||'compartilhado'):'a lista com '+lista.length+' oradores';
-    if(confirm('Deseja copiar '+descricao+' para sua congregação?')){
+    if(await revisarImportacaoCompartilhada(lista)){
       const existentes=new Set(oradores.map(chaveIdentidadeOrador));let novos=0;
       for(const o of lista){const chave=chaveIdentidadeOrador(o);if(o.nome&&!existentes.has(chave)){await FF.add(FF.col(db,'oradores'),o);existentes.add(chave);novos++;}}
       await loadOradores();toast('✓ '+novos+' oradores importados; '+(lista.length-novos)+' duplicados ignorados.',5000);
     }
   }catch(e){toast('Não foi possível importar a lista: '+e.message,5000);}
   finally{history.replaceState({},'',location.pathname+location.hash);}
+}
+function revisarImportacaoCompartilhada(lista){
+  return new Promise(resolve=>{
+    document.getElementById('revisarImportacaoShare')?.remove();const overlay=document.createElement('div');overlay.id='revisarImportacaoShare';overlay.className='choice-overlay';
+    const modal=document.createElement('div');modal.className='choice-modal share-speakers-modal';const titulo=document.createElement('div');titulo.className='choice-title';titulo.textContent='Revisar importação';modal.appendChild(titulo);
+    const exatos=new Map(oradores.map(o=>[chaveIdentidadeOrador(o),o])),porNome=new Map(oradores.map(o=>[normalizarTexto(o.nome),o]));let novos=0,duplicados=0,conflitos=0;
+    const listaEl=document.createElement('div');listaEl.className='share-speakers-list';
+    lista.forEach(o=>{const exato=exatos.get(chaveIdentidadeOrador(o)),mesmoNome=porNome.get(normalizarTexto(o.nome));let status='Novo',classe='bgrn';if(exato){status='Já existe';classe='bgry';duplicados++;}else if(mesmoNome){status='Revisar congregação';classe='bamb';conflitos++;novos++;}else novos++;
+      const row=document.createElement('div');row.className='share-import-row';const info=document.createElement('span'),nome=document.createElement('strong'),meta=document.createElement('small'),badge=document.createElement('em');nome.textContent=o.nome||'Sem nome';meta.textContent=(o.cong||'Congregação não informada')+(o.tel?' · '+o.tel:'');info.appendChild(nome);info.appendChild(meta);badge.className='badge '+classe;badge.textContent=status;row.appendChild(info);row.appendChild(badge);listaEl.appendChild(row);
+    });
+    const resumo=document.createElement('p');resumo.className='choice-hint';resumo.textContent=novos+' novos · '+duplicados+' duplicados'+(conflitos?' · '+conflitos+' com possível conflito':'');modal.appendChild(resumo);modal.appendChild(listaEl);
+    const actions=document.createElement('div');actions.className='topic-warning-actions';const cancelar=document.createElement('button');cancelar.className='btn bo';cancelar.textContent='Cancelar';const importar=document.createElement('button');importar.className='btn bp';importar.textContent='Importar '+novos+' novo'+(novos===1?'':'s');importar.disabled=novos===0;importar.style.opacity=novos?'1':'.5';
+    const fechar=valor=>{overlay.remove();resolve(valor);};cancelar.onclick=()=>fechar(false);importar.onclick=()=>fechar(true);actions.appendChild(cancelar);actions.appendChild(importar);modal.appendChild(actions);overlay.appendChild(modal);document.body.appendChild(overlay);
+  });
 }
 async function ensureXlsx(){if(window.XLSX)return;await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
 function normKey(k){return String(k||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}

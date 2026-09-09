@@ -30,14 +30,16 @@ export default async function handler(request,response){
   response.setHeader('Cache-Control','public, s-maxage=21600, stale-while-revalidate=86400');
   const data=String(request.query?.data||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(data))return response.status(400).json({error:'Data inválida'});
   const alvo=new Date(data+'T12:00:00Z');
+  const diagnostico=[];
   for(let off=0;off<=4;off++){
     const edicao=new Date(Date.UTC(alvo.getUTCFullYear(),alvo.getUTCMonth()-off,1)),mes=MESES[edicao.getUTCMonth()],ano=edicao.getUTCFullYear();
     const url=`https://www.jw.org/pt/biblioteca/revistas/sentinela-estudo-${mes}-${ano}/`;
     try{
-      const resultado=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0 (compatible; Oradores/1.0)','Accept-Language':'pt-BR,pt;q=0.9'}});if(!resultado.ok)continue;
+      const resultado=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0 (compatible; Oradores/1.0)','Accept-Language':'pt-BR,pt;q=0.9'}});if(!resultado.ok){diagnostico.push({url,status:resultado.status});continue;}
       const artigo=extrairArtigos(await resultado.text()).find(a=>alvo>=a.intervalo[0]&&alvo<=a.intervalo[1]);
       if(artigo)return response.status(200).json({tema:artigo.titulo,data,fonte:url});
-    }catch(error){}
+    }catch(error){diagnostico.push({url,erro:error.message});console.error('[sentinela]',data,url,error);}
   }
-  return response.status(404).json({tema:null,data});
+  console.warn('[sentinela] tema não encontrado',data,diagnostico);
+  return response.status(404).json({tema:null,data,error:'Tema não encontrado nas edições consultadas.',diagnostico});
 }

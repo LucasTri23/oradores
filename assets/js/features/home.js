@@ -213,6 +213,26 @@ function obterPendenciasPrograma(registro={}){
   if(registro.nome&&!String(registro.telefone||'').trim())faltas.push('telefone');
   return faltas;
 }
+const CONFIRMACAO_LABELS={nao_enviado:'Convite não enviado',aguardando:'Aguardando resposta',confirmado:'Confirmado',recusado:'Recusado',substituir:'Precisa substituir'};
+function notificacoesLocais(){
+  const hoje=new Date().toISOString().slice(0,10),limite=new Date();limite.setDate(limite.getDate()+60);const ate=isoLocal(limite),itens=[];
+  const datas=[];for(let ano=Number(hoje.slice(0,4));ano<=Number(ate.slice(0,4));ano++)datas.push(...allMeetingDays(ano));
+  const byDate=new Map(programa.map(p=>[p.data,p]));datas.filter(d=>d>=hoje&&d<=ate).forEach(data=>{const p=byDate.get(data)||{data},faltas=obterPendenciasPrograma(p);if(faltas.length)itens.push({tipo:'pendencia',data,texto:'Falta '+faltas.join(', ')+' na programação.',acao:()=>editarAgend(JSON.stringify(p))});else if(!p.semDiscurso&&p.nome&&(!p.confirmacao||p.confirmacao==='nao_enviado'))itens.push({tipo:'convite',data,texto:'Convite de '+p.nome+' ainda não foi enviado.',acao:()=>editarAgend(JSON.stringify(p))});else if(['aguardando','recusado','substituir'].includes(p.confirmacao))itens.push({tipo:p.confirmacao,data,texto:CONFIRMACAO_LABELS[p.confirmacao]+': '+p.nome+'.',acao:()=>editarAgend(JSON.stringify(p))});});
+  if(typeof _jwFalhas!=='undefined')_jwFalhas.forEach(data=>itens.push({tipo:'sentinela',data,texto:'Não foi possível buscar a Sentinela.',acao:abrirConfigSentinela}));return itens.sort((a,b)=>a.data.localeCompare(b.data));
+}
+function renderProximaAcao(){
+  const box=document.getElementById('homeNextAction');if(!box)return;const item=notificacoesLocais()[0];box.innerHTML='';
+  const count=document.getElementById('notificationsCount'),total=notificacoesLocais().length;if(count){count.textContent=total;count.hidden=!total;}
+  if(!item){box.className='next-action-card is-clear';box.innerHTML='<i data-lucide="circle-check"></i><div><small>Próxima ação</small><strong>Programação em dia</strong></div>';return;}
+  box.className='next-action-card';box.innerHTML='<i data-lucide="circle-alert"></i>';const info=document.createElement('div'),small=document.createElement('small'),strong=document.createElement('strong'),button=document.createElement('button');small.textContent='Próxima ação · '+fD(item.data);strong.textContent=item.texto;info.appendChild(small);info.appendChild(strong);button.className='btn bp bs';button.textContent='Resolver';button.onclick=item.acao;box.appendChild(info);box.appendChild(button);
+}
+async function abrirCentralNotificacoes(){
+  document.getElementById('centralNotificacoes')?.remove();const overlay=document.createElement('div');overlay.id='centralNotificacoes';overlay.className='choice-overlay';const modal=document.createElement('div');modal.className='choice-modal notifications-modal';modal.innerHTML='<div class="choice-title">Notificações</div>';
+  const lista=document.createElement('div');lista.className='notifications-list';const itens=notificacoesLocais();itens.forEach(item=>{const b=document.createElement('button');b.className='notification-item';const data=document.createElement('small'),texto=document.createElement('strong');data.textContent=fD(item.data);texto.textContent=item.texto;b.appendChild(data);b.appendChild(texto);b.onclick=()=>{overlay.remove();item.acao();};lista.appendChild(b);});
+  try{const{data}=await supabase.from('speaker_shares').select('expires_at').gt('expires_at',new Date().toISOString());(data||[]).forEach(s=>{const horas=Math.ceil((new Date(s.expires_at)-new Date())/36e5);if(horas<=48){const d=document.createElement('div');d.className='notification-item';d.innerHTML='<small>Compartilhamento</small><strong>Um link expira em '+horas+' hora'+(horas===1?'':'s')+'.</strong>';lista.appendChild(d);}});}catch(e){}
+  try{const desde=new Date(Date.now()-7*864e5).toISOString(),rotulos={programa:'programação',oradores:'oradores',config:'configurações',sentinela:'Sentinela'};const{data}=await supabase.from('app_records').select('collection,updated_at,updated_by').eq('workspace_id',activeWorkspaceId).neq('updated_by',currentUser.id).gte('updated_at',desde).order('updated_at',{ascending:false}).limit(5);(data||[]).forEach(a=>{const d=document.createElement('div');d.className='notification-item';const quando=new Date(a.updated_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});d.innerHTML='<small>Alteração da equipe · '+quando+'</small><strong>Outro integrante atualizou '+(rotulos[a.collection]||a.collection)+'.</strong>';lista.appendChild(d);});}catch(e){}
+  if(!lista.children.length)lista.innerHTML='<div class="empty">Nenhuma pendência no momento.</div>';modal.appendChild(lista);const fechar=document.createElement('button');fechar.className='btn bo choice-close';fechar.textContent='Fechar';fechar.onclick=()=>overlay.remove();modal.appendChild(fechar);overlay.appendChild(modal);document.body.appendChild(overlay);
+}
 
 function renderHome(){
   const hoje=new Date().toISOString().slice(0,10),byDate={};
@@ -238,6 +258,7 @@ function renderHome(){
   }
   renderCalendar(byDate);
   renderSentinelaChip();
+  renderProximaAcao();
   if(window.lucide)lucide.createIcons();
 }
 
@@ -287,7 +308,7 @@ function renderCalendar(byDate){
     if(semDiscurso){status.innerHTML='<i class="status-dot"></i><span>Sem discurso</span>';status.querySelector('i').style.background=corEspecial(registro.semDiscursoCor||'#f59e0b');}
     else if(pendente)status.innerHTML='<i class="status-dot pending"></i><span>Falta: '+faltas.join(', ')+'</span>';
     else if(especial){status.innerHTML='<i class="status-dot"></i><span></span>';status.querySelector('i').style.background=corEspecial(registro.especialCor);status.querySelector('span').textContent=registro.especialTitulo||'Especial';}
-    else status.innerHTML='<i class="status-dot ready"></i><span>Completo</span>';
+    else{const conf=registro.confirmacao||'nao_enviado';status.innerHTML='<i class="status-dot '+(conf==='confirmado'?'ready':conf==='recusado'||conf==='substituir'?'danger':'waiting')+'"></i><span></span>';status.querySelector('span').textContent=CONFIRMACAO_LABELS[conf]||'Completo';}
     row.appendChild(date);row.appendChild(info);row.appendChild(topic);row.appendChild(status);row.appendChild(actions);grid.appendChild(row);
   });
 }
@@ -311,12 +332,12 @@ function renderSentinelaChip(){
     sd.innerHTML='';
     if(titulo){
       const sc=document.createElement('div');sc.className='sentchip';
-      sc.innerHTML='📖 <strong>Sentinela:</strong> '+titulo+' <span style="opacity:.6;margin-left:6px">'+fD(alvo)+'</span>';
+      sc.innerHTML='📖 <strong>Sentinela:</strong> '+titulo+' <span style="opacity:.6;margin-left:6px">'+fD(alvo)+'</span>';const meta=document.createElement('small');const estado=_jwEstado[alvo];meta.className='sentinela-meta';meta.textContent=(estado?.fonte==='jw.org'?'Consultado no jw.org':'Usando '+(estado?.fonte||'fonte local'))+' · atualizado '+new Date(estado?.atualizadoEm||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});sc.appendChild(meta);
       sd.appendChild(sc);
       registrarSentinelaAuto(alvo,titulo);
     } else {
       const sc2=document.createElement('div');sc2.className='sentchip';sc2.style.cssText='opacity:.4;cursor:pointer';
-      sc2.textContent='📖 Não encontrei automaticamente — toque para corrigir em Configurações';sc2.onclick=abrirConfigSentinela;
+      sc2.textContent='📖 Falha na busca automática — toque para tentar novamente';sc2.onclick=()=>mostrarErroDetalhado('Falha ao buscar a Sentinela',_jwEstado[alvo]?.erro||'Serviço indisponível.',()=>{delete _jwTemaCache[alvo];renderSentinelaChip();});
       sd.appendChild(sc2);
     }
   });

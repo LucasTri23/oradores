@@ -75,7 +75,7 @@ async function saveSug(){
   await FF.add(FF.col(db,'sugestoes'),{nome,temaNum:num,descricao:desc,dataSugestao:sDataVal,criadoEm:FF.ts()});
   closeM('mSug');await loadSugestoes();toast('✓ Salvo!');
 }
-async function delSug(id){if(!confirm('Remover?'))return;await FF.del(FF.doc(db,'sugestoes',id));await loadSugestoes();}
+async function delSug(id){if(!(await confirmarModal('Remover sugestão','A sugestão será enviada para a lixeira.','Remover',true)))return;await FF.del(FF.doc(db,'sugestoes',id));await loadSugestoes();}
 
 // ANALYTICS
 function renderAnalytics(){
@@ -192,7 +192,7 @@ async function saveSentinela(){
   document.getElementById('sentTema').value='';
   await loadSentinelas();renderHome();toast('✓ Salvo!');
 }
-async function delSent(id){if(!confirm('Remover?'))return;await FF.del(FF.doc(db,'sentinela',id));await loadSentinelas();renderHome();}
+async function delSent(id){if(!(await confirmarModal('Remover tema','O tema salvo da Sentinela será enviado para a lixeira.','Remover',true)))return;await FF.del(FF.doc(db,'sentinela',id));await loadSentinelas();renderHome();}
 
 // Busca automática do tema de A Sentinela no jw.org.
 // O site não é servido com cabeçalhos CORS, então o navegador não consegue buscar direto;
@@ -222,17 +222,20 @@ function parseRangeSentinela(str){
 // Cacheado por data (por Promise, não só valor) pra não disparar buscas duplicadas quando
 // renderHome() é chamado várias vezes em sequência durante o carregamento inicial.
 let _jwTemaCache={};
+let _jwFalhas=new Set();
+let _jwEstado={};
 function fetchTemaJW(dataAlvo){
   if(_jwTemaCache[dataAlvo])return _jwTemaCache[dataAlvo];
   const p=(async()=>{
     // Consulta o jw.org pela função da Vercel para não depender de CORS no navegador.
     try{
       const resposta=await fetch('/api/sentinela?data='+encodeURIComponent(dataAlvo));
-      if(resposta.ok){const resultado=await resposta.json();if(resultado.tema)return resultado.tema;}
-    }catch(e){}
+      if(resposta.ok){const resultado=await resposta.json();if(resultado.tema){_jwFalhas.delete(dataAlvo);_jwEstado[dataAlvo]={fonte:'jw.org',atualizadoEm:new Date().toISOString()};return resultado.tema;}}
+      const falha=await resposta.json().catch(()=>({}));_jwEstado[dataAlvo]={fonte:'erro',erro:falha.error||('HTTP '+resposta.status),atualizadoEm:new Date().toISOString()};
+    }catch(e){_jwEstado[dataAlvo]={fonte:'erro',erro:e.message,atualizadoEm:new Date().toISOString()};}
     // Contingência para quando o jw.org ou a rede estiverem temporariamente indisponíveis.
     const local=SENTINELA_SEMANAS.find(s=>dataAlvo>=s.de&&dataAlvo<=s.ate);
-    if(local)return local.tema;
+    if(local){_jwFalhas.delete(dataAlvo);_jwEstado[dataAlvo]={fonte:'calendário local',atualizadoEm:new Date().toISOString()};return local.tema;}
     const mesesPt=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     const alvo=new Date(dataAlvo+'T12:00:00');
     for(let off=0;off<=3;off++){
@@ -253,7 +256,7 @@ function fetchTemaJW(dataAlvo){
         }
       }catch(e){/* tenta a próxima edição */}
     }
-    return null;
+    _jwFalhas.add(dataAlvo);_jwEstado[dataAlvo]={fonte:'erro',erro:_jwEstado[dataAlvo]?.erro||'jw.org e fonte alternativa indisponíveis',atualizadoEm:new Date().toISOString()};renderProximaAcao();return null;
   })();
   _jwTemaCache[dataAlvo]=p;
   return p;
@@ -270,7 +273,7 @@ async function buscarSentinelaJW(){
     if(!dataInput)document.getElementById('sentData').value=dataAlvo;
     toast('✓ Tema encontrado: '+titulo);
   } else {
-    toast('Não encontrei o tema para essa data no jw.org. Preencha manualmente.',4000);
+    mostrarErroDetalhado('Falha ao buscar a Sentinela',_jwEstado[dataAlvo]?.erro||'Não foi possível consultar o jw.org.',buscarSentinelaJW);
   }
 }
 // Auto-preenche os campos ao abrir a aba Sentinela, sem precisar clicar em nada

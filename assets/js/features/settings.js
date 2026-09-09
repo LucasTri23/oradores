@@ -81,6 +81,15 @@ async function salvarDiaReuniao2027(dia,overlay=document.getElementById('pergunt
   cfg.dia2027=Number(dia);document.getElementById('cfgDia2027').value=String(cfg.dia2027);
   await FF.set(FF.doc(db,'config','app'),cfg);overlay?.remove();renderHome();toast('✓ Dia das reuniões de 2027 salvo!');
 }
+async function renderTrash(){
+  const el=document.getElementById('trashList');if(!el||!supabase)return;el.innerHTML='<div class="spin"></div>';
+  try{const{data,error}=await supabase.from('app_record_trash').select('id,collection,data,deleted_at,recover_until').eq('workspace_id',activeWorkspaceId).gt('recover_until',new Date().toISOString()).order('deleted_at',{ascending:false}).limit(30);if(error)throw error;el.innerHTML='';
+    (data||[]).forEach(item=>{const row=document.createElement('div');row.className='trash-row';const info=document.createElement('span'),titulo=document.createElement('strong'),meta=document.createElement('small'),restore=document.createElement('button');titulo.textContent=item.data?.nome||item.data?.tema||item.data?.data||item.collection;meta.textContent=item.collection+' · excluído em '+new Date(item.deleted_at).toLocaleDateString('pt-BR');info.append(titulo,meta);restore.className='btn bo bs';restore.textContent='Restaurar';restore.onclick=()=>restoreTrash(item.id);row.append(info,restore);el.appendChild(row);});if(!el.children.length)el.innerHTML='<div class="empty">A lixeira está vazia.</div>';
+  }catch(error){el.innerHTML='';mostrarErroDetalhado('Não foi possível abrir a lixeira',error.message,renderTrash);}
+}
+async function restoreTrash(id){
+  try{const{data,error}=await supabase.rpc('restore_app_record',{trash_id:id});if(error)throw error;if(!data)throw new Error('Item expirado ou sem permissão.');await loadAll();await renderTrash();toast('✓ Item restaurado.');}catch(error){mostrarErroDetalhado('Falha ao restaurar',error.message,()=>restoreTrash(id));}
+}
 
 // MINHA CONGREGAÇÃO — DISCURSANTES
 let discursantes=[];
@@ -294,7 +303,7 @@ async function saveDiscursante(){
 }
 
 async function delDiscursante(id){
-  if(!confirm('Remover este discursante?'))return;
+  if(!(await confirmarModal('Remover discursante','Este registro será enviado para a lixeira.','Remover',true)))return;
   await FF.del(FF.doc(db,'discursantes',id));
   discursantes=discursantes.filter(d=>d.id!==id);
   renderMinha();
@@ -457,10 +466,11 @@ function mostrarPickerMsg(sem){
     btn.onmouseout=function(){this.style.borderColor='var(--border2)';};
     const preview=buildMsg(m.texto,sem).slice(0,80)+'...';
     btn.innerHTML='<strong style="color:var(--whi);display:block;margin-bottom:3px">'+m.titulo+'</strong><span style="font-size:11px;color:var(--whi3)">'+preview+'</span>';
-    btn.onclick=function(){
+    btn.onclick=async function(){
       const txt=buildMsg(m.texto,sem);
       const tel=sem.telefone?sem.telefone.replace(/\D/g,''):'';
       window.open(tel?'https://wa.me/55'+tel+'?text='+encodeURIComponent(txt):'https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+      if(m.tipo==='convite'&&sem.data){const agendado=programa.find(p=>p.id===sem.id||p.data===sem.data);if(agendado&&(!agendado.confirmacao||agendado.confirmacao==='nao_enviado')){await FF.upd(FF.doc(db,'programa',agendado.id),{confirmacao:'aguardando'});agendado.confirmacao='aguardando';renderHome();}}
       overlay.remove();
     };
     modal.appendChild(btn);

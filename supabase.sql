@@ -126,3 +126,34 @@ create policy "Equipe lê os dados" on public.app_records for select to authenti
 create policy "Equipe insere dados" on public.app_records for insert to authenticated with check(public.is_workspace_member(workspace_id) and owner_id=auth.uid());
 create policy "Equipe atualiza dados" on public.app_records for update to authenticated using(public.is_workspace_member(workspace_id)) with check(public.is_workspace_member(workspace_id));
 create policy "Equipe exclui dados" on public.app_records for delete to authenticated using(public.is_workspace_member(workspace_id));
+
+-- INTEGRIDADE, AUDITORIA E LIXEIRA (seguro para executar novamente).
+delete from public.app_records a using public.app_records b
+where a.pk<b.pk and a.workspace_id=b.workspace_id and a.collection=b.collection
+  and ((a.collection in ('programa','sentinela') and a.data->>'data'=b.data->>'data')
+    or (a.collection='oradores' and lower(trim(a.data->>'nome'))=lower(trim(b.data->>'nome')) and lower(trim(a.data->>'cong'))=lower(trim(b.data->>'cong'))));
+create unique index if not exists app_records_programa_data_uidx on public.app_records(workspace_id,(data->>'data')) where collection='programa' and data ? 'data';
+create unique index if not exists app_records_sentinela_data_uidx on public.app_records(workspace_id,(data->>'data')) where collection='sentinela' and data ? 'data';
+create unique index if not exists app_records_orador_identidade_uidx on public.app_records(workspace_id,lower(trim(data->>'nome')),lower(trim(data->>'cong'))) where collection='oradores' and data ? 'nome';
+alter table public.app_records drop constraint if exists app_records_required_data_check;
+alter table public.app_records add constraint app_records_required_data_check check(
+  (collection not in ('programa','discursos','sentinela') or (data ? 'data' and (data->>'data') ~ '^\d{4}-\d{2}-\d{2}$')) and
+  (collection<>'oradores' or length(trim(data->>'nome'))>0)
+) not valid;
+
+create table if not exists public.app_record_audit(id bigint generated always as identity primary key,workspace_id uuid,record_id text,collection text,action text not null,old_data jsonb,new_data jsonb,changed_by uuid,changed_at timestamptz not null default now());
+create table if not exists public.app_record_trash(id bigint generated always as identity primary key,workspace_id uuid not null,record_id text not null,collection text not null,data jsonb not null,deleted_by uuid,deleted_at timestamptz not null default now(),recover_until timestamptz not null default(now()+interval '30 days'));
+alter table public.app_record_audit enable row level security;alter table public.app_record_trash enable row level security;
+grant select on public.app_record_audit,public.app_record_trash to authenticated;
+drop policy if exists "Equipe ve auditoria" on public.app_record_audit;create policy "Equipe ve auditoria" on public.app_record_audit for select to authenticated using(public.is_workspace_member(workspace_id));
+drop policy if exists "Equipe ve lixeira" on public.app_record_trash;create policy "Equipe ve lixeira" on public.app_record_trash for select to authenticated using(public.is_workspace_member(workspace_id));
+create or replace function public.audit_app_record() returns trigger language plpgsql security definer set search_path=public as $$ begin
+  insert into public.app_record_audit(workspace_id,record_id,collection,action,old_data,new_data,changed_by) values(coalesce(new.workspace_id,old.workspace_id),coalesce(new.id,old.id),coalesce(new.collection,old.collection),tg_op,case when tg_op<>'INSERT' then old.data end,case when tg_op<>'DELETE' then new.data end,auth.uid());
+  if tg_op='DELETE' then delete from public.app_record_trash where recover_until<now();insert into public.app_record_trash(workspace_id,record_id,collection,data,deleted_by) values(old.workspace_id,old.id,old.collection,old.data,auth.uid());return old;end if;return new;
+end $$;
+drop trigger if exists app_records_audit on public.app_records;create trigger app_records_audit after insert or update or delete on public.app_records for each row execute function public.audit_app_record();
+create or replace function public.restore_app_record(trash_id bigint) returns boolean language plpgsql security definer set search_path=public as $$ declare item public.app_record_trash;begin
+  select * into item from public.app_record_trash where id=trash_id and recover_until>now() and public.is_workspace_member(workspace_id) for update;if item.id is null then return false;end if;
+  insert into public.app_records(id,workspace_id,owner_id,collection,data) values(item.record_id,item.workspace_id,auth.uid(),item.collection,item.data) on conflict(workspace_id,collection,id) do update set data=excluded.data;delete from public.app_record_trash where id=trash_id;return true;
+end $$;
+revoke all on function public.restore_app_record(bigint) from public,anon;grant execute on function public.restore_app_record(bigint) to authenticated;
