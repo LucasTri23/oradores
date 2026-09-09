@@ -295,7 +295,7 @@ function renderSentinelaChip(){
   const sd=document.getElementById('homeSentinela');
   if(!sd)return;
   const alvo=nextSab();
-  const us=sentinelas.find(s=>s.data===alvo)||(sentinelas.length?sentinelas[0]:null);
+  const us=sentinelas.find(s=>s.data===alvo);
   if(us){
     const sc=document.createElement('div');sc.className='sentchip';
     sc.innerHTML='📖 <strong>Sentinela:</strong> '+us.tema+(us.data?' <span style="opacity:.6;margin-left:6px">'+fD(us.data)+'</span>':'');

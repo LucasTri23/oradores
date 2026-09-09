@@ -1,31 +1,3 @@
-// GEMINI AI
-async function gemini(prompt,key,retry=0){
-  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+key;
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
-  if(r.status===429){if(retry<2){await new Promise(res=>setTimeout(res,3000*(retry+1)));return gemini(prompt,key,retry+1);}throw new Error('Limite atingido (429). Aguarde e tente novamente.');}
-  if(!r.ok)throw new Error('HTTP '+r.status);
-  const data=await r.json();return data.candidates?.[0]?.content?.parts?.[0]?.text||'Sem resposta.';
-}
-function buildCtx(){
-  const ct={};discursos.forEach(d=>{if(d.temaNum&&d.temaNum>0)ct[d.temaNum]=(ct[d.temaNum]||0)+1;});
-  const topT=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c])=>'T'+n+'('+( TL[n]||'?')+'):'+c+'x').join(', ');
-  const sem=oradores.map(o=>{const u=getUltimoDiscurso(o);const m=u?Math.floor((new Date()-new Date(u+'T12:00:00'))/(864e5*30.44)):999;return o.nome+'('+( o.cong||'—')+'):'+( m>900?'nunca':m+'m');}).sort().slice(0,10).join(', ');
-  return (cfg.cong||'Minha Congregação')+'\nOradores:'+oradores.length+' | Discursos:'+discursos.length+'\nTop temas: '+topT+'\nSem discursar: '+sem;
-}
-function toggleAI(){document.getElementById('aiPanel').classList.toggle('open');}
-function closeAI(){document.getElementById('aiPanel').classList.remove('open');}
-async function sendAI(){const inp=document.getElementById('aiIn');const msg=inp.value.trim();if(!msg)return;inp.value='';await askAI(msg);}
-async function askAI(msg){
-  const gk=localStorage.getItem('bj_gem');
-  document.getElementById('aiPanel').classList.add('open');
-  addAIMsg('u',msg);
-  if(!gk){addAIMsg('b','⚠️ Configure a chave Gemini em ⚙️ Config.');return;}
-  const bot=addAIMsg('b','⏳ Pensando...');
-  try{const r=await gemini(buildCtx()+'\n\nVocê é um assistente de organização de discursos. Responda em português.\n\nPergunta: '+msg,gk);bot.textContent=r;}
-  catch(e){bot.textContent='✗ '+e.message;}
-}
-function addAIMsg(tipo,txt){const d=document.createElement('div');d.className='ai-msg '+tipo;d.textContent=txt;const c=document.getElementById('aiMsgs');c.appendChild(d);d.scrollIntoView({behavior:'smooth',block:'nearest'});return d;}
-
 // CONFIG
 async function loadConfig(){
   if(!db)return;
@@ -73,7 +45,6 @@ async function loadConfig(){
   updateBranding();
   document.getElementById('cfgNome').value=cfg.cong;document.getElementById('cfgEnd').value=cfg.end;document.getElementById('cfgHor').value=cfg.hor;document.getElementById('cfgDia').value=String(cfg.dia);
   document.getElementById('cfgDia2027').value=cfg.dia2027===0||cfg.dia2027===6?String(cfg.dia2027):'';
-  document.getElementById('cfgGemini').value=localStorage.getItem('bj_gem')||'';
   document.getElementById('cfgGroupMsg').value=cfg.groupMsg||'';
   document.getElementById('cfgSugerirSentinela').checked=!!cfg.sugerirSentinela;
 }
@@ -93,7 +64,6 @@ async function saveConfig(){
   const dia2027=document.getElementById('cfgDia2027').value;cfg.dia2027=dia2027===''?null:Number(dia2027);
   cfg.sugerirSentinela=document.getElementById('cfgSugerirSentinela').checked;
   cfg.groupMsg=document.getElementById('cfgGroupMsg').value.trim();
-  const gem=document.getElementById('cfgGemini').value.trim();if(gem)localStorage.setItem('bj_gem',gem);else localStorage.removeItem('bj_gem');
   if(db)await FF.set(FF.doc(db,'config','app'),cfg);
   updateBranding();renderMensagens();renderHome();toast('✓ Salvo!');
 }

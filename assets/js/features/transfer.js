@@ -10,24 +10,62 @@ function resetImportModal(mode){
 }
 function openImportOradores(){resetImportModal('oradores');}
 function openImportHistorico(){resetImportModal('historico');}
-async function compartilharOradores(){
+function dadosOradorCompartilhavel(o){
+  const{id,...dados}=o;return dados;
+}
+async function gerarLinkOradores(lista,titulo){
   if(!supabase||!currentUser)return toast('Entre com Google primeiro.');
-  if(!oradores.length)return toast('Não há oradores para compartilhar.');
-  if(!confirm('Gerar um link com nome, congregação, telefone e demais dados dos '+oradores.length+' oradores? O link expira em 7 dias.'))return;
+  if(!lista.length)return toast('Não há oradores para compartilhar.');
+  const quantidade=lista.length===1?'este orador':'estes '+lista.length+' oradores';
+  if(!confirm('Gerar um link com os dados de '+quantidade+'? O link expira em 7 dias.'))return;
   try{
-    const copia=oradores.map(({id,...o})=>o);
+    const copia=lista.map(dadosOradorCompartilhavel);
     const{data,error}=await supabase.from('speaker_shares').insert({payload:copia}).select('token').single();if(error)throw error;
     const link=location.origin+location.pathname+'?import='+encodeURIComponent(data.token);
-    if(navigator.share){await navigator.share({title:'Lista de oradores',text:'Abra o link, entre com Google e importe a lista de oradores:',url:link});}
+    if(navigator.share){await navigator.share({title,text:'Abra o link, entre com Google e importe '+(lista.length===1?'este orador':'os oradores')+':',url:link});}
     else{await navigator.clipboard.writeText(link);toast('✓ Link copiado! Ele expira em 7 dias.',4500);}
   }catch(e){if(e.name!=='AbortError')toast('Erro ao compartilhar: '+e.message,5000);}
+}
+async function compartilharOrador(id){
+  const orador=oradores.find(o=>o.id===id);if(!orador)return toast('Orador não encontrado.');
+  if(normalizarCongregacao(orador.cong)!==normalizarCongregacao(cfg.cong))return toast('Só é permitido compartilhar oradores da sua congregação.',5000);
+  return gerarLinkOradores([orador],'Orador: '+orador.nome);
+}
+function compartilharOradores(){
+  const congregacao=normalizarCongregacao(cfg.cong),lista=oradores.filter(o=>normalizarCongregacao(o.cong)===congregacao);
+  if(!congregacao)return toast('Configure primeiro o nome da sua congregação.');
+  if(!lista.length)return toast('Nenhum orador cadastrado na congregação "'+cfg.cong+'".',5000);
+  document.getElementById('selecionarOradoresShare')?.remove();
+  const overlay=document.createElement('div');overlay.id='selecionarOradoresShare';overlay.className='choice-overlay';
+  const modal=document.createElement('div');modal.className='choice-modal share-speakers-modal';
+  const titulo=document.createElement('div');titulo.className='choice-title';titulo.textContent='Compartilhar oradores';modal.appendChild(titulo);
+  const ajuda=document.createElement('p');ajuda.className='choice-hint';ajuda.textContent='Selecione quais oradores de '+cfg.cong+' deseja enviar para outra congregação.';modal.appendChild(ajuda);
+  const tools=document.createElement('div');tools.className='share-speakers-tools';
+  const todos=document.createElement('button');todos.type='button';todos.className='btn bo bs';todos.textContent='Selecionar todos';
+  const nenhum=document.createElement('button');nenhum.type='button';nenhum.className='btn bo bs';nenhum.textContent='Limpar';tools.appendChild(todos);tools.appendChild(nenhum);modal.appendChild(tools);
+  const itens=document.createElement('div');itens.className='share-speakers-list';
+  lista.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR')).forEach(o=>{
+    const label=document.createElement('label');label.className='share-speaker-option';
+    const input=document.createElement('input');input.type='checkbox';input.value=o.id;
+    const info=document.createElement('span'),nome=document.createElement('strong'),telefone=document.createElement('small');nome.textContent=o.nome;telefone.textContent=o.tel||'Sem telefone';info.appendChild(nome);info.appendChild(telefone);label.appendChild(input);label.appendChild(info);itens.appendChild(label);
+  });
+  modal.appendChild(itens);
+  const contador=document.createElement('div');contador.className='share-speakers-count';modal.appendChild(contador);
+  const actions=document.createElement('div');actions.className='topic-warning-actions';
+  const cancelar=document.createElement('button');cancelar.type='button';cancelar.className='btn bo';cancelar.textContent='Cancelar';cancelar.onclick=()=>overlay.remove();
+  const compartilhar=document.createElement('button');compartilhar.type='button';compartilhar.className='btn bp';compartilhar.innerHTML='<i data-lucide="share-2"></i> Compartilhar selecionados';
+  const atualizar=()=>{const n=itens.querySelectorAll('input:checked').length;contador.textContent=n+' de '+lista.length+' selecionado'+(n===1?'':'s');compartilhar.disabled=n===0;compartilhar.style.opacity=n?'1':'.5';};
+  itens.addEventListener('change',atualizar);todos.onclick=()=>{itens.querySelectorAll('input').forEach(i=>i.checked=true);atualizar();};nenhum.onclick=()=>{itens.querySelectorAll('input').forEach(i=>i.checked=false);atualizar();};
+  compartilhar.onclick=async()=>{const ids=new Set([...itens.querySelectorAll('input:checked')].map(i=>i.value)),selecionados=lista.filter(o=>ids.has(o.id));if(!selecionados.length)return;overlay.remove();await gerarLinkOradores(selecionados,'Oradores de '+cfg.cong);};
+  actions.appendChild(cancelar);actions.appendChild(compartilhar);modal.appendChild(actions);overlay.appendChild(modal);document.body.appendChild(overlay);atualizar();if(window.lucide)lucide.createIcons();
 }
 async function checkSharedImport(){
   const token=new URLSearchParams(location.search).get('import');if(!token||!supabase||!currentUser)return;
   try{
     const{data,error}=await supabase.rpc('get_shared_speakers',{share_token:token});if(error)throw error;
     const lista=Array.isArray(data)?data:[];if(!lista.length)throw new Error('Este link expirou ou não existe.');
-    if(confirm('Esta lista compartilhada contém '+lista.length+' oradores. Deseja copiar para sua conta?')){
+    const descricao=lista.length===1?'o orador '+(lista[0].nome||'compartilhado'):'a lista com '+lista.length+' oradores';
+    if(confirm('Deseja copiar '+descricao+' para sua congregação?')){
       const existentes=new Set(oradores.map(chaveIdentidadeOrador));let novos=0;
       for(const o of lista){const chave=chaveIdentidadeOrador(o);if(o.nome&&!existentes.has(chave)){await FF.add(FF.col(db,'oradores'),o);existentes.add(chave);novos++;}}
       await loadOradores();toast('✓ '+novos+' oradores importados; '+(lista.length-novos)+' duplicados ignorados.',5000);

@@ -133,6 +133,7 @@ function renderOradores(){
     const btns=document.createElement('div');
     btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
     if(o.tel){const b=document.createElement('button');b.className='btn bo bs';b.title='Escolher mensagem para WhatsApp';b.innerHTML='<i data-lucide="message-circle-more"></i><span>Mensagem</span>';b.onclick=()=>abrirMensagensOrador(o.id);btns.appendChild(b);}
+    if(normalizarCongregacao(o.cong)===normalizarCongregacao(cfg.cong)){const bs=document.createElement('button');bs.className='btn bo bs';bs.title='Compartilhar este orador';bs.setAttribute('aria-label','Compartilhar '+o.nome);bs.innerHTML='<i data-lucide="share-2"></i>';bs.onclick=()=>compartilharOrador(o.id);btns.appendChild(bs);}
     const be=document.createElement('button');be.className='btn bo bs';be.title='Editar';be.textContent='✏️';be.onclick=()=>editOrador(o.id);btns.appendChild(be);
     const bd=document.createElement('button');bd.className='btn bo bs';bd.style.cssText='color:var(--red);opacity:.7';bd.title='Excluir';bd.textContent='🗑';bd.onclick=()=>delOrador(o.id);btns.appendChild(bd);
     row.appendChild(btns);

@@ -224,14 +224,15 @@ function parseRangeSentinela(str){
 let _jwTemaCache={};
 function fetchTemaJW(dataAlvo){
   if(_jwTemaCache[dataAlvo])return _jwTemaCache[dataAlvo];
-  // Tabela pesquisada previamente (data.js) — instantâneo, sem depender do proxy externo.
-  const local=SENTINELA_SEMANAS.find(s=>dataAlvo>=s.de&&dataAlvo<=s.ate);
-  if(local){
-    const p2=Promise.resolve(local.tema);
-    _jwTemaCache[dataAlvo]=p2;
-    return p2;
-  }
   const p=(async()=>{
+    // Consulta o jw.org pela função da Vercel para não depender de CORS no navegador.
+    try{
+      const resposta=await fetch('/api/sentinela?data='+encodeURIComponent(dataAlvo));
+      if(resposta.ok){const resultado=await resposta.json();if(resultado.tema)return resultado.tema;}
+    }catch(e){}
+    // Contingência para quando o jw.org ou a rede estiverem temporariamente indisponíveis.
+    const local=SENTINELA_SEMANAS.find(s=>dataAlvo>=s.de&&dataAlvo<=s.ate);
+    if(local)return local.tema;
     const mesesPt=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     const alvo=new Date(dataAlvo+'T12:00:00');
     for(let off=0;off<=3;off++){
@@ -243,11 +244,11 @@ function fetchTemaJW(dataAlvo){
         const r=await fetch('https://r.jina.ai/'+url);
         if(!r.ok)continue;
         const texto=await r.text();
-        const re=/##\s*\[([^\]]+)\]\([^)]*\)\s*\n+\s*Estudo para a semana de\s*([^.\n]+)\./gi;
+        const re=/##\s*(?:\[([^\]]+)\]\([^)]*\)|([^\n]+))\s*\n+\s*(?:Artigo de estudo|Estudo) para a semana de\s*([^.\n]+)\./gi;
         let m;
         while((m=re.exec(texto))){
-          const titulo=m[1].trim();
-          const range=parseRangeSentinela(m[2]);
+          const titulo=(m[1]||m[2]).trim();
+          const range=parseRangeSentinela(m[3]);
           if(range&&alvo>=range[0]&&alvo<=range[1])return titulo;
         }
       }catch(e){/* tenta a próxima edição */}

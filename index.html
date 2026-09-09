@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="assets/images/oradores-speaker-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260902-1">
+<link rel="stylesheet" href="assets/css/style.css?v=20260909-1">
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <script>document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';</script>
 </head>
@@ -23,17 +23,6 @@
   </div>
 </div>
 <div id="toast"></div>
-<div id="aiPanel">
-  <div class="ai-head"><div class="ai-title">◈ Assistente Gemini</div><button class="btn bo bs" onclick="closeAI()">✕</button></div>
-  <div class="ai-chips">
-    <div class="chip" onclick="askAI('Quem está há mais tempo sem discursar?')">⏰ Sem discursar</div>
-    <div class="chip" onclick="askAI('Quais os 10 temas mais usados?')">📊 Top temas</div>
-    <div class="chip" onclick="askAI('Quais temas nunca foram usados?')">🆕 Nunca usados</div>
-    <div class="chip" onclick="askAI('Análise geral do histórico de oradores')">📋 Análise</div>
-  </div>
-  <div class="ai-msgs" id="aiMsgs"><div class="ai-msg b">Olá! Posso analisar seu histórico de discursos. O que você quer saber?</div></div>
-  <div class="ai-foot"><input id="aiIn" placeholder="Pergunte algo..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp bs" onclick="sendAI()">↑</button></div>
-</div>
 <!-- MODAL AGENDAMENTO -->
 <div class="mbg" id="mAgend">
   <div class="modal">
@@ -196,7 +185,6 @@
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="moon"></i></button>
     <button class="icon-btn optional-action" onclick="openImportHistorico()" title="Importar histórico"><i data-lucide="folder-up"></i></button>
     <button class="icon-btn optional-action" onclick="openM('mExport')" title="Exportar Excel"><i data-lucide="download"></i></button>
-    <button class="icon-btn optional-action" onclick="toggleAI()" title="Assistente"><i data-lucide="sparkles"></i></button>
     <button class="user-menu" onclick="toggleUserMenu()" aria-label="Menu da conta"><img id="userAvatar" alt=""><span id="userName">Conta</span><i data-lucide="chevron-down"></i></button>
     <div class="account-popover" id="accountPopover"><div id="userEmail"></div><button onclick="irTab('config');toggleUserMenu(false)"><i data-lucide="settings"></i> Configurações</button><button onclick="logout()"><i data-lucide="log-out"></i> Sair</button></div>
   </div>
@@ -256,7 +244,7 @@
 <div class="page" id="page-oradores">
   <div class="panel-head">
     <div class="panel-title" style="margin:0">Oradores</div>
-    <div class="brow-r"><button class="btn bo bs" onclick="compartilharOradores()">🔗 Compartilhar lista</button><button class="btn bo bs" onclick="openImportOradores()">📂 Importar lista</button><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
+    <div class="brow-r"><button class="btn bo bs" onclick="compartilharOradores()"><i data-lucide="share-2"></i> Compartilhar minha congregação</button><button class="btn bo bs" onclick="openImportOradores()">📂 Importar lista</button><button class="btn bp bs" onclick="novoOrador()">+ Novo</button></div>
   </div>
   <input id="buscaOr" placeholder="🔍 Buscar por nome ou congregação..." oninput="renderOradores()" style="margin-bottom:8px">
   <div class="filter-bar" style="margin-bottom:10px">
@@ -314,7 +302,6 @@
       <div class="field"><label>Dia dos discursos (padrão / 2026)</label><select id="cfgDia"><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
       <div class="field"><label>Dia dos discursos em 2027</label><select id="cfgDia2027"><option value="">Responder depois</option><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
     </div>
-    <div class="field"><label>Gemini API Key (opcional)</label><input id="cfgGemini" type="password" placeholder="AIzaSy..."></div>
   </div>
   <details class="card settings-details" id="sentinelaConfig">
     <summary><span><i data-lucide="library"></i><strong>Correção manual da Sentinela</strong></span><small>Use somente se a busca automática falhar</small><i data-lucide="chevron-down" class="details-chevron"></i></summary>
@@ -366,12 +353,12 @@
 </main>
 <script src="assets/js/supabase-client.js?v=20260904-1"></script>
 <script src="assets/js/app.js?v=20260904-1"></script>
-<script src="assets/js/features/home.js?v=20260904-1"></script>
+<script src="assets/js/features/home.js?v=20260909-1"></script>
 <script src="assets/js/features/schedule.js?v=20260904-1"></script>
-<script src="assets/js/features/directory.js?v=20260904-1"></script>
-<script src="assets/js/features/insights.js?v=20260904-1"></script>
-<script src="assets/js/features/transfer.js?v=20260904-1"></script>
-<script src="assets/js/features/settings.js?v=20260904-1"></script>
+<script src="assets/js/features/directory.js?v=20260909-2"></script>
+<script src="assets/js/features/insights.js?v=20260909-1"></script>
+<script src="assets/js/features/transfer.js?v=20260909-2"></script>
+<script src="assets/js/features/settings.js?v=20260909-1"></script>
 <script src="assets/js/features/team.js?v=20260904-1"></script>
 <script src="assets/js/features/init.js?v=20260904-1"></script>
 </body>
