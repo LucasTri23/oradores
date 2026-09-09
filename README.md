@@ -26,7 +26,7 @@ supabase.sql                  Banco de dados e políticas RLS
 
 Antes de desligar a versão antiga, exporte Oradores, Programação e Histórico em Excel. Na nova versão, entre com a conta Google que será dona dos dados antigos, use **Oradores → Importar lista** para o cadastro inicial e o botão de pasta no topo para o histórico/programação. Registros repetidos da lista são ignorados por nome + congregação.
 
-Cada usuário começa com dados separados. Em **Oradores → Compartilhar minha congregação**, é possível selecionar oradores marcados como pertencentes à congregação local e gerar uma cópia temporária por link, válida por sete dias. Antes de importar, o destinatário revisa registros novos, duplicados e possíveis conflitos.
+Cada usuário começa com dados separados. Em **Minha Cong. → Compartilhar oradores**, é possível selecionar oradores marcados como pertencentes à congregação local. O envio pode ser feito dentro do sistema usando o código da congregação destinatária ou por um link temporário válido por sete dias. O destinatário recebe uma notificação, revisa registros novos e duplicados por nome + congregação e decide se aceita ou recusa.
 
 ## Uso local
 

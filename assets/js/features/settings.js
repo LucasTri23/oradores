@@ -65,6 +65,7 @@ async function saveConfig(){
   cfg.sugerirSentinela=document.getElementById('cfgSugerirSentinela').checked;
   cfg.groupMsg=document.getElementById('cfgGroupMsg').value.trim();
   if(db)await FF.set(FF.doc(db,'config','app'),cfg);
+  if(supabase&&activeWorkspaceId){const{error}=await supabase.rpc('set_workspace_display_name',{target_workspace:activeWorkspaceId,new_name:cfg.cong});if(error)return toast('Configuração salva, mas o nome público não foi atualizado: '+error.message,6000);}
   updateBranding();renderMensagens();renderHome();toast('✓ Salvo!');
 }
 

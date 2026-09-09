@@ -32,9 +32,10 @@ async function createTeamInvite(){
 
 async function renderTeamPanel(){
   const el=document.getElementById('teamStatus');if(!el||!activeWorkspaceId)return;
-  const{data,error}=await supabase.rpc('list_workspace_members',{target_workspace:activeWorkspaceId});
+  const[{data,error},{data:identity}]=await Promise.all([supabase.rpc('list_workspace_members',{target_workspace:activeWorkspaceId}),supabase.rpc('get_workspace_share_identity',{target_workspace:activeWorkspaceId})]);
   if(error){el.textContent='Não foi possível consultar a equipe.';return;}
   el.innerHTML='';
+  if(identity?.[0]?.public_code){const box=document.createElement('div');box.className='team-member';const info=document.createElement('span'),label=document.createElement('small'),code=document.createElement('strong'),copy=document.createElement('button');label.textContent='Código para receber oradores';code.textContent=identity[0].public_code;code.style.display='block';code.style.letterSpacing='2px';info.appendChild(label);info.appendChild(code);copy.className='btn bo bs';copy.textContent='Copiar código';copy.onclick=async()=>{await navigator.clipboard.writeText(identity[0].public_code);toast('Código copiado.');};box.appendChild(info);box.appendChild(copy);el.appendChild(box);}
   (data||[]).forEach(member=>{
     const row=document.createElement('div');row.className='team-member';
     const info=document.createElement('span');info.textContent=(member.email||'Conta Google')+(member.user_id===currentUser.id?' (você)':'');row.appendChild(info);

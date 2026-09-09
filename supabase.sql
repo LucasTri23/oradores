@@ -157,3 +157,127 @@ create or replace function public.restore_app_record(trash_id bigint) returns bo
   insert into public.app_records(id,workspace_id,owner_id,collection,data) values(item.record_id,item.workspace_id,auth.uid(),item.collection,item.data) on conflict(workspace_id,collection,id) do update set data=excluded.data;delete from public.app_record_trash where id=trash_id;return true;
 end $$;
 revoke all on function public.restore_app_record(bigint) from public,anon;grant execute on function public.restore_app_record(bigint) to authenticated;
+
+-- COMPARTILHAMENTO INTERNO DE ORADORES ENTRE CONGREGAÇÕES.
+-- Cada congregação divulga apenas seu código; sua lista de participantes não fica pública.
+create extension if not exists unaccent;
+alter table public.workspaces add column if not exists public_code text;
+update public.workspaces set public_code=upper(substr(replace(id::text,'-',''),1,8)) where public_code is null;
+alter table public.workspaces alter column public_code set not null;
+create unique index if not exists workspaces_public_code_uidx on public.workspaces(upper(public_code));
+
+create or replace function public.normalize_speaker_identity(value text)
+returns text language sql immutable parallel safe set search_path=public,extensions as $$
+  select regexp_replace(lower(unaccent(trim(coalesce(value,'')))),'\s+',' ','g')
+$$;
+
+-- Substitui o índice antigo para também ignorar acentos e espaços repetidos.
+drop index if exists public.app_records_orador_identidade_uidx;
+delete from public.app_records a using public.app_records b
+where a.pk<b.pk and a.workspace_id=b.workspace_id and a.collection='oradores' and b.collection='oradores'
+  and public.normalize_speaker_identity(a.data->>'nome')=public.normalize_speaker_identity(b.data->>'nome')
+  and public.normalize_speaker_identity(a.data->>'cong')=public.normalize_speaker_identity(b.data->>'cong');
+create unique index if not exists app_records_orador_identidade_uidx on public.app_records(
+  workspace_id,public.normalize_speaker_identity(data->>'nome'),public.normalize_speaker_identity(data->>'cong')
+) where collection='oradores' and data ? 'nome';
+
+create table if not exists public.speaker_share_invites(
+  id uuid primary key default gen_random_uuid(),
+  sender_workspace_id uuid not null references public.workspaces(id) on delete cascade,
+  recipient_workspace_id uuid not null references public.workspaces(id) on delete cascade,
+  created_by uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  payload jsonb not null check(jsonb_typeof(payload)='array' and jsonb_array_length(payload)>0),
+  status text not null default 'pending' check(status in ('pending','accepted','declined','cancelled','expired')),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default(now()+interval '7 days'),
+  responded_at timestamptz,
+  responded_by uuid references auth.users(id),
+  check(sender_workspace_id<>recipient_workspace_id)
+);
+create index if not exists speaker_share_invites_recipient_idx on public.speaker_share_invites(recipient_workspace_id,status,created_at desc);
+create index if not exists speaker_share_invites_sender_idx on public.speaker_share_invites(sender_workspace_id,status,created_at desc);
+alter table public.speaker_share_invites enable row level security;
+revoke all on table public.speaker_share_invites from anon,authenticated;
+
+create or replace function public.get_workspace_share_identity(target_workspace uuid)
+returns table(public_code text,name text) language sql security definer stable set search_path=public as $$
+  select w.public_code,w.name from public.workspaces w
+  where w.id=target_workspace and public.is_workspace_member(target_workspace)
+$$;
+
+create or replace function public.set_workspace_display_name(target_workspace uuid,new_name text)
+returns boolean language plpgsql security definer set search_path=public as $$
+begin
+  if not public.is_workspace_member(target_workspace) then raise exception 'Sem acesso a esta congregação'; end if;
+  if length(trim(new_name))<2 then raise exception 'Informe o nome da congregação'; end if;
+  update public.workspaces set name=trim(new_name) where id=target_workspace;return found;
+end $$;
+
+drop function if exists public.send_speaker_share_invite(text,jsonb);
+create or replace function public.send_speaker_share_invite(sender_workspace uuid,target_code text,speakers jsonb)
+returns uuid language plpgsql security definer set search_path=public as $$
+declare recipient uuid;invite_id uuid;sender_name text;clean_payload jsonb;
+begin
+  if auth.uid() is null then raise exception 'Login necessário'; end if;
+  if not public.is_workspace_member(sender_workspace) then raise exception 'Congregação remetente não encontrada'; end if;
+  select id into recipient from public.workspaces where upper(public_code)=upper(trim(target_code));
+  if recipient is null then raise exception 'Código de congregação não encontrado'; end if;
+  if recipient=sender_workspace then raise exception 'Escolha outra congregação'; end if;
+  if jsonb_typeof(speakers)<>'array' or jsonb_array_length(speakers)=0 then raise exception 'Selecione ao menos um orador'; end if;
+  select name into sender_name from public.workspaces where id=sender_workspace;
+  select jsonb_agg(jsonb_build_object(
+    'nome',trim(item->>'nome'),'cong',coalesce(nullif(trim(item->>'cong'),''),sender_name),
+    'tel',item->>'tel','obs',item->>'obs','nota',item->'nota','ultimoDiscurso',item->>'ultimoDiscurso',
+    'minhaCongregacao',false,'compartilhadoPorWorkspace',sender_workspace::text
+  )) into clean_payload from jsonb_array_elements(speakers) item where length(trim(item->>'nome'))>0;
+  if clean_payload is null then raise exception 'Os oradores selecionados são inválidos'; end if;
+  insert into public.speaker_share_invites(sender_workspace_id,recipient_workspace_id,payload)
+  values(sender_workspace,recipient,clean_payload) returning id into invite_id;
+  return invite_id;
+end $$;
+
+create or replace function public.list_speaker_share_invites()
+returns table(id uuid,direction text,other_congregation text,payload jsonb,status text,created_at timestamptz,expires_at timestamptz)
+language sql security definer stable set search_path=public as $$
+  select i.id,
+    case when i.recipient_workspace_id=m.workspace_id then 'received' else 'sent' end,
+    case when i.recipient_workspace_id=m.workspace_id then sw.name else rw.name end,
+    i.payload,case when i.status='pending' and i.expires_at<=now() then 'expired' else i.status end,
+    i.created_at,i.expires_at
+  from public.workspace_members m
+  join public.speaker_share_invites i on i.recipient_workspace_id=m.workspace_id or i.sender_workspace_id=m.workspace_id
+  join public.workspaces sw on sw.id=i.sender_workspace_id join public.workspaces rw on rw.id=i.recipient_workspace_id
+  where m.user_id=auth.uid() order by i.created_at desc limit 50
+$$;
+
+create or replace function public.respond_speaker_share_invite(share_invite_id uuid,accept_invite boolean)
+returns jsonb language plpgsql security definer set search_path=public as $$
+declare inv public.speaker_share_invites;item jsonb;existing_id text;added int:=0;duplicates int:=0;
+begin
+  select * into inv from public.speaker_share_invites where id=share_invite_id for update;
+  if inv.id is null or not public.is_workspace_member(inv.recipient_workspace_id) then raise exception 'Convite não encontrado'; end if;
+  if inv.status<>'pending' or inv.expires_at<=now() then raise exception 'Convite expirado ou já respondido'; end if;
+  if not accept_invite then
+    update public.speaker_share_invites set status='declined',responded_at=now(),responded_by=auth.uid() where id=share_invite_id;
+    return jsonb_build_object('accepted',false,'added',0,'duplicates',0);
+  end if;
+  for item in select * from jsonb_array_elements(inv.payload) loop
+    select id into existing_id from public.app_records
+    where workspace_id=inv.recipient_workspace_id and collection='oradores'
+      and public.normalize_speaker_identity(data->>'nome')=public.normalize_speaker_identity(item->>'nome')
+      and public.normalize_speaker_identity(data->>'cong')=public.normalize_speaker_identity(item->>'cong') limit 1;
+    if existing_id is null then
+      begin
+        insert into public.app_records(workspace_id,owner_id,collection,data)
+        values(inv.recipient_workspace_id,auth.uid(),'oradores',item || jsonb_build_object('minhaCongregacao',false,'importadoEm',now()));
+        added:=added+1;
+      exception when unique_violation then duplicates:=duplicates+1;end;
+    else duplicates:=duplicates+1;end if;
+    existing_id:=null;
+  end loop;
+  update public.speaker_share_invites set status='accepted',responded_at=now(),responded_by=auth.uid() where id=share_invite_id;
+  return jsonb_build_object('accepted',true,'added',added,'duplicates',duplicates);
+end $$;
+
+revoke all on function public.get_workspace_share_identity(uuid),public.set_workspace_display_name(uuid,text),public.send_speaker_share_invite(uuid,text,jsonb),public.list_speaker_share_invites(),public.respond_speaker_share_invite(uuid,boolean) from public,anon;
+grant execute on function public.get_workspace_share_identity(uuid),public.set_workspace_display_name(uuid,text),public.send_speaker_share_invite(uuid,text,jsonb),public.list_speaker_share_invites(),public.respond_speaker_share_invite(uuid,boolean) to authenticated;

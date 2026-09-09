@@ -225,12 +225,20 @@ function renderProximaAcao(){
   if(!item){box.className='next-action-card is-clear';box.innerHTML='<i data-lucide="circle-check"></i><div><small>Próxima ação</small><strong>Programação em dia</strong></div>';return;}
   box.className='next-action-card';box.innerHTML='<i data-lucide="circle-alert"></i>';const info=document.createElement('div'),small=document.createElement('small'),strong=document.createElement('strong'),button=document.createElement('button');small.textContent='Próxima ação · '+fD(item.data);strong.textContent=item.texto;info.appendChild(small);info.appendChild(strong);button.className='btn bp bs';button.textContent='Resolver';button.onclick=item.acao;box.appendChild(info);box.appendChild(button);
 }
-async function abrirCentralNotificacoes(){
+async function _abrirCentralNotificacoesBase(){
   document.getElementById('centralNotificacoes')?.remove();const overlay=document.createElement('div');overlay.id='centralNotificacoes';overlay.className='choice-overlay';const modal=document.createElement('div');modal.className='choice-modal notifications-modal';modal.innerHTML='<div class="choice-title">Notificações</div>';
   const lista=document.createElement('div');lista.className='notifications-list';const itens=notificacoesLocais();itens.forEach(item=>{const b=document.createElement('button');b.className='notification-item';const data=document.createElement('small'),texto=document.createElement('strong');data.textContent=fD(item.data);texto.textContent=item.texto;b.appendChild(data);b.appendChild(texto);b.onclick=()=>{overlay.remove();item.acao();};lista.appendChild(b);});
   try{const{data}=await supabase.from('speaker_shares').select('expires_at').gt('expires_at',new Date().toISOString());(data||[]).forEach(s=>{const horas=Math.ceil((new Date(s.expires_at)-new Date())/36e5);if(horas<=48){const d=document.createElement('div');d.className='notification-item';d.innerHTML='<small>Compartilhamento</small><strong>Um link expira em '+horas+' hora'+(horas===1?'':'s')+'.</strong>';lista.appendChild(d);}});}catch(e){}
   try{const desde=new Date(Date.now()-7*864e5).toISOString(),rotulos={programa:'programação',oradores:'oradores',config:'configurações',sentinela:'Sentinela'};const{data}=await supabase.from('app_records').select('collection,updated_at,updated_by').eq('workspace_id',activeWorkspaceId).neq('updated_by',currentUser.id).gte('updated_at',desde).order('updated_at',{ascending:false}).limit(5);(data||[]).forEach(a=>{const d=document.createElement('div');d.className='notification-item';const quando=new Date(a.updated_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});d.innerHTML='<small>Alteração da equipe · '+quando+'</small><strong>Outro integrante atualizou '+(rotulos[a.collection]||a.collection)+'.</strong>';lista.appendChild(d);});}catch(e){}
   if(!lista.children.length)lista.innerHTML='<div class="empty">Nenhuma pendência no momento.</div>';modal.appendChild(lista);const fechar=document.createElement('button');fechar.className='btn bo choice-close';fechar.textContent='Fechar';fechar.onclick=()=>overlay.remove();modal.appendChild(fechar);overlay.appendChild(modal);document.body.appendChild(overlay);
+}
+async function atualizarContadorConvites(){
+  try{const convites=await carregarConvitesOradores(),pendentes=convites.filter(c=>c.direction==='received'&&c.status==='pending').length,count=document.getElementById('notificationsCount'),total=notificacoesLocais().length+pendentes;if(count){count.textContent=total;count.hidden=!total;}}catch(e){}
+}
+async function abrirCentralNotificacoes(){
+  await _abrirCentralNotificacoesBase();
+  const lista=document.querySelector('#centralNotificacoes .notifications-list');if(!lista)return;
+  try{const convites=await carregarConvitesOradores(),pendentes=convites.filter(c=>c.direction==='received'&&c.status==='pending');if(pendentes.length&&lista.querySelector('.empty'))lista.innerHTML='';pendentes.forEach(c=>{const row=document.createElement('div');row.className='notification-item';const small=document.createElement('small'),strong=document.createElement('strong'),actions=document.createElement('div');small.textContent='Oradores compartilhados';strong.textContent=c.other_congregation+' enviou '+c.payload.length+' orador'+(c.payload.length===1?'':'es')+'.';actions.className='topic-warning-actions';const recusar=document.createElement('button'),aceitar=document.createElement('button');recusar.className='btn bo bs';recusar.textContent='Recusar';aceitar.className='btn bp bs';aceitar.textContent='Ver e aceitar';recusar.onclick=async()=>{if(await responderConviteOradores(c,false)){row.remove();atualizarContadorConvites();}};aceitar.onclick=async()=>{if(await responderConviteOradores(c,true)){document.getElementById('centralNotificacoes')?.remove();atualizarContadorConvites();}};actions.appendChild(recusar);actions.appendChild(aceitar);row.appendChild(small);row.appendChild(strong);row.appendChild(actions);lista.prepend(row);});}catch(e){toast('Não foi possível carregar os convites internos.',5000);}
 }
 
 function renderHome(){
@@ -258,6 +266,7 @@ function renderHome(){
   renderCalendar(byDate);
   renderSentinelaChip();
   renderProximaAcao();
+  atualizarContadorConvites();
   if(window.lucide)lucide.createIcons();
 }
 
