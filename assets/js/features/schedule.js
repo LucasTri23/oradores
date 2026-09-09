@@ -72,7 +72,7 @@ function preencherModalAgend(p){
   document.getElementById('agCanticoDesc').textContent=p.cantico||'';
   document.getElementById('agTemImagens').checked=!!p.temImagens;
   document.getElementById('agObs').value=p.obs||'';
-  document.getElementById('agConfirmacao').value=p.confirmacao||'nao_enviado';
+  document.getElementById('agConfirmacao').value=p.confirmacao==='confirmado'||p.confirmacao==='recusado'||p.confirmacao==='substituir'?p.confirmacao:'aguardando';
   document.getElementById('agMotivo').value=p.motivo||'';
   document.getElementById('agSemDiscursoCor').value=/^#[0-9a-f]{6}$/i.test(p.semDiscursoCor||'')?p.semDiscursoCor:'#f59e0b';
   document.getElementById('agCadastrar').checked=false;
@@ -297,7 +297,7 @@ async function saveAgend(){
     congregacao:isSemDisc?'':cong,
     telefone:isSemDisc?'':tel,
     obs:isSemDisc?'':document.getElementById('agObs').value.trim(),
-    confirmacao:isSemDisc?'':document.getElementById('agConfirmacao').value,
+    confirmacao:isSemDisc?'':(nome?document.getElementById('agConfirmacao').value:''),
     motivo:isSemDisc?document.getElementById('agMotivo').value.trim():'',
     semDiscursoCor:isSemDisc?document.getElementById('agSemDiscursoCor').value:'#f59e0b',
     especial:isEspecial,
