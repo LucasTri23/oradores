@@ -213,11 +213,10 @@ function obterPendenciasPrograma(registro={}){
   if(registro.nome&&!String(registro.telefone||'').trim())faltas.push('telefone');
   return faltas;
 }
-const CONFIRMACAO_LABELS={aguardando:'Aguardando resposta',confirmado:'Confirmado',recusado:'Recusado',substituir:'Precisa substituir'};
 function notificacoesLocais(){
   const hoje=new Date().toISOString().slice(0,10),limite=new Date();limite.setDate(limite.getDate()+60);const ate=isoLocal(limite),itens=[];
   const datas=[];for(let ano=Number(hoje.slice(0,4));ano<=Number(ate.slice(0,4));ano++)datas.push(...allMeetingDays(ano));
-  const byDate=new Map(programa.map(p=>[p.data,p]));datas.filter(d=>d>=hoje&&d<=ate).forEach(data=>{const p=byDate.get(data)||{data},faltas=obterPendenciasPrograma(p);if(faltas.length)itens.push({tipo:'pendencia',data,texto:'Falta '+faltas.join(', ')+' na programação.',acao:()=>editarAgend(JSON.stringify(p))});else if(!p.semDiscurso&&p.nome){const status=p.confirmacao||'aguardando';if(['aguardando','recusado','substituir'].includes(status))itens.push({tipo:status,data,texto:CONFIRMACAO_LABELS[status]+': '+p.nome+'.',acao:()=>editarAgend(JSON.stringify(p))});}});
+  const byDate=new Map(programa.map(p=>[p.data,p]));datas.filter(d=>d>=hoje&&d<=ate).forEach(data=>{const p=byDate.get(data)||{data},faltas=obterPendenciasPrograma(p);if(faltas.length)itens.push({tipo:'pendencia',data,texto:'Falta '+faltas.join(', ')+' na programação.',acao:()=>editarAgend(JSON.stringify(p))});});
   if(typeof _jwFalhas!=='undefined')_jwFalhas.forEach(data=>itens.push({tipo:'sentinela',data,texto:'Não foi possível buscar a Sentinela.',acao:abrirConfigSentinela}));return itens.sort((a,b)=>a.data.localeCompare(b.data));
 }
 function renderProximaAcao(){
@@ -308,7 +307,7 @@ function renderCalendar(byDate){
     if(semDiscurso){status.innerHTML='<i class="status-dot"></i><span>Sem discurso</span>';status.querySelector('i').style.background=corEspecial(registro.semDiscursoCor||'#f59e0b');}
     else if(pendente)status.innerHTML='<i class="status-dot pending"></i><span>Falta: '+faltas.join(', ')+'</span>';
     else if(especial){status.innerHTML='<i class="status-dot"></i><span></span>';status.querySelector('i').style.background=corEspecial(registro.especialCor);status.querySelector('span').textContent=registro.especialTitulo||'Especial';}
-    else{const conf=registro.confirmacao||'aguardando';status.innerHTML='<i class="status-dot '+(conf==='confirmado'?'ready':conf==='recusado'||conf==='substituir'?'danger':'waiting')+'"></i><span></span>';status.querySelector('span').textContent=CONFIRMACAO_LABELS[conf]||'Aguardando resposta';}
+    else status.innerHTML='<i class="status-dot ready"></i><span>Completo</span>';
     row.appendChild(date);row.appendChild(info);row.appendChild(topic);row.appendChild(status);row.appendChild(actions);grid.appendChild(row);
   });
 }

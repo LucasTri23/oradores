@@ -466,11 +466,10 @@ function mostrarPickerMsg(sem){
     btn.onmouseout=function(){this.style.borderColor='var(--border2)';};
     const preview=buildMsg(m.texto,sem).slice(0,80)+'...';
     btn.innerHTML='<strong style="color:var(--whi);display:block;margin-bottom:3px">'+m.titulo+'</strong><span style="font-size:11px;color:var(--whi3)">'+preview+'</span>';
-    btn.onclick=async function(){
+    btn.onclick=function(){
       const txt=buildMsg(m.texto,sem);
       const tel=sem.telefone?sem.telefone.replace(/\D/g,''):'';
       window.open(tel?'https://wa.me/55'+tel+'?text='+encodeURIComponent(txt):'https://wa.me/?text='+encodeURIComponent(txt),'_blank');
-      if(m.tipo==='convite'&&sem.data){const agendado=programa.find(p=>p.id===sem.id||p.data===sem.data);if(agendado&&(!agendado.confirmacao||agendado.confirmacao==='nao_enviado')){await FF.upd(FF.doc(db,'programa',agendado.id),{confirmacao:'aguardando'});agendado.confirmacao='aguardando';renderHome();}}
       overlay.remove();
     };
     modal.appendChild(btn);
