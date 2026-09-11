@@ -130,7 +130,7 @@ function diaReuniaoDoAno(ano){return ano===2027&&(cfg.dia2027===0||cfg.dia2027==
 function currentOrNextProg(){
   // Returns the programa entry to highlight: exact saturday match, or closest future
   const sab=nextSab();
-  const today=new Date().toISOString().slice(0,10);
+  const today=typeof isoLocal==='function'?isoLocal(new Date()):new Date().toISOString().slice(0,10);
   // Dedup by date
   const byDate={};
   programa.forEach(p=>{if(p.data)byDate[p.data]=p;});

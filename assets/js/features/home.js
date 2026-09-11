@@ -214,10 +214,14 @@ function obterPendenciasPrograma(registro={}){
   return faltas;
 }
 function notificacoesLocais(){
-  const hoje=new Date().toISOString().slice(0,10),limite=new Date();limite.setDate(limite.getDate()+60);const ate=isoLocal(limite),itens=[];
+  const hoje=isoLocal(new Date()),limite=new Date();limite.setDate(limite.getDate()+60);const ate=isoLocal(limite),itens=[];
   const datas=[];for(let ano=Number(hoje.slice(0,4));ano<=Number(ate.slice(0,4));ano++)datas.push(...allMeetingDays(ano));
-  const byDate=new Map(programa.map(p=>[p.data,p]));datas.filter(d=>d>=hoje&&d<=ate).forEach(data=>{const p=byDate.get(data)||{data},faltas=obterPendenciasPrograma(p);if(faltas.length)itens.push({tipo:'pendencia',data,texto:'Falta '+faltas.join(', ')+' na programação.',acao:()=>editarAgend(JSON.stringify(p))});});
-  if(typeof _jwFalhas!=='undefined')_jwFalhas.forEach(data=>itens.push({tipo:'sentinela',data,texto:'Não foi possível buscar a Sentinela.',acao:abrirConfigSentinela}));return itens.sort((a,b)=>a.data.localeCompare(b.data));
+  const byDate=new Map();
+  discursos.forEach(p=>{if(p.data)byDate.set(p.data,{...p,_origem:'discurso'});});
+  programa.forEach(p=>{if(p.data)byDate.set(p.data,{...p,_origem:'programa'});});
+  datas.filter(data=>data>=hoje&&data<=ate).forEach(data=>{const p=byDate.get(data)||{data},faltas=obterPendenciasPrograma(p);if(faltas.length)itens.push({tipo:'pendencia',data,texto:'Falta '+faltas.join(', ')+' na programação.',acao:()=>editarAgend(JSON.stringify(p))});});
+  if(typeof _jwFalhas!=='undefined')_jwFalhas.forEach(data=>itens.push({tipo:'sentinela',data,texto:'Não foi possível buscar a Sentinela.',acao:abrirConfigSentinela}));
+  return itens.sort((a,b)=>a.data.localeCompare(b.data));
 }
 function renderProximaAcao(){
   const box=document.getElementById('homeNextAction');if(!box)return;const item=notificacoesLocais()[0];box.innerHTML='';
@@ -242,7 +246,7 @@ async function abrirCentralNotificacoes(){
 }
 
 function renderHome(){
-  const hoje=new Date().toISOString().slice(0,10),byDate={};
+  const hoje=isoLocal(new Date()),byDate={};
   discursos.forEach(p=>{if(p.data)byDate[p.data]={...p,_origem:'discurso'};});
   programa.forEach(p=>{if(p.data)byDate[p.data]={...p,_origem:'programa'};});
 
@@ -272,7 +276,7 @@ function renderHome(){
 
 function renderCalendar(byDate){
   const grid=document.getElementById('homeCalendar'),title=document.getElementById('calendarTitle');if(!grid||!title)return;
-  const ano=mesAtivo.getFullYear(),mes=mesAtivo.getMonth(),hoje=new Date().toISOString().slice(0,10);
+  const ano=mesAtivo.getFullYear(),mes=mesAtivo.getMonth(),hoje=isoLocal(new Date());
   title.textContent=mesAtivo.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase());
   grid.innerHTML='';
   const datas=allMeetingDays(ano).filter(iso=>Number(iso.slice(5,7))===mes+1);
