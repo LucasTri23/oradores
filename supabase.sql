@@ -54,7 +54,9 @@ revoke all on function public.get_shared_speakers(uuid) from public, anon;
 grant execute on function public.get_shared_speakers(uuid) to authenticated;
 
 -- EQUIPES: execute também este bloco em projetos que já estavam funcionando.
-create table if not exists public.workspaces (id uuid primary key default gen_random_uuid(),name text not null default 'Minha Congregação',created_by uuid not null references auth.users(id) on delete cascade,created_at timestamptz not null default now());
+create table if not exists public.workspaces (id uuid primary key default gen_random_uuid(),name text not null default 'Minha Congregação',public_code text not null default upper(substr(replace(gen_random_uuid()::text,'-',''),1,8)),created_by uuid not null references auth.users(id) on delete cascade,created_at timestamptz not null default now());
+alter table public.workspaces add column if not exists public_code text;
+alter table public.workspaces alter column public_code set default upper(substr(replace(gen_random_uuid()::text,'-',''),1,8));
 create table if not exists public.workspace_members (workspace_id uuid not null references public.workspaces(id) on delete cascade,user_id uuid not null references auth.users(id) on delete cascade,role text not null default 'editor' check (role in ('owner','editor')),joined_at timestamptz not null default now(),primary key (workspace_id,user_id));
 create table if not exists public.workspace_invites (token uuid primary key default gen_random_uuid(),workspace_id uuid not null references public.workspaces(id) on delete cascade,created_by uuid not null references auth.users(id) on delete cascade,expires_at timestamptz not null default (now() + interval '24 hours'),accepted_by uuid references auth.users(id),accepted_at timestamptz);
 alter table public.app_records add column if not exists workspace_id uuid references public.workspaces(id) on delete cascade;
@@ -63,7 +65,7 @@ do $$ declare uid uuid; wid uuid; begin
   for uid in select distinct owner_id from public.app_records loop
     select workspace_id into wid from public.workspace_members where user_id=uid order by joined_at limit 1;
     if wid is null then
-      insert into public.workspaces(name,created_by) values ('Minha Congregação',uid) returning id into wid;
+      insert into public.workspaces(name,public_code,created_by) values ('Minha Congregação',upper(substr(replace(gen_random_uuid()::text,'-',''),1,8)),uid) returning id into wid;
       insert into public.workspace_members(workspace_id,user_id,role) values(wid,uid,'owner');
     end if;
     update public.app_records set workspace_id=wid where owner_id=uid and workspace_id is null;
@@ -78,7 +80,7 @@ create or replace function public.ensure_personal_workspace() returns uuid langu
 declare wid uuid; begin
   if auth.uid() is null then raise exception 'Login necessário'; end if;
   select workspace_id into wid from public.workspace_members where user_id=auth.uid() order by joined_at limit 1;
-  if wid is null then insert into public.workspaces(created_by) values(auth.uid()) returning id into wid; insert into public.workspace_members(workspace_id,user_id,role) values(wid,auth.uid(),'owner'); end if;
+  if wid is null then insert into public.workspaces(public_code,created_by) values(upper(substr(replace(gen_random_uuid()::text,'-',''),1,8)),auth.uid()) returning id into wid; insert into public.workspace_members(workspace_id,user_id,role) values(wid,auth.uid(),'owner'); end if;
   return wid;
 end $$;
 create or replace function public.create_workspace_invite(target_workspace uuid) returns uuid language plpgsql security definer set search_path=public as $$
@@ -163,6 +165,7 @@ revoke all on function public.restore_app_record(bigint) from public,anon;grant 
 create extension if not exists unaccent;
 alter table public.workspaces add column if not exists public_code text;
 update public.workspaces set public_code=upper(substr(replace(id::text,'-',''),1,8)) where public_code is null;
+alter table public.workspaces alter column public_code set default upper(substr(replace(gen_random_uuid()::text,'-',''),1,8));
 alter table public.workspaces alter column public_code set not null;
 create unique index if not exists workspaces_public_code_uidx on public.workspaces(upper(public_code));
 
