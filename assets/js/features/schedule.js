@@ -64,7 +64,9 @@ function switchOradorTab(tab){
 }
 function preencherModalAgend(p){
   agTemaConfirmadoKey='';clearTimeout(agTemaVerificacaoTimer);
-  document.getElementById('agId').value=p.id||'';
+  document.getElementById('agId').value=p._origem==='discurso'?'':(p.id||'');
+  document.getElementById('agId').dataset.dataOriginal=p.data||'';
+  document.getElementById('agId').dataset.discursoId=p._origem==='discurso'?(p.id||''):'';
   document.getElementById('btnDelAgend').style.display=p.id?'inline-flex':'none';
   document.getElementById('agData').value=p.data||'';
   document.getElementById('agTema').value=p.temaNum||'';
@@ -317,7 +319,13 @@ async function saveAgend(){
     entry.id=ref.id;
   }
   // Replace local entry for this date
-  programa=programa.filter(p=>p.data!==data_val);
+  const dataOriginal=document.getElementById('agId').dataset.dataOriginal;
+  await removerCopiasImportadas(dataOriginal||data_val);
+  if(dataOriginal!==data_val)await removerCopiasImportadas(data_val);
+  for(const duplicado of programa.filter(p=>p.data===data_val&&p.id!==entry.id)){
+    await FF.del(FF.doc(db,'programa',duplicado.id));
+  }
+  programa=programa.filter(p=>p.id!==resolvedId&&p.data!==data_val);
   programa.push(entry);
   // Atualiza ultimoDiscurso do orador para datas já passadas
   const hoje3=new Date().toISOString().slice(0,10);
@@ -333,11 +341,22 @@ async function saveAgend(){
 }
 async function delAgendAtual(){
   const id=document.getElementById('agId').value,data=document.getElementById('agData').value;
-  if(id)await delAgend(id,data,true);
+  const campo=document.getElementById('agId');
+  await delAgend(id,campo.dataset.dataOriginal||data,true,campo.dataset.discursoId);
 }
-async function delAgend(id,data,closeModal=false){
-  if(!id||!(await confirmarModal('Excluir discurso','O discurso irá para a lixeira e poderá ser recuperado por 30 dias.','Excluir',true)))return;
-  await FF.del(FF.doc(db,'programa',id));programa=programa.filter(p=>p.id!==id);
+async function removerCopiasImportadas(data){
+  for(const p of discursos.filter(p=>p.data===data)){
+    await FF.del(FF.doc(db,'discursos',p.id));
+    discursos=discursos.filter(d=>d.id!==p.id);
+  }
+}
+async function delAgend(id,data,closeModal=false,discursoId=''){
+  if((!id&&!discursoId)||!(await confirmarModal('Excluir discurso','O discurso irá para a lixeira e poderá ser recuperado por 30 dias.','Excluir',true)))return;
+  await removerCopiasImportadas(data);
+  for(const p of programa.filter(p=>p.id===id||p.data===data)){
+    await FF.del(FF.doc(db,'programa',p.id));
+    programa=programa.filter(d=>d.id!==p.id);
+  }
   if(closeModal)closeM('mAgend');renderHome();renderPrograma();renderTemas();toast('Discurso excluído.');
 }
 

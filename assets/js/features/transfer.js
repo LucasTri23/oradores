@@ -170,7 +170,7 @@ async function startImportXlsx(){
     const registrosHistorico=xlsxParsed.filter(p=>p.data&&(p.nome||p.temaNum||p.tema));
     const validos=registrosHistorico.filter(p=>p.nome&&!ehSist(p.nome));
     const chavesDisc=new Set(discursos.map(d=>[d.data,normalizarTexto(d.nome),d.temaNum||''].join('|')));
-    const novosDisc=registrosHistorico.filter(p=>!chavesDisc.has([p.data,normalizarTexto(p.nome),p.temaNum||''].join('|')));
+    const novosDisc=registrosHistorico.filter(p=>p.data<hoje&&!chavesDisc.has([p.data,normalizarTexto(p.nome),p.temaNum||''].join('|')));
     addLog('Registros lidos: '+xlsxParsed.length+'.');
     addLog('Itens novos no histórico: '+novosDisc.length+'. Já existentes: '+(registrosHistorico.length-novosDisc.length)+'.');
     for(let i=0;i<novosDisc.length;i++){await FF.add(FF.col(db,'discursos'),novosDisc[i]);bar.style.width=Math.round((i+1)/Math.max(novosDisc.length,1)*55)+'%';}

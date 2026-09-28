@@ -340,7 +340,7 @@ function renderMensagens(){
 }
 
 function addMsg(){
-  mensagens.push({id:Date.now(),tipo:'geral',titulo:'Nova mensagem',texto:'Olá {orador}!\n\n📖 Tema: {tema}\n📅 Data: {data}\n📍 {cong}\n\n🙏'});
+  mensagens.push({id:Date.now(),tipo:'geral',titulo:'Nova mensagem',texto:'Olá {orador}!\n\nTema: {tema}\nData: {data}\n{cong}'});
   saveMensagens();renderMensagens();
 }
 
@@ -350,14 +350,7 @@ function decodeHtmlEntities(str){
   txt.innerHTML=str;
   return txt.value;
 }
-function repararEmojisMensagem(valor){
-  return String(valor||'')
-    .replace(/^[ \t�]*(?=Tema\s*:)/gim,'📖 ')
-    .replace(/^[ \t�]*(?=Data\s*:)/gim,'📅 ')
-    .replace(/^[ \t�]*(?=(?:Congrega(?:ção|cao)|Endere(?:ço|co))\s*:)/gim,'📍 ')
-    .replace(/^[ \t]*�+[ \t]*$/gm,'🙏')
-    .replace(/^[ \t]*�+[ \t]*(?=\S)/gm,'📍 ');
-}
+function repararEmojisMensagem(valor){return String(valor||'');}
 function buildMsg(template,sem){
   const nT=sem.temaNum;
   const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'—';

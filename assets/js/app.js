@@ -133,6 +133,7 @@ function currentOrNextProg(){
   const today=typeof isoLocal==='function'?isoLocal(new Date()):new Date().toISOString().slice(0,10);
   // Dedup by date
   const byDate={};
+  discursos.forEach(p=>{if(p.data)byDate[p.data]={...p,_origem:'discurso'};});
   programa.forEach(p=>{if(p.data)byDate[p.data]=p;});
   const sorted=Object.values(byDate).filter(p=>p.data>=today).sort((a,b)=>a.data<b.data?-1:1);
   // Prefer exact saturday match, fallback to first future

@@ -217,6 +217,7 @@
   <section class="calendar-card agenda-card">
     <div class="calendar-head"><div><div class="section-label">Agenda de discursos</div><h2 id="calendarTitle"></h2></div><div class="calendar-nav"><button class="icon-btn" onclick="mudarMes(-1)" title="Mês anterior"><i data-lucide="chevron-left"></i></button><button class="btn bo bs" onclick="irMesAtual()">Mês atual</button><button class="icon-btn" onclick="mudarMes(1)" title="Próximo mês"><i data-lucide="chevron-right"></i></button></div></div>
     <div class="agenda-legend"><span><i class="status-dot ready"></i> Completo</span><span><i class="status-dot pending"></i> Pendente</span><span><i class="status-dot special"></i> Evento especial</span></div>
+    <label style="display:flex;align-items:center;gap:8px;margin:12px 0"><input type="checkbox" onchange="alternarAgendaAno(this.checked)"> Mostrar ano inteiro, separado por mês</label>
     <div id="homeCalendar" class="agenda-list"><div class="skeleton skeleton-calendar"></div></div>
   </section>
   <div class="quick-card quick-card-mobile"><div class="section-label">Ações rápidas</div><div class="quick-actions"><button onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar histórico</button><button onclick="compartilharProgramacao()"><i data-lucide="share-2"></i> Compartilhar</button><button onclick="irTab('oradores')"><i data-lucide="users"></i> Oradores</button></div></div>

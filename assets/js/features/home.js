@@ -192,6 +192,8 @@ function allMeetingDays(year){
   return sats;
 }
 
+let agendaAnoInteiro=false;
+function alternarAgendaAno(valor){agendaAnoInteiro=valor;renderHome();}
 let mesAtivo=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 function isoLocal(date){return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');}
 function mudarMes(delta){mesAtivo=new Date(mesAtivo.getFullYear(),mesAtivo.getMonth()+delta,1);renderHome();}
@@ -277,12 +279,18 @@ function renderHome(){
 function renderCalendar(byDate){
   const grid=document.getElementById('homeCalendar'),title=document.getElementById('calendarTitle');if(!grid||!title)return;
   const ano=mesAtivo.getFullYear(),mes=mesAtivo.getMonth(),hoje=isoLocal(new Date());
-  title.textContent=mesAtivo.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase());
+  title.textContent=agendaAnoInteiro?String(ano):mesAtivo.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase());
   grid.innerHTML='';
-  const datas=allMeetingDays(ano).filter(iso=>Number(iso.slice(5,7))===mes+1);
+  const datas=allMeetingDays(ano).filter(iso=>agendaAnoInteiro||Number(iso.slice(5,7))===mes+1);
+  let ultimoMes='';
   datas.forEach(iso=>{
+    if(agendaAnoInteiro&&ultimoMes!==iso.slice(0,7)){
+      ultimoMes=iso.slice(0,7);
+      const heading=document.createElement('h3');heading.className='agenda-month-title';
+      heading.textContent=new Date(iso+'T12:00:00').toLocaleDateString('pt-BR',{month:'long'});grid.appendChild(heading);
+    }
     const registro=completarDadosPrograma(byDate[iso]||{data:iso}),semDiscurso=!!registro.semDiscurso,especial=!!registro.especial,visualEspecial=semDiscurso||especial;
-    const apenasHistorico=registro._origem==='discurso';
+    const apenasHistorico=registro._origem==='discurso'&&iso<hoje;
     const faltas=obterPendenciasPrograma(registro),completo=semDiscurso||faltas.length===0,pendente=!completo;
     const tema=registro.temaNum?(TL[registro.temaNum]||registro.tema||'Tema não encontrado'):(registro.tema||'');
     const row=document.createElement('article');
