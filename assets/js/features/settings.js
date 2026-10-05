@@ -145,6 +145,26 @@ function compartilharSaidasDiscursante(id){
   window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank','noopener');
 }
 
+function mensagemAgendaMinha(hoje=isoLocal(new Date())){
+  const agenda=discursantes.flatMap(d=>saidasFuturasDiscursante(d,hoje).map(saida=>({...saida,nome:d.nome||'Orador'})))
+    .sort((a,b)=>a.data.localeCompare(b.data)||a.nome.localeCompare(b.nome,'pt-BR'));
+  if(!agenda.length)return '';
+  const linhas=['*Agenda de discursos — '+(cfg.cong||'Minha congregação')+'*'];
+  let ano='';
+  agenda.forEach(saida=>{
+    if(ano!==saida.data.slice(0,4)){ano=saida.data.slice(0,4);linhas.push('', '*'+ano+'*');}
+    linhas.push(fD(saida.data)+' — '+saida.nome+' — '+(saida.destino||'Destino não informado'));
+    if(saida.obs)linhas.push('Observações: '+saida.obs);
+  });
+  return linhas.join('\n');
+}
+
+function compartilharAgendaMinha(){
+  const texto=mensagemAgendaMinha();
+  if(!texto)return toast('Não há discursos futuros para compartilhar.');
+  window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank','noopener');
+}
+
 function renderMinha(){
   const div=document.getElementById('listaMinha');if(!div)return;
   const hoje=isoLocal(new Date());
@@ -152,13 +172,13 @@ function renderMinha(){
   if(mcFiltro==='agendado') lista=lista.filter(d=>proximaSaidaDiscursante(d,hoje));
   if(mcFiltro==='sem') lista=lista.filter(d=>!proximaSaidaDiscursante(d,hoje));
   lista.sort((a,b)=>{
-    // Mais recente primeiro: usa proxSaida se existir, senão ultSaida
-    const da=proximaSaidaDiscursante(a,hoje)?.data||a.ultSaida||'';
-    const db=proximaSaidaDiscursante(b,hoje)?.data||b.ultSaida||'';
-    if(da&&db)return db>da?1:-1;
+    // Próxima saída primeiro; oradores sem agendamento ficam no final.
+    const da=proximaSaidaDiscursante(a,hoje)?.data||'';
+    const db=proximaSaidaDiscursante(b,hoje)?.data||'';
+    if(da&&db)return da.localeCompare(db)||(a.nome||'').localeCompare(b.nome||'','pt-BR');
     if(da)return -1;
     if(db)return 1;
-    return (a.nome||'').localeCompare(b.nome||'');
+    return (a.nome||'').localeCompare(b.nome||'','pt-BR');
   });
   if(!lista.length){div.innerHTML='<div class="empty"><div class="ico">🏠</div>Nenhum discursante cadastrado</div>';return;}
   div.innerHTML='';
