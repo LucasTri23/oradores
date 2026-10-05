@@ -116,13 +116,38 @@ function saidasDiscursante(d){
   return saidas.sort((a,b)=>String(a.data).localeCompare(String(b.data)));
 }
 
-function proximaSaidaDiscursante(d,hoje=new Date().toISOString().slice(0,10)){
-  return saidasDiscursante(d).find(s=>s.data>=hoje)||null;
+function saidasFuturasDiscursante(d,hoje=isoLocal(new Date())){
+  return saidasDiscursante(d).filter(s=>s.data>=hoje);
+}
+
+function proximaSaidaDiscursante(d,hoje=isoLocal(new Date())){
+  return saidasFuturasDiscursante(d,hoje)[0]||null;
+}
+
+function mensagemSaidasDiscursante(d,hoje=isoLocal(new Date())){
+  const futuras=saidasFuturasDiscursante(d,hoje);
+  if(!futuras.length)return '';
+  const linhas=['*Discursos agendados — '+(d.nome||'Orador')+'*'];
+  if(cfg.cong)linhas.push('Congregação de origem: '+cfg.cong);
+  let ano='';
+  futuras.forEach(saida=>{
+    if(ano!==saida.data.slice(0,4)){ano=saida.data.slice(0,4);linhas.push('', '*'+ano+'*');}
+    linhas.push(fD(saida.data)+' — '+(saida.destino||'Destino não informado'));
+    if(saida.obs)linhas.push('Observações: '+saida.obs);
+  });
+  return linhas.join('\n');
+}
+
+function compartilharSaidasDiscursante(id){
+  const d=discursantes.find(item=>item.id===id);if(!d)return;
+  const texto=mensagemSaidasDiscursante(d);
+  if(!texto)return toast('Não há discursos futuros para compartilhar.');
+  window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank','noopener');
 }
 
 function renderMinha(){
   const div=document.getElementById('listaMinha');if(!div)return;
-  const hoje=new Date().toISOString().slice(0,10);
+  const hoje=isoLocal(new Date());
   let lista=[...discursantes];
   if(mcFiltro==='agendado') lista=lista.filter(d=>proximaSaidaDiscursante(d,hoje));
   if(mcFiltro==='sem') lista=lista.filter(d=>!proximaSaidaDiscursante(d,hoje));
@@ -138,8 +163,9 @@ function renderMinha(){
   if(!lista.length){div.innerHTML='<div class="empty"><div class="ico">🏠</div>Nenhum discursante cadastrado</div>';return;}
   div.innerHTML='';
   lista.forEach(d=>{
-    const futuras=saidasDiscursante(d).filter(s=>s.data>=hoje),proxima=futuras[0]||null,temProx=!!proxima;
+    const futuras=saidasFuturasDiscursante(d,hoje),proxima=futuras[0]||null,temProx=!!proxima;
     const card=document.createElement('div');
+    card.className='outbound-card';
     card.style.cssText='background:var(--surf);border:1px solid '+(temProx?'rgba(37,99,235,.35)':'var(--border)')+';border-radius:10px;padding:13px 15px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px';
     // Info
     const info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
@@ -155,10 +181,24 @@ function renderMinha(){
       prox.innerHTML='<span class="badge bpur">📅 Próxima: '+fD(proxima.data)+'</span>';
       info.appendChild(prox);
     }
-    if(futuras.length>1){
-      const details=document.createElement('details');details.className='outbound-more';
-      const summary=document.createElement('summary');summary.textContent='Ver outros '+(futuras.length-1)+' discursos agendados';details.appendChild(summary);
-      futuras.slice(1).forEach(saida=>{const item=document.createElement('div');item.className='outbound-date';item.innerHTML='<strong>'+fD(saida.data)+'</strong><span>'+(saida.destino||'Destino não informado')+'</span>';details.appendChild(item);});info.appendChild(details);
+    if(futuras.length){
+      const listaSaidas=document.createElement('div');listaSaidas.className='outbound-schedule';
+      let ano='';
+      futuras.forEach(saida=>{
+        if(ano!==saida.data.slice(0,4)){
+          ano=saida.data.slice(0,4);
+          const heading=document.createElement('h3');heading.textContent=ano;listaSaidas.appendChild(heading);
+        }
+        const item=document.createElement('div');item.className='outbound-date';
+        const data=document.createElement('strong');data.textContent=fD(saida.data);
+        const destino=document.createElement('span');destino.textContent=saida.destino||'Destino não informado';
+        item.appendChild(data);item.appendChild(destino);listaSaidas.appendChild(item);
+        if(saida.obs){const obs=document.createElement('div');obs.className='outbound-note';obs.textContent=saida.obs;listaSaidas.appendChild(obs);}
+      });
+      info.appendChild(listaSaidas);
+      const compartilhar=document.createElement('button');compartilhar.type='button';compartilhar.className='btn bgn bs outbound-share';
+      compartilhar.textContent='Compartilhar agenda no WhatsApp';
+      compartilhar.onclick=()=>compartilharSaidasDiscursante(d.id);info.appendChild(compartilhar);
     }
     if(d.ultSaida){
       const ult=document.createElement('div');ult.style.cssText='font-size:11px;color:var(--whi3);margin-top:3px';

@@ -219,3 +219,10 @@ input,select,textarea{padding:11px 12px;border-radius:9px;background:var(--bg)}
   .agenda-row{grid-template-columns:44px minmax(0,1fr) auto;gap:9px;padding:10px 8px;min-height:70px}.agenda-date{padding-right:8px}.agenda-date strong{font-size:21px}.agenda-topic,.agenda-state{display:none}.agenda-speaker{font-size:12px}.agenda-action{width:34px;height:34px;padding:0}.agenda-action span{display:none}.agenda-actions{gap:4px}
   .modal{padding:0 16px 18px}.modal-title{margin:0 -16px 16px;padding:18px 16px 14px}
 }
+.outbound-schedule{margin-top:10px;font-size:12px}
+.outbound-schedule h3{margin:12px 0 6px;font-size:12px;color:var(--pur3)}
+.outbound-schedule .outbound-date{align-items:flex-start;flex-wrap:wrap}
+.outbound-schedule .outbound-date span{white-space:normal;overflow-wrap:anywhere}
+.outbound-note{margin:4px 8px 8px;font-size:11px;color:var(--whi3);overflow-wrap:anywhere}
+.outbound-share{margin-top:12px;white-space:normal;text-align:left}
+@media(max-width:600px){.outbound-card{flex-wrap:wrap}.outbound-card>div:first-child{flex-basis:100%!important}}
