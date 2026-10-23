@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="assets/images/oradores-speaker-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260909-3">
+<link rel="stylesheet" href="assets/css/style.css?v=20261023-1">
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <script>document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';</script>
 </head>
@@ -18,9 +18,10 @@
   <div class="setup-box">
     <div class="setup-logo"><img src="assets/images/oradores-speaker-logo.png" alt=""><span>Oradores</span></div>
     <div class="setup-sub">Sua programação de discursos, simples e organizada</div>
-    <div class="setup-hint" style="text-align:center;margin:18px 0">Cada conta possui programação, histórico, configurações e oradores separados.</div>
-    <div id="setupErr"></div>
-    <button class="btn bp" style="width:100%;justify-content:center;margin-top:6px;padding:11px;font-size:13px" onclick="doSetup()">Entrar com Google</button>
+    <div class="setup-hint" style="text-align:center;margin:18px 0">Entre com sua conta Google para acessar sua congregação ou aceitar um convite de equipe.</div>
+    <div id="setupErr" role="alert"></div>
+    <div id="workspaceWelcome" hidden><p>Você está conectado e ainda não faz parte de uma congregação. Abra um convite para entrar em uma equipe ou crie sua própria congregação.</p><button type="button" class="btn bp" id="createWorkspaceBtn" onclick="criarMinhaCongregacao()">Criar minha congregação</button><button type="button" class="btn bo" onclick="logout().then(()=>location.reload())">Sair da conta</button></div>
+    <button class="btn bp" id="googleLoginBtn" style="width:100%;justify-content:center;margin-top:6px;padding:11px;font-size:13px" onclick="doSetup()">Entrar com Google</button>
   </div>
 </div>
 <div id="toast"></div>
@@ -350,7 +351,9 @@
     <h3>Compartilhar este sistema</h3>
     <p>Crie um convite seguro para outra pessoa trabalhar na mesma programação e lista de oradores. O link dura 24 horas e só pode ser usado uma vez.</p>
     <div id="teamStatus" class="team-status">Carregando equipe...</div>
-    <button class="btn bp" onclick="createTeamInvite()"><i data-lucide="user-plus"></i> Criar link de convite</button>
+    <button class="btn bp" id="createTeamInviteBtn" hidden onclick="createTeamInvite()"><i data-lucide="user-plus"></i> Criar link de convite</button>
+    <div id="leaveTeamTransfer" class="field" hidden style="margin-top:16px"><label for="leaveTeamSuccessor">Para sair, transfira a propriedade para outro integrante</label><select id="leaveTeamSuccessor"></select></div>
+    <button type="button" class="btn bo" id="leaveTeamBtn" hidden style="margin-top:12px;color:var(--red)" onclick="sairDaCongregacao()">Sair da congregação</button>
   </div>
   <div class="card team-card">
     <div class="slabel">Mensagem para grupo do WhatsApp</div>
@@ -367,7 +370,7 @@
   </div>
 </div>
 </main>
-<script src="assets/js/supabase-client.js?v=20261023-1"></script>
+<script src="assets/js/supabase-client.js?v=20261023-2"></script>
 <script src="assets/js/app.js?v=20260911-1"></script>
 <script src="assets/js/features/home.js?v=20260911-1"></script>
 <script src="assets/js/features/schedule.js?v=20260909-5"></script>
@@ -376,7 +379,7 @@
 <script src="assets/js/features/transfer.js?v=20260911-1"></script>
 <script src="assets/js/features/settings.js?v=20260909-6"></script>
 <script src="assets/js/features/noticeboard.js?v=20261023-2"></script>
-<script src="assets/js/features/team.js?v=20261023-1"></script>
+<script src="assets/js/features/team.js?v=20261023-2"></script>
 <script src="assets/js/features/init.js?v=20260904-1"></script>
 </body>
 </html>

@@ -226,3 +226,8 @@ input,select,textarea{padding:11px 12px;border-radius:9px;background:var(--bg)}
 .outbound-note{margin:4px 8px 8px;font-size:11px;color:var(--whi3);overflow-wrap:anywhere}
 .outbound-share{margin-top:12px;white-space:normal;text-align:left}
 @media(max-width:600px){.outbound-card{flex-wrap:wrap}.outbound-card>div:first-child{flex-basis:100%!important}}
+
+/* Respeita os estados ocultos mesmo em componentes com display próprio. */
+[hidden]{display:none!important}
+#workspaceWelcome p{font-size:13px;line-height:1.6;color:var(--whi2);margin:16px 0}
+#workspaceWelcome .btn{margin:4px 4px 4px 0;white-space:normal}

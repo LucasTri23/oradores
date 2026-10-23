@@ -63,7 +63,7 @@ async function checkSetup(){
     if(data.session){
       currentUser=data.session.user;
       await checkTeamInvite();
-      await initializeWorkspace();
+      if(!(await initializeWorkspace()))return;
       updateUserHeader();
       document.getElementById('setup').style.display='none';
       await loadAll();
@@ -90,5 +90,8 @@ async function doSetup(){
 
 async function logout(){
   if(supabase)await supabase.auth.signOut();
-  currentUser=null;document.getElementById('setup').style.display='flex';
+  currentUser=null;activeWorkspaceId=null;localStorage.removeItem('oradores_workspace');
+  document.getElementById('workspaceWelcome').hidden=true;
+  document.getElementById('googleLoginBtn').hidden=false;
+  document.getElementById('setup').style.display='flex';
 }

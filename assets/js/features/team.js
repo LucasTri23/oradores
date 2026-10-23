@@ -1,13 +1,22 @@
 // Compartilhamento seguro de uma área de trabalho entre contas Google.
 async function initializeWorkspace(){
-  const saved=localStorage.getItem('oradores_workspace');
-  if(saved){
-    const{data}=await supabase.from('workspace_members').select('workspace_id').eq('workspace_id',saved).eq('user_id',currentUser.id).maybeSingle();
-    if(data){activeWorkspaceId=saved;return;}
-  }
-  const{data,error}=await supabase.rpc('ensure_personal_workspace');
-  if(error)throw new Error('Atualize o banco executando o novo supabase.sql: '+error.message);
-  activeWorkspaceId=data;localStorage.setItem('oradores_workspace',data);
+  const{data,error}=await supabase.from('workspace_members').select('workspace_id').eq('user_id',currentUser.id).maybeSingle();
+  if(error)throw new Error('Não foi possível consultar sua congregação. Tente novamente.');
+  activeWorkspaceId=data?.workspace_id||null;
+  if(activeWorkspaceId){localStorage.setItem('oradores_workspace',activeWorkspaceId);return true;}
+  localStorage.removeItem('oradores_workspace');
+  document.getElementById('workspaceWelcome').hidden=false;
+  document.getElementById('googleLoginBtn').hidden=true;
+  return false;
+}
+
+async function criarMinhaCongregacao(){
+  const botao=document.getElementById('createWorkspaceBtn');if(botao.disabled)return;
+  botao.disabled=true;
+  try{
+    const{error}=await supabase.rpc('ensure_personal_workspace');if(error)throw error;
+    location.reload();
+  }catch(error){toast('Não foi possível criar a congregação. Tente novamente.',6000);botao.disabled=false;}
 }
 
 async function checkTeamInvite(){
@@ -39,6 +48,14 @@ async function renderTeamPanel(){
   const[{data,error},{data:identity}]=await Promise.all([supabase.rpc('list_workspace_members',{target_workspace:activeWorkspaceId}),supabase.rpc('get_workspace_share_identity',{target_workspace:activeWorkspaceId})]);
   if(error){el.textContent='Não foi possível consultar a equipe.';return;}
   el.innerHTML='';
+  const eu=(data||[]).find(m=>m.user_id===currentUser.id);
+  document.getElementById('createTeamInviteBtn').hidden=eu?.role!=='owner';
+  document.getElementById('leaveTeamBtn').hidden=!eu;
+  const transferencia=document.getElementById('leaveTeamTransfer');
+  transferencia.hidden=eu?.role!=='owner';
+  const sucessor=document.getElementById('leaveTeamSuccessor');
+  sucessor.replaceChildren(new Option('Selecione o novo proprietário',''));
+  (data||[]).filter(m=>m.user_id!==currentUser.id).forEach(m=>sucessor.add(new Option(m.email||'Integrante',m.user_id)));
   if(identity?.[0]?.public_code){const box=document.createElement('div');box.className='team-member';const info=document.createElement('span'),label=document.createElement('small'),code=document.createElement('strong'),copy=document.createElement('button');label.textContent='Código para receber oradores';code.textContent=identity[0].public_code;code.style.display='block';code.style.letterSpacing='2px';info.appendChild(label);info.appendChild(code);copy.className='btn bo bs';copy.textContent='Copiar código';copy.onclick=async()=>{await navigator.clipboard.writeText(identity[0].public_code);toast('Código copiado.');};box.appendChild(info);box.appendChild(copy);el.appendChild(box);}
   (data||[]).forEach(member=>{
     const row=document.createElement('div');row.className='team-member';
@@ -49,6 +66,26 @@ async function renderTeamPanel(){
     }
     el.appendChild(row);
   });
+}
+
+let saindoDaCongregacao=false;
+async function sairDaCongregacao(){
+  if(saindoDaCongregacao||!activeWorkspaceId)return;
+  const proprietario=!document.getElementById('leaveTeamTransfer').hidden;
+  const select=document.getElementById('leaveTeamSuccessor');
+  if(proprietario&&!select.value)return toast('Escolha outro integrante para assumir como proprietário antes de sair. Se você está sozinho, convide alguém primeiro.',8000);
+  const aviso='Você perderá o acesso à programação, aos oradores, ao histórico e às configurações desta congregação. Os dados e o acesso dos outros integrantes serão mantidos. Sua conta continuará existindo, sem criar outra congregação automaticamente. Para voltar, será necessário um novo convite.'+(proprietario?' '+select.selectedOptions[0].textContent+' assumirá como proprietário.':'')+' Deseja realmente sair?';
+  saindoDaCongregacao=true;
+  const botao=document.getElementById('leaveTeamBtn');
+  try{
+    if(!(await confirmarModal('Sair da congregação',aviso,'Sair da congregação',true)))return;
+    botao.disabled=true;botao.textContent='Saindo…';
+    const{error}=await supabase.rpc('leave_workspace',{target_workspace:activeWorkspaceId,successor_user:proprietario?select.value:null});
+    if(error)throw error;
+    activeWorkspaceId=null;localStorage.removeItem('oradores_workspace');
+    location.replace(location.pathname);
+  }catch(error){toast('Não foi possível sair da congregação: '+error.message,8000);}
+  finally{saindoDaCongregacao=false;botao.disabled=false;botao.textContent='Sair da congregação';}
 }
 
 async function removeTeamMember(userId,email){

@@ -69,7 +69,7 @@
   alter table public.app_records add column if not exists workspace_id uuid references public.workspaces(id) on delete cascade;
 
   do $$ declare uid uuid; wid uuid; begin
-    for uid in select distinct owner_id from public.app_records loop
+    for uid in select distinct owner_id from public.app_records where workspace_id is null loop
       select workspace_id into wid from public.workspace_members where user_id=uid order by joined_at limit 1;
       if wid is null then
         insert into public.workspaces(name,public_code,created_by) values ('Minha Congregação',upper(substr(replace(gen_random_uuid()::text,'-',''),1,8)),uid) returning id into wid;
@@ -118,12 +118,37 @@
   create or replace function public.remove_workspace_member(target_workspace uuid,target_user uuid)
   returns boolean language plpgsql security definer set search_path=public as $$
   begin
+    perform 1 from public.workspaces where id=target_workspace for update;
     if not exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=auth.uid() and role='owner') then raise exception 'Apenas o proprietário pode remover acessos'; end if;
     if exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=target_user and role='owner') then raise exception 'O proprietário não pode ser removido'; end if;
     delete from public.workspace_members where workspace_id=target_workspace and user_id=target_user; return found;
   end $$;
 
   alter table public.workspaces enable row level security; alter table public.workspace_members enable row level security; alter table public.workspace_invites enable row level security;
+  -- Saída voluntária: mantém dados e transfere a propriedade quando necessário.
+  create or replace function public.leave_workspace(target_workspace uuid,successor_user uuid default null)
+  returns boolean language plpgsql security definer set search_path=public as $$
+  declare member_role text; begin
+    if auth.uid() is null then raise exception 'Login necessário'; end if;
+    perform 1 from auth.users where id=auth.uid() for update;
+    perform 1 from public.workspaces where id=target_workspace for update;
+    select role into member_role from public.workspace_members where workspace_id=target_workspace and user_id=auth.uid() for update;
+    if member_role is null then raise exception 'Você não faz parte desta congregação'; end if;
+    if member_role='owner' then
+      if successor_user is null or successor_user=auth.uid() then raise exception 'Escolha outro integrante para assumir como proprietário'; end if;
+      perform 1 from public.workspace_members where workspace_id=target_workspace and user_id=successor_user for update;
+      if not found then raise exception 'O novo proprietário precisa fazer parte da congregação'; end if;
+      update public.workspace_members set role='owner' where workspace_id=target_workspace and user_id=successor_user;
+      -- A conta criadora pode sair sem deixar a propriedade técnica na conta antiga.
+      update public.workspaces set created_by=successor_user where id=target_workspace;
+    end if;
+    -- Links antigos criados por quem sai deixam de conceder acesso à equipe.
+    delete from public.workspace_invites where workspace_id=target_workspace and created_by=auth.uid() and accepted_at is null;
+    delete from public.workspace_members where workspace_id=target_workspace and user_id=auth.uid();
+    return true;
+  end $$;
+  revoke all on function public.leave_workspace(uuid,uuid) from public,anon;
+  grant execute on function public.leave_workspace(uuid,uuid) to authenticated;
   grant select on public.workspaces,public.workspace_members to authenticated;
   revoke all on function public.ensure_personal_workspace() from public,anon;
   revoke all on function public.create_workspace_invite(uuid) from public,anon;
