@@ -38,3 +38,18 @@ Depois de atualizar o projeto, execute novamente todo o arquivo `supabase.sql` n
 Em **Configurações > Equipe da congregação**, o proprietário pode criar um convite de uso único, válido por 24 horas. A pessoa convidada abre o link, entra com Google e passa a acessar a mesma programação, histórico, configurações e lista de oradores. O proprietário pode revogar o acesso na mesma tela.
 
 Para grupos do WhatsApp, configure o modelo em **Configurações > Mensagem para grupo**. Na Home, use **Enviar para grupo** e escolha o grupo dentro do WhatsApp. Por segurança, o navegador não recebe a lista de grupos nem seleciona um destinatário automaticamente.
+
+## Um workspace por conta
+
+Cada conta pode pertencer a somente um workspace. Execute o `supabase.sql` atualizado para aplicar a restrição no banco. Convites para outra equipe são recusados enquanto houver um vínculo existente; o convite não é consumido e a conta continua acessando sua equipe atual.
+
+Se a atualização apontar vínculos duplicados, consulte os casos antes de decidir qual acesso manter:
+
+```sql
+select user_id, array_agg(workspace_id order by joined_at) as workspaces
+from public.workspace_members
+group by user_id
+having count(*) > 1;
+```
+
+A atualização não escolhe nem exclui vínculos automaticamente. Uma conta nova que chega por convite entra diretamente na equipe convidada, sem criar um workspace pessoal antes.

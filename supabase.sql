@@ -58,6 +58,13 @@
   alter table public.workspaces add column if not exists public_code text;
   alter table public.workspaces alter column public_code set default upper(substr(replace(gen_random_uuid()::text,'-',''),1,8));
   create table if not exists public.workspace_members (workspace_id uuid not null references public.workspaces(id) on delete cascade,user_id uuid not null references auth.users(id) on delete cascade,role text not null default 'editor' check (role in ('owner','editor')),joined_at timestamptz not null default now(),primary key (workspace_id,user_id));
+  -- Não remove vínculos existentes automaticamente.
+  do $$ begin
+    if exists(select 1 from public.workspace_members group by user_id having count(*)>1) then
+      raise exception 'Existem contas vinculadas a mais de um workspace. Revise workspace_members e mantenha somente o vínculo correto de cada conta antes de executar esta atualização.';
+    end if;
+  end $$;
+  create unique index if not exists workspace_members_user_id_uidx on public.workspace_members(user_id);
   create table if not exists public.workspace_invites (token uuid primary key default gen_random_uuid(),workspace_id uuid not null references public.workspaces(id) on delete cascade,created_by uuid not null references auth.users(id) on delete cascade,expires_at timestamptz not null default (now() + interval '24 hours'),accepted_by uuid references auth.users(id),accepted_at timestamptz);
   alter table public.app_records add column if not exists workspace_id uuid references public.workspaces(id) on delete cascade;
 
@@ -79,6 +86,8 @@
   create or replace function public.ensure_personal_workspace() returns uuid language plpgsql security definer set search_path=public as $$
   declare wid uuid; begin
     if auth.uid() is null then raise exception 'Login necessário'; end if;
+    -- Serializa criação e aceite de convite para a mesma conta.
+    perform 1 from auth.users where id=auth.uid() for update;
     select workspace_id into wid from public.workspace_members where user_id=auth.uid() order by joined_at limit 1;
     if wid is null then insert into public.workspaces(public_code,created_by) values(upper(substr(replace(gen_random_uuid()::text,'-',''),1,8)),auth.uid()) returning id into wid; insert into public.workspace_members(workspace_id,user_id,role) values(wid,auth.uid(),'owner'); end if;
     return wid;
@@ -92,8 +101,12 @@
   create or replace function public.accept_workspace_invite(invite_token uuid) returns uuid language plpgsql security definer set search_path=public as $$
   declare wid uuid; begin
     if auth.uid() is null then raise exception 'Entre com Google para aceitar'; end if;
+    perform 1 from auth.users where id=auth.uid() for update;
     select workspace_id into wid from public.workspace_invites where token=invite_token and expires_at>now() and accepted_at is null for update;
     if wid is null then raise exception 'Convite inválido, expirado ou já utilizado'; end if;
+    if exists(select 1 from public.workspace_members where user_id=auth.uid() and workspace_id<>wid) then
+      raise exception 'Esta conta já está vinculada a outra congregação e não pode entrar em outro workspace.';
+    end if;
     insert into public.workspace_members(workspace_id,user_id,role) values(wid,auth.uid(),'editor') on conflict do nothing;
     update public.workspace_invites set accepted_by=auth.uid(),accepted_at=now() where token=invite_token; return wid;
   end $$;

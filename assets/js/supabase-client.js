@@ -62,8 +62,8 @@ async function checkSetup(){
     const{data}=await supabase.auth.getSession();
     if(data.session){
       currentUser=data.session.user;
-      await initializeWorkspace();
       await checkTeamInvite();
+      await initializeWorkspace();
       updateUserHeader();
       document.getElementById('setup').style.display='none';
       await loadAll();

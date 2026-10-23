@@ -13,7 +13,11 @@ async function initializeWorkspace(){
 async function checkTeamInvite(){
   const token=new URLSearchParams(location.search).get('equipe');if(!token)return;
   const{data,error}=await supabase.rpc('accept_workspace_invite',{invite_token:token});
-  if(error)throw new Error('Não foi possível aceitar o convite: '+error.message);
+  if(error){
+    history.replaceState({},'',location.pathname+location.hash);
+    toast('Não foi possível aceitar o convite: '+error.message,8000);
+    return;
+  }
   activeWorkspaceId=data;localStorage.setItem('oradores_workspace',data);
   history.replaceState({},'',location.pathname+location.hash);
   toast('Convite aceito. Agora vocês compartilham o mesmo sistema.',5000);
