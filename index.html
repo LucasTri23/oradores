@@ -309,6 +309,15 @@
       <div class="field"><label>Dia dos discursos em 2027</label><select id="cfgDia2027"><option value="">Responder depois</option><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
     </div>
   </div>
+  <div class="card">
+    <div class="slabel">Quadro de anúncios</div>
+    <p class="settings-note">Baixe a programação de oradores em PDF, com o nome da congregação e os discursos de 1 a 3 meses consecutivos.</p>
+    <div class="g2">
+      <div class="field"><label for="quadroMes">Mês inicial</label><input type="month" id="quadroMes" required></div>
+      <div class="field"><label for="quadroQuantidade">Período</label><select id="quadroQuantidade"><option value="1">1 mês</option><option value="2">2 meses</option><option value="3" selected>3 meses</option></select></div>
+    </div>
+    <button type="button" class="btn bp" id="quadroBaixar" onclick="baixarQuadroAnuncios()"><i data-lucide="file-down"></i> Baixar PDF</button>
+  </div>
   <details class="card settings-details" id="sentinelaConfig">
     <summary><span><i data-lucide="library"></i><strong>Correção manual da Sentinela</strong></span><small>Use somente se a busca automática falhar</small><i data-lucide="chevron-down" class="details-chevron"></i></summary>
     <div class="settings-details-body">
@@ -366,6 +375,7 @@
 <script src="assets/js/features/insights.js?v=20260909-3"></script>
 <script src="assets/js/features/transfer.js?v=20260911-1"></script>
 <script src="assets/js/features/settings.js?v=20260909-6"></script>
+<script src="assets/js/features/noticeboard.js?v=20261023-1"></script>
 <script src="assets/js/features/team.js?v=20260909-6"></script>
 <script src="assets/js/features/init.js?v=20260904-1"></script>
 </body>
