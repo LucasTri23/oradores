@@ -317,6 +317,8 @@
       <div class="field"><label for="quadroMes">Mês inicial</label><input type="month" id="quadroMes" required></div>
       <div class="field"><label for="quadroQuantidade">Período</label><select id="quadroQuantidade"><option value="1">1 mês</option><option value="2">2 meses</option><option value="3" selected>3 meses</option></select></div>
     </div>
+    <label class="config-toggle"><input type="checkbox" id="quadroIncluirResponsaveis" onchange="renderResponsaveisQuadro()"><span><strong>Colocar presidente e leitor?</strong><small>Preencha manualmente os nomes para cada data. Eles aparecerão abaixo do discurso no PDF.</small></span></label>
+    <div id="quadroResponsaveis" hidden></div>
     <button type="button" class="btn bp" id="quadroBaixar" onclick="baixarQuadroAnuncios()"><i data-lucide="file-down"></i> Baixar PDF</button>
   </div>
   <details class="card settings-details" id="sentinelaConfig">
@@ -378,7 +380,7 @@
 <script src="assets/js/features/insights.js?v=20260909-3"></script>
 <script src="assets/js/features/transfer.js?v=20260911-1"></script>
 <script src="assets/js/features/settings.js?v=20260909-6"></script>
-<script src="assets/js/features/noticeboard.js?v=20261023-2"></script>
+<script src="assets/js/features/noticeboard.js?v=20261104-1"></script>
 <script src="assets/js/features/team.js?v=20261023-2"></script>
 <script src="assets/js/features/init.js?v=20260904-1"></script>
 </body>
