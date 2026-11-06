@@ -42,7 +42,7 @@ function dadosQuadroAnuncios(inicio,quantidade){
     porData.forEach((r,d)=>{if(d.startsWith(chave))datas.add(d);});
     return {data,linhas:[...datas].sort().map(d=>{
       const r=completarDadosPrograma(porData.get(d)||{data:d});
-      return {data:d,nome:r.semDiscurso?(r.motivo||'Sem discurso nesta data'):(r.nome||'A definir'),congregacao:r.semDiscurso?'—':(r.congregacao||'—'),tema:r.semDiscurso?'—':(TL[r.temaNum]||r.tema||'A definir')};
+      return {data:d,nome:r.semDiscurso?(r.motivo||'Sem discurso nesta data'):(r.nome||'A definir'),congregacao:r.semDiscurso?'—':(r.congregacao||'—'),tema:r.semDiscurso?'—':r.especial?(r.tema||r.especialTitulo||'Discurso especial'):(TL[r.temaNum]||r.tema||'A definir')};
     })};
   });
 }

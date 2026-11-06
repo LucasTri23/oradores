@@ -2,7 +2,7 @@
 function corEspecial(valor){return /^#[0-9a-f]{6}$/i.test(valor||'')?valor:'#7c3aed';}
 function mkWeekCard(sem,isCurrent,isPast,isFirst){
   const nT=sem.temaNum;
-  const nomeT=nT&&TL[nT]?TL[nT]:sem.tema||'';
+  const nomeT=sem.especial?(sem.tema||sem.especialTitulo||'Discurso especial'):(nT&&TL[nT]?TL[nT]:sem.tema||'');
   const temOr=sem.nome&&!ehSist(sem.nome);
   // Look up telefone from oradores if missing in programa entry
   let tel=sem.telefone||'';
@@ -193,7 +193,7 @@ function allMeetingDays(year){
 }
 
 let agendaAnoInteiro=false;
-function alternarAgendaAno(valor){agendaAnoInteiro=valor;renderHome();}
+function alternarAgendaAno(valor){agendaAnoInteiro=valor;if(valor)mesAtivo=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderHome();}
 let mesAtivo=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 function isoLocal(date){return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');}
 function mudarMes(delta){mesAtivo=new Date(mesAtivo.getFullYear(),mesAtivo.getMonth()+delta,1);renderHome();}
@@ -281,7 +281,7 @@ function renderCalendar(byDate){
   const ano=mesAtivo.getFullYear(),mes=mesAtivo.getMonth(),hoje=isoLocal(new Date());
   title.textContent=agendaAnoInteiro?String(ano):mesAtivo.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase());
   grid.innerHTML='';
-  const datas=allMeetingDays(ano).filter(iso=>agendaAnoInteiro||Number(iso.slice(5,7))===mes+1);
+  const datas=allMeetingDays(ano).filter(iso=>agendaAnoInteiro?iso>=hoje:Number(iso.slice(5,7))===mes+1);
   let ultimoMes='';
   datas.forEach(iso=>{
     if(agendaAnoInteiro&&ultimoMes!==iso.slice(0,7)){
@@ -292,7 +292,7 @@ function renderCalendar(byDate){
     const registro=completarDadosPrograma(byDate[iso]||{data:iso}),semDiscurso=!!registro.semDiscurso,especial=!!registro.especial,visualEspecial=semDiscurso||especial;
     const apenasHistorico=registro._origem==='discurso'&&iso<hoje;
     const faltas=obterPendenciasPrograma(registro),completo=semDiscurso||faltas.length===0,pendente=!completo;
-    const tema=registro.temaNum?(TL[registro.temaNum]||registro.tema||'Tema não encontrado'):(registro.tema||'');
+    const tema=registro.especial?(registro.tema||registro.especialTitulo||'Discurso especial'):(registro.temaNum?(TL[registro.temaNum]||registro.tema||'Tema não encontrado'):(registro.tema||''));
     const row=document.createElement('article');
     row.className='agenda-row '+(visualEspecial?'is-special':completo?'is-ready':'is-pending')+(iso<hoje?' is-past':'')+(iso===hoje?' is-today':'');
     if(especial||semDiscurso){const color=corEspecial(especial?registro.especialCor:(registro.semDiscursoCor||'#f59e0b'));row.style.borderLeftColor=color;row.style.background=color+'0d';}

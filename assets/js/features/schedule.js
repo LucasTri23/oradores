@@ -25,7 +25,7 @@ function renderPrograma(){
   div.innerHTML=hist.map(p=>{
     const temOr=p.nome&&!ehSist(p.nome);
     const nT=p.temaNum;
-    const nomeT=nT&&TL[nT]?TL[nT]:p.tema||'';
+    const nomeT=p.especial?(p.tema||p.especialTitulo||'Discurso especial'):(nT&&TL[nT]?TL[nT]:p.tema||'');
     let h='<div class="prog-row">';
     h+='<div style="min-width:70px;flex-shrink:0"><div style="font-size:12px;font-weight:700;color:var(--whi2)">'+fD(p.data)+'</div><div style="font-size:10px;color:var(--whi3)">'+diaSem(p.data)+'</div></div>';
     h+='<div style="flex:1;min-width:0">';
@@ -126,8 +126,11 @@ function onAgSemDiscurso(){
 function onAgEspecial(){
   const checked=document.getElementById('agEspecial').checked,color=document.getElementById('agEspecialCor');
   document.getElementById('agEspecialCampos').style.display=checked?'grid':'none';
-  document.getElementById('agTemaField').style.display=checked?'none':'block';
-  document.getElementById('agTemaDesc').style.display=checked?'none':'block';
+  document.getElementById('agTemaField').style.display='block';
+  document.getElementById('agTemaDesc').style.display='block';
+  document.getElementById('agTemaLabel').textContent=checked?'Nº do Tema (opcional)':'Nº do Tema';
+  document.getElementById('agTema').required=false;
+  if(checked){clearTimeout(agTemaVerificacaoTimer);agTemaConfirmadoKey='';}
   document.getElementById('agEspecialCorHex').textContent=color.value.toUpperCase();
   color.oninput=()=>document.getElementById('agEspecialCorHex').textContent=color.value.toUpperCase();
   atualizarSugestoesSentinela();
@@ -289,7 +292,7 @@ async function saveAgend(){
   const entry={
     data:data_val,
     semDiscurso:isSemDisc||false,
-    temaNum:(isSemDisc||isEspecial)?null:temaNumInformado,
+    temaNum:isSemDisc?null:temaNumInformado,
     tema:isEspecial?temaEspecial:'',
     canticoNum,
     cantico,

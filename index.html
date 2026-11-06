@@ -32,7 +32,7 @@
     <input type="hidden" id="agId">
     <div class="g2">
       <div class="field"><label id="agDataLabel">Data do discurso</label><input type="date" id="agData" onchange="atualizarSugestoesSentinela()"></div>
-      <div class="field" id="agTemaField"><label>Nº do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema(true)"></div>
+      <div class="field" id="agTemaField"><label id="agTemaLabel" for="agTema">Nº do Tema</label><input type="number" id="agTema" min="1" max="194" placeholder="Ex: 45" oninput="onAgTema(true)"></div>
     </div>
     <div id="agTemaDesc" style="font-size:11px;color:var(--pur3);margin:-6px 0 10px;min-height:13px"></div>
     <div id="agSugestoesSentinela" class="watchtower-suggestions" hidden></div>
@@ -75,7 +75,7 @@
       </label>
     </div>
     <div class="special-editor" id="agEspecialBox">
-      <label class="special-check"><input type="checkbox" id="agEspecial" onchange="onAgEspecial()"><span><strong>Discurso especial</strong><small>Destacar este discurso com uma cor personalizada</small></span></label>
+      <label class="special-check"><input type="checkbox" id="agEspecial" onchange="onAgEspecial()"><span><strong>Discurso especial</strong><small>Informe o nome do discurso e escolha uma cor. O número do tema é opcional.</small></span></label>
       <div id="agEspecialCampos" class="special-fields" style="display:none">
         <div class="field"><label>Nome do discurso especial</label><input id="agEspecialTitulo" placeholder="Digite o tema completo do discurso"></div>
         <div class="field color-field"><label>Cor do cartão</label><input type="color" id="agEspecialCor" value="#7c3aed"><span id="agEspecialCorHex">#7C3AED</span></div>
@@ -218,7 +218,7 @@
   <section class="calendar-card agenda-card">
     <div class="calendar-head"><div><div class="section-label">Agenda de discursos</div><h2 id="calendarTitle"></h2></div><div class="calendar-nav"><button class="icon-btn" onclick="mudarMes(-1)" title="Mês anterior"><i data-lucide="chevron-left"></i></button><button class="btn bo bs" onclick="irMesAtual()">Mês atual</button><button class="icon-btn" onclick="mudarMes(1)" title="Próximo mês"><i data-lucide="chevron-right"></i></button></div></div>
     <div class="agenda-legend"><span><i class="status-dot ready"></i> Completo</span><span><i class="status-dot pending"></i> Pendente</span><span><i class="status-dot special"></i> Evento especial</span></div>
-    <label style="display:flex;align-items:center;gap:8px;margin:12px 0"><input type="checkbox" onchange="alternarAgendaAno(this.checked)"> Mostrar ano inteiro, separado por mês</label>
+    <label style="display:flex;align-items:center;gap:8px;margin:12px 0"><input type="checkbox" onchange="alternarAgendaAno(this.checked)"> Mostrar de hoje até o fim do ano, separado por mês</label>
     <div id="homeCalendar" class="agenda-list"><div class="skeleton skeleton-calendar"></div></div>
   </section>
   <div class="quick-card quick-card-mobile"><div class="section-label">Ações rápidas</div><div class="quick-actions"><button onclick="openImportHistorico()"><i data-lucide="file-up"></i> Importar histórico</button><button onclick="compartilharProgramacao()"><i data-lucide="share-2"></i> Compartilhar</button><button onclick="irTab('oradores')"><i data-lucide="users"></i> Oradores</button></div></div>
@@ -240,6 +240,7 @@
   <input id="temaSearch" placeholder="🔍 Buscar por número ou palavra..." oninput="renderTemas()" style="margin-bottom:10px">
   <div class="filter-bar">
     <div class="fchip on" data-f="todos" onclick="setTF(this)">Todos</div>
+    <div class="fchip" data-f="agendados" onclick="setTF(this)">Agendados</div>
     <div class="fchip" data-f="0" onclick="setTF(this)">Nunca usados</div>
     <div class="fchip" data-f="1" onclick="setTF(this)">Usados 1×</div>
     <div class="fchip" data-f="2" onclick="setTF(this)">Usados 2×</div>
@@ -374,13 +375,13 @@
 </main>
 <script src="assets/js/supabase-client.js?v=20261023-2"></script>
 <script src="assets/js/app.js?v=20260911-1"></script>
-<script src="assets/js/features/home.js?v=20260911-1"></script>
-<script src="assets/js/features/schedule.js?v=20260909-5"></script>
-<script src="assets/js/features/directory.js?v=20260909-3"></script>
+<script src="assets/js/features/home.js?v=20261106-1"></script>
+<script src="assets/js/features/schedule.js?v=20261106-1"></script>
+<script src="assets/js/features/directory.js?v=20261106-1"></script>
 <script src="assets/js/features/insights.js?v=20260909-3"></script>
 <script src="assets/js/features/transfer.js?v=20260911-1"></script>
 <script src="assets/js/features/settings.js?v=20260909-6"></script>
-<script src="assets/js/features/noticeboard.js?v=20261104-1"></script>
+<script src="assets/js/features/noticeboard.js?v=20261106-1"></script>
 <script src="assets/js/features/team.js?v=20261023-2"></script>
 <script src="assets/js/features/init.js?v=20260904-1"></script>
 </body>

@@ -6,12 +6,15 @@ function renderTemas(){
   const entries=Object.entries(TL).map(([n,t])=>({n:+n,t})).sort((a,b)=>a.n-b.n);
   div.innerHTML='';
   let found=0;
+  const hoje=isoLocal(new Date());
   entries.forEach(({n,t})=>{
     const bloqueado=bloqueados.has(n);
     const editado=TEMAS[n]&&t!==TEMAS[n]&&!bloqueado;
     const usosTema=[...discursos,...programa.filter(p=>p.data&&p.data<=new Date().toISOString().slice(0,10)&&!p.semDiscurso)]
       .filter(d=>d.temaNum==n).filter((d,i,a)=>a.findIndex(x=>x.data===d.data&&x.temaNum==d.temaNum)===i);
     const u=usosTema.length;
+    const agendados=programa.filter(p=>p.temaNum==n&&p.data>=hoje&&!p.semDiscurso).sort((a,b)=>a.data.localeCompare(b.data));
+    if(temaFiltro==='agendados'&&!agendados.length)return;
     if(!bloqueado){
       if(temaFiltro==='0'&&u>0)return;
       if(temaFiltro==='1'&&u!==1)return;
@@ -39,6 +42,10 @@ function renderTemas(){
     subEl.style.cssText='font-size:11px;color:var(--whi3);margin-top:1px';
     subEl.textContent=bloqueado?'Tema bloqueado':(u?'Usado '+u+'× · último: '+fD(ult):'Nunca usado');
     info.appendChild(subEl);
+    agendados.forEach(p=>{
+      const agendamento=document.createElement('div');agendamento.className='badge bpur';agendamento.style.cssText='margin-top:5px;white-space:normal';
+      agendamento.textContent='Agendado: '+fD(p.data)+(p.nome?' · '+p.nome:' · Orador a definir');info.appendChild(agendamento);
+    });
     row.appendChild(info);
     // Ações
     const acts=document.createElement('div');acts.style.cssText='display:flex;gap:4px;align-items:center;flex-shrink:0';
