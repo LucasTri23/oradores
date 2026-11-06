@@ -284,7 +284,6 @@ async function saveAgend(){
   const isSemDisc=document.getElementById('agSemDiscurso').checked;
   const isEspecial=!isSemDisc&&document.getElementById('agEspecial').checked;
   const temaEspecial=isEspecial?document.getElementById('agEspecialTitulo').value.trim():'';
-  if(isEspecial&&!temaEspecial)return toast('Digite o nome do discurso especial!');
   const temaNumInformado=parseInt(document.getElementById('agTema').value)||null;
   if(!isSemDisc&&!isEspecial&&temaNumInformado&&!(await verificarUsoTema(temaNumInformado)))return;
   const canticoNum=isSemDisc?null:(parseInt(document.getElementById('agCantico').value)||null);
