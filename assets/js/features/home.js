@@ -210,7 +210,7 @@ function obterPendenciasPrograma(registro={}){
   if(registro.semDiscurso)return [];
   const faltas=[];
   if(!String(registro.nome||'').trim())faltas.push('orador');
-  if(!registro.temaNum&&!String(registro.tema||'').trim())faltas.push('tema');
+  if(!registro.especial&&!registro.temaNum&&!String(registro.tema||'').trim())faltas.push('tema');
   if(registro.nome&&!String(registro.congregacao||'').trim())faltas.push('congregação');
   if(registro.nome&&!String(registro.telefone||'').trim())faltas.push('telefone');
   return faltas;
@@ -327,7 +327,6 @@ function renderCalendar(byDate){
     const status=document.createElement('div');status.className='agenda-state';
     if(semDiscurso){status.innerHTML='<i class="status-dot"></i><span>Sem discurso</span>';status.querySelector('i').style.background=corEspecial(registro.semDiscursoCor||'#f59e0b');}
     else if(pendente)status.innerHTML='<i class="status-dot pending"></i><span>Falta: '+faltas.join(', ')+'</span>';
-    else if(especial){status.innerHTML='<i class="status-dot"></i><span></span>';status.querySelector('i').style.background=corEspecial(registro.especialCor);status.querySelector('span').textContent=registro.especialTitulo||'Especial';}
     else status.innerHTML='<i class="status-dot ready"></i><span>Completo</span>';
     row.appendChild(date);row.appendChild(info);row.appendChild(topic);row.appendChild(status);row.appendChild(actions);grid.appendChild(row);
   });
