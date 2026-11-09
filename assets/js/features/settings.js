@@ -294,21 +294,69 @@ function novoDiscursante(){
   document.getElementById('dcSaidaId').value='';
   ['dcUlt','dcProx','dcDest','dcObs'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('dcInfo').style.display='none';
+  mostrarSeletorSaidas(null);
   document.getElementById('mDiscTit').textContent='Novo Discursante';
   popularSelectDiscursante(null);
   openM('mDiscursante');
 }
 
+// Mostra (ou esconde) o seletor "Qual discurso editar" e o botão de excluir.
+function mostrarSeletorSaidas(d,selecionadaId){
+  const field=document.getElementById('dcSaidaField'),sel=document.getElementById('dcSaidaSel'),del=document.getElementById('dcDelSaidaBtn');
+  const saidas=d?saidasDiscursante(d):[];
+  sel.innerHTML='';
+  if(!saidas.length){field.style.display='none';del.style.display='none';return;}
+  const hoje=isoLocal(new Date());
+  saidas.forEach(s=>{
+    const opt=document.createElement('option');opt.value=s.id;
+    opt.textContent=fD(s.data)+' — '+(s.destino||'Destino não informado')+(s.data<hoje?' (passado)':'');
+    sel.appendChild(opt);
+  });
+  sel.value=selecionadaId||saidas[0].id;
+  field.style.display='';del.style.display='';
+}
+
+function preencherSaida(saida){
+  document.getElementById('dcSaidaId').value=saida?.id||'';
+  document.getElementById('dcProx').value=saida?.data||'';
+  document.getElementById('dcDest').value=saida?.destino||'';
+  document.getElementById('dcObs').value=saida?.obs||'';
+}
+
+function onDcSaidaSelect(){
+  const d=discursantes.find(x=>x.id===document.getElementById('dcId').value);if(!d)return;
+  const v=document.getElementById('dcSaidaSel').value;
+  preencherSaida(saidasDiscursante(d).find(s=>s.id===v)||null);
+}
+
+function camposSaidas(saidas){
+  const proxima=saidas.find(s=>s.data>=isoLocal(new Date()))||null;
+  return {proxSaida:proxima?.data||null,destino:proxima?.destino||'',obs:proxima?.obs||'',saidas};
+}
+
+async function excluirSaidaDiscursante(){
+  if(!db)return toast('Supabase não conectado!');
+  const id=document.getElementById('dcId').value,saidaId=document.getElementById('dcSaidaSel').value;
+  const d=discursantes.find(x=>x.id===id);if(!d||!saidaId)return;
+  const saida=saidasDiscursante(d).find(s=>s.id===saidaId);if(!saida)return;
+  if(!(await confirmarModal('Excluir discurso','Excluir o discurso de '+fD(saida.data)+' — '+(saida.destino||'Destino não informado')+'?','Excluir',true)))return;
+  const data=camposSaidas(saidasDiscursante(d).filter(s=>s.id!==saidaId));
+  try{
+    await FF.upd(FF.doc(db,'discursantes',id),data);
+  }catch(error){return toast('Falha ao excluir: '+error.message);}
+  discursantes=discursantes.map(x=>x.id===id?{...x,...data}:x);
+  renderMinha();toast('✓ Discurso excluído.');
+  editDiscursante(id);
+}
+
 function editDiscursante(id){
   const d=discursantes.find(x=>x.id===id);if(!d)return;
-  const proxima=proximaSaidaDiscursante(d);
+  const proxima=proximaSaidaDiscursante(d)||saidasDiscursante(d).slice(-1)[0]||null;
   document.getElementById('dcId').value=id;
   document.getElementById('dcOradorId').value=d.oradorId||'';
-  document.getElementById('dcSaidaId').value=proxima?.id||'';
   document.getElementById('dcUlt').value=d.ultSaida||'';
-  document.getElementById('dcProx').value=proxima?.data||'';
-  document.getElementById('dcDest').value=proxima?.destino||'';
-  document.getElementById('dcObs').value=proxima?.obs||'';
+  preencherSaida(proxima);
+  mostrarSeletorSaidas(d,proxima?.id);
   document.getElementById('mDiscTit').textContent='Editar — '+d.nome;
   popularSelectDiscursante(d.oradorId||null);
   // Show info
@@ -322,8 +370,8 @@ function editDiscursante(id){
 function addSaidaDiscursante(id){
   const d=discursantes.find(x=>x.id===id);if(!d)return;
   editDiscursante(id);
-  document.getElementById('dcSaidaId').value='';
-  document.getElementById('dcProx').value='';document.getElementById('dcDest').value='';document.getElementById('dcObs').value='';
+  preencherSaida(null);
+  mostrarSeletorSaidas(null);
   document.getElementById('mDiscTit').textContent='Adicionar discurso — '+d.nome;
 }
 
@@ -344,14 +392,10 @@ async function saveDiscursante(){
     if(saidaId){const pos=saidas.findIndex(s=>s.id===saidaId);if(pos>=0)saidas[pos]=compromisso;else saidas.push(compromisso);}else saidas.push(compromisso);
   }
   saidas=saidas.filter((s,i,a)=>a.findIndex(x=>x.id===s.id)===i).sort((a,b)=>a.data.localeCompare(b.data));
-  const proxima=saidas.find(s=>s.data>=new Date().toISOString().slice(0,10))||null;
   const data={
     nome,tel,oradorId:selV||oradorId||'',
     ultSaida:document.getElementById('dcUlt').value||null,
-    proxSaida:proxima?.data||null,
-    destino:proxima?.destino||'',
-    obs:proxima?.obs||'',
-    saidas
+    ...camposSaidas(saidas)
   };
   if(id){
     await FF.upd(FF.doc(db,'discursantes',id),data);
