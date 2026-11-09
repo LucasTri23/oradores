@@ -64,6 +64,13 @@ body.dz-shell{background:var(--bg);color:var(--whi);font-family:'Inter',sans-ser
 .dz-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font:600 10px Inter,sans-serif;background:var(--pur-dim);color:var(--pur3)}
 .dz-readonly{display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:9px 12px;border-radius:10px;background:color-mix(in srgb,var(--amber) 12%,transparent);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent);color:var(--whi2);font-size:12px}
 .dz-readonly svg{width:16px;height:16px;color:var(--amber);flex:0 0 auto}
+/* Tela de carregamento: cobre a página até os dados estarem prontos (nada para clicar antes disso). */
+.dz-carregando{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;color:var(--whi3);font:500 13px Inter,sans-serif}
+.dz-carregando[hidden]{display:none}
+.dz-carregando img{width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(37,99,235,.22))}
+.dz-carregando .dz-giro{width:26px;height:26px;border-radius:50%;border:3px solid var(--border2);border-top-color:var(--pur);animation:dz-gira .8s linear infinite}
+.dz-carregando .dz-erro{color:var(--red);max-width:380px}
+@keyframes dz-gira{to{transform:rotate(360deg)}}
 .dz-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--whi);color:var(--bg);padding:10px 16px;border-radius:10px;font:500 13px Inter,sans-serif;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100% - 32px);text-align:center;z-index:900}
 .dz-toast.show{opacity:1}
 
@@ -72,7 +79,7 @@ body.somente-leitura [onclick^="save"],body.somente-leitura [onclick^="openNovoA
 body.somente-leitura [onclick^="openImport"],body.somente-leitura [onclick^="startImport"],body.somente-leitura [onclick^="del"],
 body.somente-leitura [onclick^="excluir"],body.somente-leitura [onclick^="addMsg"],body.somente-leitura [onclick^="abrirNovaSug"],
 body.somente-leitura [onclick^="redefinir"],body.somente-leitura [onclick^="limpar"],body.somente-leitura [onclick^="buscarSentinelaJW"],
-body.somente-leitura [onclick^="compartilharOradores"],body.somente-leitura #createTeamInviteBtn{display:none!important}
+body.somente-leitura [onclick^="compartilharOradores"],body.somente-leitura #createTeamInviteBtn,body.somente-leitura .so-edicao{display:none!important}
 
 @media(min-width:900px){
   body.dz-shell{padding-left:224px}

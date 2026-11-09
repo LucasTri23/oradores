@@ -1,9 +1,10 @@
 # Designa
 
-Sistema da congregação com dois módulos, preparado para Supabase e Vercel:
+Sistema da congregação com três módulos, preparado para Supabase e Vercel:
 
 - **Oradores** (`/oradores`): programação e histórico de discursos.
 - **Territórios** (`/territorios`): registro de territórios, cartões de mapa, dirigentes e campanhas.
+- **Designações** (`/designacoes`): presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões do meio de semana e do fim de semana, com avisos de conflito, tempo sem fazer cada função, sugestão automática e PDF do quadro de anúncios.
 
 A tela inicial (`/`) faz o login com Google e mostra os módulos liberados para a conta. O proprietário da congregação escolhe, na própria tela inicial, quem pode editar Oradores, Territórios ou os dois. O nome do sistema fica em `assets/shared/conta.js` (`APP_NOME`).
 
@@ -14,6 +15,7 @@ index.html                    Tela inicial: login, escolha do módulo e acessos 
 oradores/index.html           Estrutura das telas do Oradores
 territorios/index.html        App de Territórios
 territorios/bridge.js         Liga o app de Territórios ao Supabase (coleções terr_*)
+designacoes/                  Módulo Designações (regras.js, app.js, pdf.js; coleções desig_*)
 assets/shared/conta.js        Login, congregação e módulos compartilhados
 assets/css/style.css          Tema, componentes e responsividade
 assets/js/app.js              Estado, navegação e utilitários
@@ -68,3 +70,9 @@ A atualização não escolhe nem exclui vínculos automaticamente. Uma conta nov
 Depois de atualizar, execute novamente todo o `supabase.sql`. Quem já estava na equipe continua só com **Oradores**; o proprietário acessa tudo. Em **Início → Configurações da congregação**, o proprietário escolhe para cada pessoa, em cada módulo, **Editar**, **Só ver** ou **Sem acesso**, e cria convites já com esses acessos. As imagens dos cartões de mapa ficam no Storage do Supabase (bucket `territorios`, criado pelo `supabase.sql`). O Designa pode ser instalado no celular (`manifest.webmanifest` + `sw.js`).
 
 Para trazer os dados da versão antiga de Territórios (Firebase), abra **Territórios → Config → Importar do Firebase antigo**, cole as credenciais antigas e clique em **Importar dados**. Faça isso uma vez só.
+
+## Dados da congregação (todos os módulos)
+
+- **Pessoas** (Início → Pessoas, coleção `cong_pessoas`): lista única com nome, grupo, telefone e situação. As Designações usam esta lista (as funções de cada pessoa ficam em `desig_pessoas`) e os Territórios permitem escolher dirigentes dela. O botão "Juntar cadastros existentes" traz quem já estava nos módulos.
+- **Eventos** (Início → Eventos, coleção `cong_eventos`): assembleia, congresso, visita do superintendente, Celebração. A pessoa escolhe se ocupa só os dias do evento ou a semana toda, se terá designações e se fica sem discurso público. Ao salvar, o Oradores e as Designações são atualizados; ao apagar ou mudar, o que existia antes volta.
+- Qualquer integrante vê esses dados; quem pode editar algum módulo pode alterá-los.

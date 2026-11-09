@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Designações</title>
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/assets/images/oradores-speaker-logo.png">
+<link rel="apple-touch-icon" href="/assets/images/oradores-speaker-logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-1">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
+<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+<style>
+.secao[hidden]{display:none}
+.barra{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.barra .esp{flex:1}
+.mes-nav{display:flex;align-items:center;gap:6px}
+.mes-nav strong{font:700 18px 'Space Grotesk',sans-serif;min-width:170px;text-align:center}
+.titulo-sec{font:700 22px 'Space Grotesk',sans-serif;letter-spacing:-.02em;margin:0 0 4px}
+.sub-sec{color:var(--whi3);font-size:13px;margin:0 0 18px}
+.vazio{color:var(--whi3);font-size:13px;text-align:center;padding:30px 10px;border:1px dashed var(--border2);border-radius:12px}
+.campo-busca{padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surf);color:var(--whi);font:500 13px Inter,sans-serif;min-width:200px}
+input,select,textarea{font-family:Inter,sans-serif}
+
+/* Programação */
+.reunioes{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;align-items:start}
+.reuniao{display:flex;flex-direction:column;justify-content:flex-start;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s,transform .15s;text-align:left;color:inherit;font:inherit;width:100%}
+.reuniao:hover{border-color:var(--pur)}
+.reuniao.passada{opacity:.6}
+.reuniao.leitura{cursor:default}.reuniao.leitura:hover{border-color:var(--border)}
+.reuniao-topo{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dia{flex:0 0 auto;width:48px;text-align:center;background:var(--pur-dim);color:var(--pur);border-radius:10px;padding:5px 0}
+.dia b{display:block;font:700 19px 'Space Grotesk',sans-serif;line-height:1.1}
+.dia small{font:700 9px Inter,sans-serif;text-transform:uppercase}
+.reuniao-topo .tx{flex:1;min-width:0}
+.reuniao-topo strong{display:block;font-size:14px}
+.reuniao-topo span{font-size:11px;color:var(--whi3)}
+.tipo{font:600 10px Inter,sans-serif;padding:3px 8px;border-radius:20px;background:var(--surf2);color:var(--whi2);white-space:nowrap}
+.tipo.fim{background:color-mix(in srgb,var(--green) 13%,transparent);color:var(--green)}
+.funcao-linha{display:grid;grid-template-columns:104px 1fr;gap:8px;align-items:start;padding:6px 0;border-top:1px solid var(--border)}
+.funcao-linha>span{font:600 11px Inter,sans-serif;color:var(--whi3);padding-top:4px;display:flex;align-items:center;gap:5px}
+.funcao-linha>span svg{width:13px;height:13px}
+.nomes{display:flex;flex-wrap:wrap;gap:4px}
+.nome{display:inline-flex;align-items:center;gap:4px;font:600 12px Inter,sans-serif;padding:3px 9px;border-radius:7px;background:var(--surf2);color:var(--whi)}
+.nome.vago{background:transparent;border:1px dashed var(--border2);color:var(--whi3);font-weight:500}
+.nome.alerta{background:color-mix(in srgb,var(--amber) 14%,transparent);color:var(--whi)}
+.nome svg{width:13px;height:13px;color:var(--amber)}
+.sem-reuniao{font-size:13px;color:var(--whi3);padding:8px 0;border-top:1px solid var(--border)}
+.legenda{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--whi3);margin:-6px 0 14px}
+.legenda span{display:inline-flex;align-items:center;gap:5px}.legenda svg{width:13px;height:13px;color:var(--amber)}
+
+/* Pessoas */
+.grupo{margin-bottom:22px}
+.grupo h3{display:flex;align-items:center;gap:8px;font:700 14px 'Space Grotesk',sans-serif;margin:0 0 8px}
+.grupo h3 small{font:600 11px Inter,sans-serif;color:var(--whi3)}
+.cabec-funcoes{display:grid;grid-template-columns:minmax(170px,1.2fr) repeat(var(--n,5),minmax(96px,1fr));gap:6px;padding:0 12px 6px;font:700 10px Inter,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--whi3)}
+.pessoa{display:grid;grid-template-columns:minmax(170px,1.2fr) repeat(var(--n,5),minmax(96px,1fr));gap:6px;align-items:center;background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:9px 12px;margin-bottom:6px}
+.pessoa.inativa{opacity:.55}
+.pessoa-nome{min-width:0;display:flex;align-items:center;gap:9px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:0}
+.pessoa-nome .av{flex:0 0 auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--pur-dim);color:var(--pur);font:700 13px Inter,sans-serif}
+.pessoa-nome strong{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pessoa-nome small{display:block;font-size:11px;color:var(--whi3)}
+.chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 9px;border-radius:9px;border:1px solid var(--border);background:var(--surf2);color:var(--whi3);font:600 11px Inter,sans-serif;cursor:pointer;text-align:left;min-height:42px;justify-content:center}
+.chip small{font:500 10px Inter,sans-serif;opacity:.85}
+.chip.on{background:var(--pur-dim);border-color:color-mix(in srgb,var(--pur) 40%,transparent);color:var(--pur3)}
+.chip.na{visibility:hidden}
+.chip:disabled{cursor:default}
+.chip .lbl{display:none}
+
+/* Configurações */
+.cfg-grid{display:grid;gap:14px;max-width:760px}
+.cfg-grid h2{font:700 15px 'Space Grotesk',sans-serif;margin:0 0 4px}
+.hint{font-size:12px;color:var(--whi3);margin:0 0 12px;line-height:1.5}
+.linha-cfg{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sel{padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surf);color:var(--whi);font:500 13px Inter,sans-serif}
+.tabela-qtd{width:100%;border-collapse:collapse;font-size:13px}
+.tabela-qtd th{font:700 10px Inter,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--whi3);text-align:left;padding:6px}
+.tabela-qtd td{padding:6px;border-top:1px solid var(--border)}
+.tabela-qtd input{width:70px;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surf);color:var(--whi);font:600 13px Inter,sans-serif}
+
+/* Janelas */
+.fundo{position:fixed;inset:0;z-index:600;background:rgba(2,6,23,.6);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow:auto}
+.fundo[hidden]{display:none}
+.janela{width:100%;max-width:560px;background:var(--surf);border:1px solid var(--border2);border-radius:16px;padding:20px;box-shadow:var(--dz-shadow)}
+.janela h2{font:700 18px 'Space Grotesk',sans-serif;margin:0 0 2px}
+.janela .sub{font-size:12px;color:var(--whi3);margin:0 0 14px}
+.janela label.campo{display:block;font:600 11px Inter,sans-serif;color:var(--whi3);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.05em}
+.janela input[type=text],.janela textarea,.janela select{width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:8px;background:var(--surf);color:var(--whi);font:500 13px Inter,sans-serif}
+.janela .acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.janela .acoes .esp{flex:1}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:12px}
+.check input{width:16px;height:16px;accent-color:var(--pur)}
+.ed-funcao{padding:12px 0;border-top:1px solid var(--border)}
+.ed-funcao h4{display:flex;align-items:center;gap:6px;margin:0 0 8px;font:700 13px Inter,sans-serif}
+.ed-funcao h4 svg{width:15px;height:15px;color:var(--pur)}
+.ed-vagas{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.aviso{display:flex;gap:6px;align-items:flex-start;font-size:12px;color:var(--whi2);background:color-mix(in srgb,var(--amber) 12%,transparent);border-radius:8px;padding:6px 9px;margin-top:6px}
+.aviso svg{width:14px;height:14px;color:var(--amber);flex:0 0 auto;margin-top:1px}
+.escolhas{display:grid;gap:8px;margin-top:6px}
+.escolha{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border:1px solid var(--border2);border-radius:10px;background:var(--surf);color:var(--whi);cursor:pointer;font:inherit;text-align:left}
+.escolha:hover,.escolha.on{border-color:var(--pur);background:var(--pur-dim)}
+.escolha strong{font-size:15px}.escolha span{font-size:12px;color:var(--whi3)}
+
+/* Lembretes e histórico */
+.lem{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border)}
+.lem .tx{flex:1;min-width:0}.lem strong{display:block;font-size:13px}.lem span{display:block;font-size:11px;color:var(--whi3)}
+.lem .dz-btn.ok{border-color:var(--green);color:var(--green)}
+.hist{display:flex;gap:10px;padding:11px 0;border-top:1px solid var(--border)}
+.hist .av{flex:0 0 auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--pur-dim);color:var(--pur);font:700 12px Inter,sans-serif}
+.hist .tx{flex:1;min-width:0;font-size:13px}.hist .tx small{display:block;color:var(--whi3);font-size:11px;margin-top:2px}
+.hist ul{margin:4px 0 0 16px;padding:0;font-size:12px;color:var(--whi2)}
+.evento-nota{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--whi2);background:var(--pur-dim);border-radius:8px;padding:7px 10px;margin-top:10px}
+.evento-nota svg{width:14px;height:14px;color:var(--pur)}
+@media(max-width:899px){
+  .cabec-funcoes{display:none}
+  .pessoa{grid-template-columns:repeat(2,1fr)}
+  .pessoa-nome{grid-column:1/-1;margin-bottom:4px}
+  .chip .lbl{display:block}
+  .chip.na{display:none}
+  .reunioes{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body class="dz-shell">
+<header class="dz-header">
+  <div class="dz-logo"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span>Designações</span><small class="nomeCong"></small></div>
+  <div class="dz-page-title">Designações <small class="nomeCong"></small></div>
+  <div class="dz-actions">
+    <div id="dzSwitch" hidden></div>
+    <button class="dz-icon-btn" data-dz-tema onclick="DesignaUI.alternarTema()"></button>
+    <div id="dzConta"></div>
+  </div>
+</header>
+<nav class="dz-nav">
+  <a class="dz-brand" href="/"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span><span class="nomeApp">Designa</span><small class="nomeCong"></small></span></a>
+  <a class="dz-tab active" data-aba="programacao" href="#programacao"><i data-lucide="calendar-days"></i><span>Programação</span></a>
+  <a class="dz-tab" data-aba="pessoas" href="#pessoas"><i data-lucide="users"></i><span>Pessoas</span></a>
+  <a class="dz-tab" data-aba="historico" href="#historico"><i data-lucide="history"></i><span>Histórico</span></a>
+  <a class="dz-tab" data-aba="config" href="#config"><i data-lucide="settings"></i><span>Configurações</span></a>
+  <div class="dz-nav-sep">Designa</div>
+  <a class="dz-tab dz-only-desktop" href="/"><i data-lucide="layout-dashboard"></i><span>Início</span></a>
+</nav>
+
+<main class="dz-main" id="principal">
+  <div id="carregando" class="vazio">Carregando…</div>
+
+  <!-- PROGRAMAÇÃO -->
+  <section class="secao" id="sec-programacao" hidden>
+    <div class="barra">
+      <div class="mes-nav">
+        <button class="dz-icon-btn" onclick="mudarMes(-1)" title="Mês anterior"><i data-lucide="chevron-left"></i></button>
+        <strong id="mesTitulo"></strong>
+        <button class="dz-icon-btn" onclick="mudarMes(1)" title="Próximo mês"><i data-lucide="chevron-right"></i></button>
+        <button class="dz-btn" onclick="irHoje()">Hoje</button>
+      </div>
+      <div class="esp"></div>
+      <button class="dz-btn so-edicao" onclick="sugerirMes()"><i data-lucide="wand-sparkles"></i> Sugerir vagas vazias</button>
+      <button class="dz-btn" onclick="abrirLembretes()"><i data-lucide="bell-ring"></i> Lembretes</button>
+      <button class="dz-btn" onclick="compartilharMes()"><i data-lucide="send"></i> WhatsApp</button>
+      <button class="dz-btn pri" onclick="abrirPdf()"><i data-lucide="file-down"></i> Quadro de anúncios</button>
+    </div>
+    <div class="legenda"><span><i data-lucide="triangle-alert"></i> aviso: a pessoa está em outra função, faz discurso ou fez na reunião anterior</span></div>
+    <div class="reunioes" id="listaReunioes"></div>
+  </section>
+
+  <!-- PESSOAS -->
+  <section class="secao" id="sec-pessoas" hidden>
+    <div class="barra">
+      <div>
+        <h1 class="titulo-sec">Pessoas</h1>
+        <p class="sub-sec" style="margin:0">Toque numa função para liberar ou tirar. Embaixo aparece há quanto tempo a pessoa não faz.</p>
+      </div>
+      <div class="esp"></div>
+      <input class="campo-busca" id="busca" placeholder="Buscar nome…" oninput="renderPessoas()">
+      <a class="dz-btn" href="/#pessoas"><i data-lucide="users"></i> Lista da congregação</a>
+      <button class="dz-btn pri so-edicao" onclick="abrirPessoa()"><i data-lucide="user-plus"></i> Nova pessoa</button>
+    </div>
+    <div id="listaPessoas"></div>
+  </section>
+
+  <!-- CONFIGURAÇÕES -->
+  <section class="secao" id="sec-historico" hidden>
+    <h1 class="titulo-sec">Histórico</h1>
+    <p class="sub-sec">Quem alterou o quê nas designações (últimas 80 alterações).</p>
+    <div id="listaHistorico"></div>
+  </section>
+
+  <section class="secao" id="sec-config" hidden>
+    <div class="cfg-grid">
+      <div class="dz-card">
+        <h2>Dias das reuniões</h2>
+        <p class="hint">Usados para montar as datas da programação e do quadro de anúncios.</p>
+        <div class="linha-cfg">
+          <label>Meio de semana <select class="sel" id="cfgDiaMeio"></select></label>
+          <label id="lblDiaFim">Fim de semana <select class="sel" id="cfgDiaFim"><option value="6">Sábado</option><option value="0">Domingo</option></select></label>
+        </div>
+        <p class="hint" id="avisoDiaFim" style="margin:10px 0 0" hidden></p>
+      </div>
+      <div class="dz-card">
+        <h2>Quantas pessoas em cada função</h2>
+        <p class="hint">Desmarque <strong>Usar</strong> nas funções que a congregação não usa (ela some da programação, das pessoas e do quadro). Use 0 para não ter a função só em uma das reuniões.</p>
+        <table class="tabela-qtd"><thead><tr><th>Usar</th><th>Função</th><th>Meio de semana</th><th>Fim de semana</th></tr></thead><tbody id="tabelaQtd"></tbody></table>
+      </div>
+      <div class="dz-card">
+        <h2>Indicador do Zoom</h2>
+        <label class="check" style="margin-top:4px"><input type="checkbox" id="cfgZoomSemanal"> Semanal: a mesma pessoa cuida do Zoom no meio e no fim de semana</label>
+        <p class="hint" style="margin:8px 0 0">Ao designar uma reunião, a outra reunião da mesma semana recebe a mesma pessoa no Zoom. No quadro de anúncios aparece por semana (ex.: 04 e 07/11).</p>
+      </div>
+      <div><button class="dz-btn pri so-edicao" onclick="salvarConfig()"><i data-lucide="save"></i> Salvar configurações</button></div>
+    </div>
+  </section>
+</main>
+
+<!-- Janela: editar reunião -->
+<div class="fundo" id="janReuniao" hidden onclick="if(event.target===this)fecharJanela('janReuniao')">
+  <div class="janela">
+    <h2 id="rTitulo"></h2>
+    <p class="sub" id="rSub"></p>
+    <label class="check"><input type="checkbox" id="rSem" onchange="alternarSemReuniao()"> Não haverá reunião (assembleia, congresso, visita…)</label>
+    <div id="rMotivoBox" hidden><label class="campo" for="rMotivo">Motivo</label><input type="text" id="rMotivo" maxlength="80" placeholder="Ex.: Assembleia de circuito"></div>
+    <div id="rFuncoes"></div>
+    <div class="acoes">
+      <button class="dz-btn" onclick="sugerirReuniao()"><i data-lucide="wand-sparkles"></i> Sugerir vagas</button>
+      <button class="dz-btn" onclick="limparReuniao()">Limpar</button>
+      <div class="esp"></div>
+      <button class="dz-btn" onclick="fecharJanela('janReuniao')">Cancelar</button>
+      <button class="dz-btn pri" id="rSalvar" onclick="salvarReuniao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Janela: pessoa -->
+<div class="fundo" id="janPessoa" hidden onclick="if(event.target===this)fecharJanela('janPessoa')">
+  <div class="janela">
+    <h2 id="pTitulo">Nova pessoa</h2>
+    <label class="campo" for="pNome">Nome</label><input type="text" id="pNome" maxlength="80" placeholder="Nome e sobrenome">
+    <label class="campo" for="pGrupo">Grupo</label>
+    <select id="pGrupo"><option value="anciao">Ancião</option><option value="servo">Servo ministerial</option><option value="publicador">Publicador</option><option value="">Sem grupo definido</option></select>
+    <label class="campo">Pode fazer</label>
+    <div id="pFuncoes" class="nomes"></div>
+    <label class="campo" for="pTel">Telefone (WhatsApp)</label><input type="text" id="pTel" maxlength="20" inputmode="tel" placeholder="(31) 99999-8888">
+    <label class="campo" for="pObs">Observação</label><textarea id="pObs" rows="2" maxlength="200" placeholder="Opcional"></textarea>
+    <label class="check"><input type="checkbox" id="pAtivo" checked> Ativo (aparece nas designações e sugestões)</label>
+    <div class="acoes">
+      <a class="dz-btn" id="pExcluir" href="/#pessoas" title="Para excluir alguém, use a lista da congregação">Excluir na lista da congregação</a>
+      <div class="esp"></div>
+      <button class="dz-btn" onclick="fecharJanela('janPessoa')">Cancelar</button>
+      <button class="dz-btn pri so-edicao" onclick="salvarPessoa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Janela: PDF -->
+<div class="fundo" id="janPdf" hidden onclick="if(event.target===this)fecharJanela('janPdf')">
+  <div class="janela" style="max-width:420px">
+    <h2>Quadro de anúncios</h2>
+    <p class="sub">PDF em A4 para imprimir. Escolha o modelo:</p>
+    <div class="escolhas" id="pdfModelos">
+      <button type="button" class="escolha" data-modelo="tabelas" onclick="escolherModeloPdf('tabelas')"><strong>Tabelas — programação completa</strong><span>Igual ao modelo em Word: discursos públicos, presidente e leitor, indicadores e microfones (fim e meio de semana) e Zoom da semana. Uma página por mês.</span></button>
+      <button type="button" class="escolha" data-modelo="cartoes" onclick="escolherModeloPdf('cartoes')"><strong>Cartões</strong><span>Um cartão por reunião com todas as designações, no estilo do quadro do Oradores.</span></button>
+    </div>
+    <label class="campo" for="pdfMes">Mês inicial</label><input type="month" id="pdfMes" class="sel" style="width:100%">
+    <label class="campo" for="pdfQtd">Período</label>
+    <select id="pdfQtd"><option value="1">1 mês</option><option value="2">2 meses</option><option value="3">3 meses</option></select>
+    <div class="acoes"><div class="esp"></div><button class="dz-btn" onclick="fecharJanela('janPdf')">Cancelar</button><button class="dz-btn" id="pdfShare" onclick="baixarPdf(true)"><i data-lucide="share-2"></i> Enviar pelo WhatsApp</button><button class="dz-btn pri" id="pdfBtn" onclick="baixarPdf()"><i data-lucide="file-down"></i> Baixar PDF</button></div>
+  </div>
+</div>
+
+<!-- Janela: lembretes no WhatsApp -->
+<div class="fundo" id="janLembretes" hidden onclick="if(event.target===this)fecharJanela('janLembretes')">
+  <div class="janela">
+    <h2>Lembretes no WhatsApp</h2>
+    <p class="sub" id="lemSub"></p>
+    <div id="lemLista"></div>
+    <div class="acoes"><div class="esp"></div><button class="dz-btn" onclick="fecharJanela('janLembretes')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- Janela: primeira configuração (dia do meio de semana) -->
+<div class="fundo" id="janDia" hidden>
+  <div class="janela" style="max-width:420px">
+    <h2>Reunião do meio de semana</h2>
+    <p class="sub">Em qual dia é a reunião do meio de semana da sua congregação? Isso define as datas da programação e do quadro de anúncios. Dá para mudar depois em Configurações.</p>
+    <div class="escolhas">
+      <button class="escolha" onclick="escolherDiaMeio(3)"><strong>Quarta-feira</strong><span>Reuniões do meio de semana às quartas</span></button>
+      <button class="escolha" onclick="escolherDiaMeio(4)"><strong>Quinta-feira</strong><span>Reuniões do meio de semana às quintas</span></button>
+    </div>
+    <p class="sub" style="margin:12px 0 0">É outro dia? Escolha em Configurações depois.</p>
+  </div>
+</div>
+
+<script src="/assets/js/data.js?v=20260902-1"></script>
+<script src="/assets/shared/conta.js?v=20261110-1"></script>
+<script src="/assets/shared/congregacao.js?v=20261110-2"></script>
+<script src="/designacoes/regras.js?v=20261110-1"></script>
+<script src="/designacoes/pdf.js?v=20261110-2"></script>
+<script src="/designacoes/app.js?v=20261110-3"></script>
+</body>
+</html>

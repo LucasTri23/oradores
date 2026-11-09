@@ -66,23 +66,34 @@ async function checkSetup(){
   renderHome();renderTemas();renderMensagens();updateThemeButton();
   if(window.DesignaUI)DesignaUI.registrarApp();
   const config=await getPublicConfig();
-  if(!config)return showSetupError('O acesso ainda não foi configurado. Configure SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY na Vercel.');
+  if(!config){mostrarTelaLogin(false);return showSetupError('O acesso ainda não foi configurado. Configure SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY na Vercel.');}
   try{
     await loadSupabase(config);
     const{data}=await supabase.auth.getSession();
-    if(data.session){
-      currentUser=data.session.user;
-      await checkTeamInvite();
-      if(!(await initializeWorkspace()))return;
-      if(!aplicarAcessoDesigna())return;
-      updateUserHeader();
-      document.getElementById('setup').style.display='none';
-      await loadAll();
-      perguntarDiaReuniao2027();
-      await renderTeamPanel();
-      await checkSharedImport();
+    if(!data.session){
+      // O login fica num lugar só: a tela inicial do Designa, que depois volta para cá.
+      const convite=new URLSearchParams(location.search).get('equipe');
+      location.replace('/?voltar=/oradores'+(convite?'&equipe='+encodeURIComponent(convite):''));
+      return;
     }
-  }catch(error){showSetupError(error.message);}
+    currentUser=data.session.user;
+    await checkTeamInvite();
+    if(!(await initializeWorkspace())){mostrarTelaLogin(false);return;}
+    if(!aplicarAcessoDesigna())return;
+    updateUserHeader();
+    await loadAll();
+    document.getElementById('setup').style.display='none';
+    perguntarDiaReuniao2027();
+    await renderTeamPanel();
+    await checkSharedImport();
+  }catch(error){mostrarTelaLogin(true);showSetupError(error.message);}
+}
+
+// Troca o "Carregando…" pela tela de entrada (só quando realmente precisa de uma ação da pessoa).
+function mostrarTelaLogin(comBotao){
+  document.getElementById('setupCarregando').style.display='none';
+  document.getElementById('setupHint').hidden=!comBotao;
+  document.getElementById('googleLoginBtn').hidden=!comBotao;
 }
 
 // Permissões do Designa: sem acesso ao Oradores volta para o início; "só ver" mostra aviso e bloqueia gravações.
@@ -122,6 +133,6 @@ async function logout(){
   if(supabase)await supabase.auth.signOut();
   currentUser=null;activeWorkspaceId=null;localStorage.removeItem('oradores_workspace');
   document.getElementById('workspaceWelcome').hidden=true;
-  document.getElementById('googleLoginBtn').hidden=false;
   document.getElementById('setup').style.display='flex';
+  location.replace('/');
 }

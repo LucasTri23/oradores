@@ -3,10 +3,29 @@ document.getElementById('quadroMes').value=isoLocal(new Date()).slice(0,7);
 const responsaveisQuadro=new Map();
 ['quadroMes','quadroQuantidade'].forEach(id=>document.getElementById(id).addEventListener('change',renderResponsaveisQuadro));
 
+// Presidente e leitor vindos do módulo Designações (data → {presidente, leitor}). Só carrega para quem tem acesso.
+let responsaveisDesignacoes=null;
+async function carregarResponsaveisDesignacoes(){
+  if(responsaveisDesignacoes||typeof FF==='undefined'||!db)return;
+  try{
+    const[rs,ps,central]=await Promise.all([FF.gets(FF.col(db,'desig_reunioes')),FF.gets(FF.col(db,'desig_pessoas')),FF.gets(FF.col(db,'cong_pessoas')).catch(()=>({docs:[]}))]);
+    // Nomes da lista única da congregação (com os cadastros antigos das Designações como reserva).
+    const nomes=new Map(ps.docs.map(d=>[d.id,d.data().nome]).filter(([,n])=>n));
+    central.docs.forEach(d=>nomes.set(d.id,d.data().nome));
+    const mapa={};
+    rs.docs.forEach(d=>{const r=d.data();if(!r?.data||r.semReuniao)return;
+      const juntar=f=>(r.pessoas?.[f]||[]).map(id=>nomes.get(id)).filter(Boolean).join(', ');
+      mapa[r.data]={presidente:juntar('presidente'),leitor:juntar('leitor')};});
+    responsaveisDesignacoes=mapa;
+  }catch(error){responsaveisDesignacoes={};}
+}
+const responsavelQuadro=(data,chave)=>responsaveisQuadro.get(data)?.[chave]??responsaveisDesignacoes?.[data]?.[chave]??'';
+
 function renderResponsaveisQuadro(){
   const painel=document.getElementById('quadroResponsaveis');
   painel.hidden=!document.getElementById('quadroIncluirResponsaveis').checked;
   painel.replaceChildren();if(painel.hidden)return;
+  if(!responsaveisDesignacoes&&typeof FF!=='undefined'&&db){carregarResponsaveisDesignacoes().then(renderResponsaveisQuadro);return;}
   try{
     const meses=dadosQuadroAnuncios(document.getElementById('quadroMes').value,Number(document.getElementById('quadroQuantidade').value));
     meses.forEach(m=>{
@@ -19,7 +38,7 @@ function renderResponsaveisQuadro(){
           const campo=document.createElement('div');campo.className='field';
           const label=document.createElement('label'),input=document.createElement('input');
           input.id='quadro-'+chave+'-'+r.data;label.htmlFor=input.id;label.textContent=chave==='presidente'?'Presidente':'Leitor de A Sentinela';
-          input.type='text';input.maxLength=120;input.placeholder='Nome completo';input.value=responsaveisQuadro.get(r.data)?.[chave]||'';
+          input.type='text';input.maxLength=120;input.placeholder='Nome completo';input.value=responsavelQuadro(r.data,chave);
           input.addEventListener('input',()=>responsaveisQuadro.set(r.data,{...responsaveisQuadro.get(r.data),[chave]:input.value}));
           campo.append(label,input);campos.appendChild(campo);
         });grupo.appendChild(campos);painel.appendChild(grupo);
@@ -129,18 +148,24 @@ function criarPdfQuadro(JsPDF,meses,congregacao,incluirResponsaveis=false){
   return pdf;
 }
 
-async function baixarQuadroAnuncios(){
-  const botao=document.getElementById('quadroBaixar');
+async function baixarQuadroAnuncios(enviar=false){
+  const botao=document.getElementById(enviar?'quadroEnviar':'quadroBaixar');const textoBotao=botao.innerHTML;
   try{
     const inicio=document.getElementById('quadroMes').value,quantidade=Number(document.getElementById('quadroQuantidade').value);
     const meses=dadosQuadroAnuncios(inicio,quantidade),congregacao=String(cfg.cong||'').trim();
     if(!congregacao||congregacao==='Minha Congregação')throw new Error('Cadastre e salve o nome da congregação antes de baixar o PDF.');
     botao.disabled=true;botao.textContent='Gerando PDF…';
     const incluir=document.getElementById('quadroIncluirResponsaveis').checked;
-    if(incluir)meses.forEach(m=>m.linhas.forEach(r=>Object.assign(r,responsaveisQuadro.get(r.data)||{})));
+    if(incluir){
+      await carregarResponsaveisDesignacoes();
+      meses.forEach(m=>m.linhas.forEach(r=>{r.presidente=responsavelQuadro(r.data,'presidente');r.leitor=responsavelQuadro(r.data,'leitor');}));
+    }
     const JsPDF=await carregarBibliotecaQuadro();
-    criarPdfQuadro(JsPDF,meses,congregacao,incluir).save('quadro-de-anuncios-'+inicio+'-'+quantidade+'-meses.pdf');
+    const pdf=criarPdfQuadro(JsPDF,meses,congregacao,incluir),nomeArq='quadro-de-anuncios-'+inicio+'-'+quantidade+'-meses.pdf';
+    // Enviar: abre o compartilhamento do celular (WhatsApp…); no computador, baixa o arquivo.
+    if(enviar&&window.DesignaUI){await DesignaUI.compartilharArquivo(pdf.output('blob'),nomeArq,'Programação de oradores — '+congregacao);return;}
+    pdf.save(nomeArq);
     toast('PDF do quadro de anúncios gerado!');
   }catch(error){toast(error.message||'Não foi possível gerar o PDF.',6000);}
-  finally{botao.disabled=false;botao.innerHTML='<i data-lucide="file-down"></i> Baixar PDF';if(window.lucide)lucide.createIcons();}
+  finally{botao.disabled=false;botao.innerHTML=textoBotao;if(window.lucide)lucide.createIcons();}
 }

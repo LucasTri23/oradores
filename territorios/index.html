@@ -16,9 +16,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261109-2">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-1">
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
-<script src="/assets/shared/conta.js?v=20261109-2"></script>
+<script src="/assets/shared/conta.js?v=20261110-1"></script>
 <script src="/territorios/bridge.js?v=20261109-2"></script>
 <style>
 :root{
@@ -833,6 +833,13 @@ datalist{display:none}
 </style>
 </head>
 <body class="dz-shell">
+<!-- Fica na frente de tudo até os territórios estarem carregados. -->
+<div class="dz-carregando" id="telaCarregando">
+  <img src="/assets/images/oradores-speaker-logo.png" alt="">
+  <div class="dz-giro" id="carregandoGiro"></div>
+  <span id="carregandoTexto">Carregando territórios…</span>
+  <button class="dz-btn pri" id="carregandoTentar" hidden onclick="location.reload()">Tentar de novo</button>
+</div>
 
 <header class="dz-header">
   <div class="dz-logo"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span>Territórios</span><small class="nomeCong"></small></div>
@@ -984,6 +991,10 @@ datalist{display:none}
       <button class="btn btn-sv" onclick="addContato()" style="height:34px">Adicionar</button>
     </div>
     <p class="chint" style="margin-top:6px">Código país + DDD + número (ex: 5531999998888)</p>
+    <div id="ctDaListaBox" hidden style="margin-top:10px">
+      <select class="inp" id="ctDaLista" onchange="escolherDirigenteDaLista(this.value)" style="height:34px;max-width:360px"><option value="">Escolher da lista da congregação…</option></select>
+      <p class="chint" style="margin-top:4px">Preenche nome e número. A lista fica em Início → Pessoas.</p>
+    </div>
   </div>
 
   <!-- MENSAGENS WHATSAPP -->
@@ -2699,6 +2710,26 @@ function toast(m,err=false){
 }
 
 // ── INIT ──
+// Dirigentes podem ser escolhidos da lista única de pessoas da congregação (Início → Pessoas).
+let pessoasCongregacao=[];
+async function carregarListaCongregacao(ctx){
+  try{
+    const sb=await Conta.supabase();
+    const{data}=await sb.from('app_records').select('id,data').eq('workspace_id',ctx.vinculo.workspaceId).eq('collection','cong_pessoas');
+    pessoasCongregacao=(data||[]).map(r=>({id:r.id,...r.data})).filter(p=>p.ativo!==false).sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+    const sel=document.getElementById('ctDaLista');
+    pessoasCongregacao.forEach(p=>sel.add(new Option(p.nome+(p.telefone?' · '+p.telefone:' · sem telefone'),p.id)));
+    document.getElementById('ctDaListaBox').hidden=!pessoasCongregacao.length;
+  }catch(e){}
+}
+function escolherDirigenteDaLista(id){
+  const p=pessoasCongregacao.find(x=>x.id===id);if(!p)return;
+  let num=String(p.telefone||'').replace(/\D/g,'');if(num.length===10||num.length===11)num='55'+num;
+  document.getElementById('ctNm').value=p.nome;document.getElementById('ctNum').value=num;
+  document.getElementById('ctDaLista').value='';
+  if(!num)toast('Essa pessoa está sem telefone. Digite o número ou cadastre em Início → Pessoas.',true);
+}
+
 // Modo "só ver": esconde o que altera dados e avisa no topo.
 function aplicarSomenteLeitura(){
   document.body.classList.add('somente-leitura');
@@ -2745,16 +2776,29 @@ document.addEventListener('DOMContentLoaded', async function(){
       if(activeTab!=='indicar') switchTab('indicar');
     }
     db=ctx.db;
+    carregarListaCongregacao(ctx);
     setSyncStatus('online');
     atualizarStatusCard();
     await sincFB();
+    // sincFB não lança erro: se não conseguiu, deixa o indicador em "offline".
+    if(document.getElementById('sdot').classList.contains('offline')) throw new Error('Não foi possível carregar os territórios.');
     renderAll();
+    document.getElementById('telaCarregando').hidden=true;
   }catch(e){
     console.error(e);
     setSyncStatus('offline');
-    toast('Não foi possível conectar: '+e.message, true);
+    falhaCarregamento(e.message);
   }
 });
+
+// Mantém a tela de carregamento, mas com a mensagem de erro e um botão para tentar de novo.
+function falhaCarregamento(msg){
+  document.getElementById('carregandoGiro').hidden=true;
+  const t=document.getElementById('carregandoTexto');
+  t.textContent='Não foi possível conectar: '+msg+' Verifique a internet e tente de novo.';
+  t.className='dz-erro';
+  document.getElementById('carregandoTentar').hidden=false;
+}
 
 </script>
 

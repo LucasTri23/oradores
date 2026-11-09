@@ -5,7 +5,8 @@ window.APP_NOME='Designa';
 window.Conta=(function(){
   const MODULOS={
     oradores:{nome:'Oradores',caminho:'/oradores',icone:'mic',descricao:'Programação de discursos, oradores, histórico e quadro de anúncios.'},
-    territorios:{nome:'Territórios',caminho:'/territorios',icone:'map',descricao:'Registro de territórios, cartões de mapa, dirigentes e campanhas.'}
+    territorios:{nome:'Territórios',caminho:'/territorios',icone:'map',descricao:'Registro de territórios, cartões de mapa, dirigentes e campanhas.'},
+    designacoes:{nome:'Designações',caminho:'/designacoes',icone:'clipboard-list',descricao:'Presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões.'}
   };
   let cliente=null;
 
@@ -133,10 +134,24 @@ window.DesignaUI=(function(){
     t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),ms);
   }
 
+  // Compartilha um arquivo (ex.: PDF do quadro) pelo menu do celular — WhatsApp, e-mail…
+  // Onde não dá para compartilhar arquivos (ex.: computador), baixa o arquivo.
+  async function compartilharArquivo(blob,nome,texto=''){
+    const arquivo=new File([blob],nome,{type:blob.type||'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[arquivo]})){
+      try{await navigator.share({files:[arquivo],title:nome,text:texto});return 'compartilhado';}
+      catch(e){if(e.name==='AbortError')return 'cancelado';}
+    }
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast('Este aparelho não envia arquivos direto. O PDF foi baixado — anexe no WhatsApp.',6000);
+    return 'baixado';
+  }
+
   // Permite instalar o Designa no celular (abre em tela cheia, com ícone).
   function registrarApp(){
     if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('/sw.js').catch(()=>{});
   }
 
-  return {aplicarTema,alternarTema,montarSeletor,montarConta,toast,registrarApp,desenharIcones};
+  return {aplicarTema,alternarTema,montarSeletor,montarConta,toast,registrarApp,desenharIcones,compartilharArquivo};
 })();

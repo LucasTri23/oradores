@@ -192,8 +192,16 @@ function allMeetingDays(year){
   return sats;
 }
 
+// A escolha "até o fim do ano" fica salva neste aparelho (vale ao atualizar ou trocar de página).
 let agendaAnoInteiro=false;
-function alternarAgendaAno(valor){agendaAnoInteiro=valor;if(valor)mesAtivo=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderHome();}
+try{agendaAnoInteiro=localStorage.getItem('bj_agenda_ano')==='1';}catch(e){}
+(function marcarAgendaAno(){const cb=document.getElementById('agendaAnoCheck');if(cb)cb.checked=agendaAnoInteiro;})();
+function alternarAgendaAno(valor){
+  agendaAnoInteiro=valor;
+  try{localStorage.setItem('bj_agenda_ano',valor?'1':'0');}catch(e){}
+  if(valor)mesAtivo=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+  renderHome();
+}
 let mesAtivo=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 function isoLocal(date){return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');}
 function mudarMes(delta){mesAtivo=new Date(mesAtivo.getFullYear(),mesAtivo.getMonth()+delta,1);renderHome();}

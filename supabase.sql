@@ -501,3 +501,62 @@
   create policy "Territórios envia arquivos" on storage.objects for insert to authenticated with check(bucket_id='territorios' and public.can_write_module(public.storage_workspace(name),'territorios'));
   create policy "Territórios altera arquivos" on storage.objects for update to authenticated using(bucket_id='territorios' and public.can_write_module(public.storage_workspace(name),'territorios')) with check(bucket_id='territorios' and public.can_write_module(public.storage_workspace(name),'territorios'));
   create policy "Territórios exclui arquivos" on storage.objects for delete to authenticated using(bucket_id='territorios' and public.can_write_module(public.storage_workspace(name),'territorios'));
+
+
+  -- MÓDULO DESIGNAÇÕES (indicadores, microfones, áudio e vídeo, presidente e leitor) — seguro para executar novamente.
+  -- Coleções que começam com "desig_" pertencem a Designações.
+  create or replace function public.module_of_collection(coll text) returns text language sql immutable as $$
+    select case when coll like 'terr\_%' then 'territorios' when coll like 'desig\_%' then 'designacoes' else 'oradores' end
+  $$;
+  create or replace function public.can_access_collection(target uuid,coll text) returns boolean language sql security definer stable set search_path=public as $$
+    select public.has_workspace_module(target,public.module_of_collection(coll))
+  $$;
+  create or replace function public.can_write_collection(target uuid,coll text) returns boolean language sql security definer stable set search_path=public as $$
+    select public.can_write_module(target,public.module_of_collection(coll))
+  $$;
+  grant execute on function public.module_of_collection(text) to authenticated;
+
+  create or replace function public.list_workspace_access(target_workspace uuid)
+  returns table(user_id uuid,email text,role text,modules text[],readonly text[]) language sql security definer stable set search_path=public,auth as $$
+    select m.user_id,u.email::text,m.role,
+      case when m.role='owner' then array['oradores','territorios','designacoes'] else m.modules end,
+      case when m.role='owner' then '{}'::text[] else m.readonly end
+    from public.workspace_members m join auth.users u on u.id=m.user_id
+    where m.workspace_id=target_workspace and public.is_workspace_member(target_workspace) order by m.role desc,u.email
+  $$;
+
+  create or replace function public.set_member_access(target_workspace uuid,target_user uuid,new_modules text[],new_readonly text[]) returns boolean language plpgsql security definer set search_path=public as $$
+  declare mods text[]; ro text[]; begin
+    if not exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=auth.uid() and role='owner') then raise exception 'Apenas o proprietário pode alterar acessos'; end if;
+    if exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=target_user and role='owner') then raise exception 'O proprietário sempre tem acesso a tudo'; end if;
+    select coalesce(array_agg(distinct m),'{}') into mods from unnest(new_modules) m where m in ('oradores','territorios','designacoes');
+    if cardinality(mods)=0 then raise exception 'Escolha pelo menos um módulo (ou remova o integrante)'; end if;
+    select coalesce(array_agg(distinct r),'{}') into ro from unnest(coalesce(new_readonly,'{}')) r where r=any(mods);
+    update public.workspace_members set modules=mods,readonly=ro where workspace_id=target_workspace and user_id=target_user;
+    return found;
+  end $$;
+
+  create or replace function public.create_workspace_invite_access(target_workspace uuid,invite_modules text[],invite_readonly text[]) returns uuid language plpgsql security definer set search_path=public as $$
+  declare invite_token uuid; mods text[]; ro text[]; begin
+    if not exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=auth.uid() and role='owner') then raise exception 'Apenas o proprietário pode convidar pessoas'; end if;
+    select coalesce(array_agg(distinct m),'{}') into mods from unnest(invite_modules) m where m in ('oradores','territorios','designacoes');
+    if cardinality(mods)=0 then raise exception 'Escolha pelo menos um módulo'; end if;
+    select coalesce(array_agg(distinct r),'{}') into ro from unnest(coalesce(invite_readonly,'{}')) r where r=any(mods);
+    delete from public.workspace_invites where expires_at<now() or (created_by=auth.uid() and accepted_at is not null);
+    insert into public.workspace_invites(workspace_id,created_by,modules,readonly) values(target_workspace,auth.uid(),mods,ro) returning token into invite_token; return invite_token;
+  end $$;
+
+  revoke all on function public.list_workspace_access(uuid),public.set_member_access(uuid,uuid,text[],text[]),public.create_workspace_invite_access(uuid,text[],text[]) from public,anon;
+  grant execute on function public.list_workspace_access(uuid),public.set_member_access(uuid,uuid,text[],text[]),public.create_workspace_invite_access(uuid,text[],text[]) to authenticated;
+
+
+  -- DADOS DA CONGREGAÇÃO (pessoas e eventos) — seguro para executar novamente.
+  -- Coleções que começam com "cong_" são de todos: qualquer integrante vê; quem edita algum módulo pode alterar.
+  create or replace function public.can_access_collection(target uuid,coll text) returns boolean language sql security definer stable set search_path=public as $$
+    select case when coll like 'cong\_%' then public.is_workspace_member(target)
+      else public.has_workspace_module(target,public.module_of_collection(coll)) end
+  $$;
+  create or replace function public.can_write_collection(target uuid,coll text) returns boolean language sql security definer stable set search_path=public as $$
+    select case when coll like 'cong\_%' then (public.can_write_module(target,'oradores') or public.can_write_module(target,'territorios') or public.can_write_module(target,'designacoes'))
+      else public.can_write_module(target,public.module_of_collection(coll)) end
+  $$;

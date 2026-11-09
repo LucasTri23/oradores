@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261109-2">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-1">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
@@ -61,6 +61,41 @@
 .acesso select{padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surf);color:var(--whi);font:500 12px Inter,sans-serif;text-transform:none;letter-spacing:0}
 .convite{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-top:6px;padding-top:14px;border-top:1px solid var(--border)}
 .secao[hidden]{display:none}
+/* Pessoas e eventos da congregação */
+.barra-sec{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.barra-sec .esp{flex:1}
+.titulo-sec{font:700 22px 'Space Grotesk',sans-serif;letter-spacing:-.02em;margin:0 0 4px}
+.busca{padding:8px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surf);color:var(--whi);font:500 13px Inter,sans-serif;min-width:190px}
+.pc-grupo{margin-bottom:20px}
+.pc-grupo h3{font:700 14px 'Space Grotesk',sans-serif;margin:0 0 8px}
+.pc-grupo h3 small{font:600 11px Inter,sans-serif;color:var(--whi3);margin-left:6px}
+.pc-linha{display:flex;align-items:center;gap:10px;background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:9px 12px;margin-bottom:6px}
+.pc-linha.inativa{opacity:.55}
+.pc-linha .av{flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--pur-dim);color:var(--pur);font:700 13px Inter,sans-serif}
+.pc-linha .tx{flex:1;min-width:0;cursor:pointer}
+.pc-linha .tx strong{display:block;font-size:13px}
+.pc-linha .tx span{display:block;font-size:11px;color:var(--whi3)}
+.pc-linha a.wa{color:#25d366}
+.ev-card{display:flex;gap:12px;align-items:flex-start;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.ev-card:hover{border-color:var(--pur)}
+.ev-card.passado{opacity:.6}
+.ev-card .ic{flex:0 0 auto;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--pur-dim);color:var(--pur)}
+.ev-card .ic svg{width:20px;height:20px}
+.ev-card strong{display:block;font-size:14px}
+.ev-card .quando{font-size:12px;color:var(--whi3);margin:2px 0 6px}
+.ev-card .efeitos{display:flex;gap:5px;flex-wrap:wrap}
+.fundo{position:fixed;inset:0;z-index:600;background:rgba(2,6,23,.6);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:5vh 12px;overflow:auto}
+.fundo[hidden]{display:none}
+.janela{width:100%;max-width:480px;background:var(--surf);border:1px solid var(--border2);border-radius:16px;padding:20px;box-shadow:var(--dz-shadow)}
+.janela h2{font:700 18px 'Space Grotesk',sans-serif;margin:0 0 6px}
+.janela .rotulo{display:block;font:600 11px Inter,sans-serif;color:var(--whi3);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.05em}
+.janela input:not([type=checkbox]):not([type=radio]),.janela select{width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:8px;background:var(--surf);color:var(--whi);font:500 13px Inter,sans-serif}
+.chk-linha{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:8px;cursor:pointer}
+.chk-linha input{width:16px;height:16px;flex:0 0 auto;accent-color:var(--pur);margin-top:1px}
+.janela .hint{font-size:12px;color:var(--whi3);line-height:1.5}
+.duas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.acoes-jan{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.acoes-jan .esp{flex:1}
+body.sem-cong .so-cong{display:none!important}
 </style>
 </head>
 <body class="dz-shell">
@@ -102,7 +137,10 @@
     <div class="dz-nav-sep">Módulos</div>
     <a class="dz-tab" id="navOradores" href="/oradores"><i data-lucide="mic"></i><span>Oradores</span></a>
     <a class="dz-tab" id="navTerritorios" href="/territorios"><i data-lucide="map"></i><span>Territórios</span></a>
+    <a class="dz-tab" id="navDesignacoes" href="/designacoes"><i data-lucide="clipboard-list"></i><span>Designações</span></a>
     <div class="dz-nav-sep">Congregação</div>
+    <a class="dz-tab" data-sec="pessoas" href="#pessoas"><i data-lucide="users"></i><span>Pessoas</span></a>
+    <a class="dz-tab" data-sec="eventos" href="#eventos"><i data-lucide="calendar-range"></i><span>Eventos</span></a>
     <a class="dz-tab" data-sec="configuracoes" href="#configuracoes"><i data-lucide="settings"></i><span>Configurações</span></a>
   </nav>
 
@@ -123,11 +161,37 @@
           <div class="sec-head"><h2><i data-lucide="map"></i> Territórios</h2><a href="/territorios">Abrir Territórios →</a></div>
           <div id="resumoTerritorios"><div class="vazio">Carregando…</div></div>
         </div>
+        <div class="dz-card" id="cardDesignacoes" hidden>
+          <div class="sec-head"><h2><i data-lucide="clipboard-list"></i> Próximas designações</h2><a href="/designacoes">Abrir Designações →</a></div>
+          <div id="listaDesignacoes"><div class="vazio">Carregando…</div></div>
+        </div>
         <div class="dz-card modulo-off" id="cardSemAcesso" hidden>
           <div class="sec-head"><h2><i data-lucide="lock"></i> Outros módulos</h2></div>
           <div id="listaSemAcesso" class="vazio"></div>
         </div>
       </div>
+    </section>
+
+    <!-- PESSOAS DA CONGREGAÇÃO (lista única usada por todos os módulos) -->
+    <section class="secao" id="sec-pessoas" hidden>
+      <div class="barra-sec">
+        <div><h1 class="titulo-sec">Pessoas da congregação</h1><p class="hint" style="margin:0">Cadastro único: as Designações e os dirigentes dos Territórios usam esta lista.</p></div>
+        <div class="esp"></div>
+        <input class="busca" id="pcBusca" placeholder="Buscar nome…" oninput="renderPessoasCong()">
+        <button class="dz-btn so-cong" onclick="juntarCadastros()"><i data-lucide="merge"></i> Juntar cadastros existentes</button>
+        <button class="dz-btn pri so-cong" onclick="abrirPessoaCong()"><i data-lucide="user-plus"></i> Nova pessoa</button>
+      </div>
+      <div id="pcLista"></div>
+    </section>
+
+    <!-- EVENTOS DA CONGREGAÇÃO -->
+    <section class="secao" id="sec-eventos" hidden>
+      <div class="barra-sec">
+        <div><h1 class="titulo-sec">Eventos da congregação</h1><p class="hint" style="margin:0">Assembleias, congressos, visita do superintendente e Celebração. Ao salvar, o Oradores e as Designações são atualizados sozinhos.</p></div>
+        <div class="esp"></div>
+        <button class="dz-btn pri so-cong" onclick="abrirEvento()"><i data-lucide="calendar-plus"></i> Novo evento</button>
+      </div>
+      <div id="evLista"></div>
     </section>
 
     <!-- CONFIGURAÇÕES DA CONGREGAÇÃO -->
@@ -150,6 +214,7 @@
             <strong style="font-size:13px;flex-basis:100%">Convidar alguém</strong>
             <label class="acesso">Oradores<select id="convOradores"><option value="editar">Editar</option><option value="ver">Só ver</option><option value="">Sem acesso</option></select></label>
             <label class="acesso">Territórios<select id="convTerritorios"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
+            <label class="acesso">Designações<select id="convDesignacoes"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
             <button class="dz-btn pri" id="convBtn" onclick="convidar()"><i data-lucide="user-plus"></i> Criar link de convite</button>
           </div>
           <p class="hint" style="margin:10px 0 0">O link vale por 24 horas e pode ser usado uma vez.</p>
@@ -164,8 +229,60 @@
 </div>
 <div class="err" id="erroGeral" hidden style="text-align:center;margin:30px 16px"></div>
 
+<!-- Janela: pessoa da congregação -->
+<div class="fundo" id="janPessoaC" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="janela">
+    <h2 id="pcTitulo">Nova pessoa</h2>
+    <label class="rotulo" for="pcNome">Nome</label><input id="pcNome" maxlength="80" placeholder="Nome e sobrenome">
+    <label class="rotulo" for="pcGrupo">Grupo</label>
+    <select id="pcGrupo"><option value="anciao">Ancião</option><option value="servo">Servo ministerial</option><option value="publicador">Publicador</option><option value="">Sem grupo definido</option></select>
+    <label class="rotulo" for="pcTel">Telefone (WhatsApp)</label><input id="pcTel" maxlength="20" inputmode="tel" placeholder="(31) 99999-8888">
+    <label class="rotulo" for="pcObs">Observação</label><input id="pcObs" maxlength="200" placeholder="Opcional">
+    <label class="chk-linha"><input type="checkbox" id="pcAtivo" checked> Ativo</label>
+    <div class="acoes-jan">
+      <button class="dz-btn danger so-cong" id="pcExcluir" onclick="excluirPessoaCong()">Excluir</button>
+      <div class="esp"></div>
+      <button class="dz-btn" onclick="$('janPessoaC').hidden=true">Cancelar</button>
+      <button class="dz-btn pri so-cong" onclick="salvarPessoaCong()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Janela: evento -->
+<div class="fundo" id="janEvento" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="janela">
+    <h2 id="evTitulo">Novo evento</h2>
+    <label class="rotulo" for="evTipo">Tipo</label>
+    <select id="evTipo" onchange="tipoEventoMudou()"><option value="assembleia">Assembleia de circuito</option><option value="congresso">Congresso regional</option><option value="visita">Visita do superintendente de circuito</option><option value="celebracao">Celebração</option><option value="outro">Outro</option></select>
+    <label class="rotulo" for="evNome">Nome que aparece na programação</label><input id="evNome" maxlength="80">
+    <div class="duas">
+      <div><label class="rotulo" for="evInicio">Início</label><input type="date" id="evInicio"></div>
+      <div><label class="rotulo" for="evFim">Fim</label><input type="date" id="evFim"></div>
+    </div>
+    <label class="rotulo">Período</label>
+    <label class="chk-linha"><input type="radio" name="evPeriodo" id="evSoDias" value="dias"> Só nos dias do evento</label>
+    <label class="chk-linha"><input type="radio" name="evPeriodo" id="evSemana" value="semana"> A semana toda (segunda a domingo)</label>
+    <label class="rotulo">Designações (indicadores, microfones, presidente…)</label>
+    <label class="chk-linha"><input type="radio" name="evDesig" id="evSemDesig" value="nao"> Não terá designações — as reuniões do período ficam como “sem reunião”</label>
+    <label class="chk-linha"><input type="radio" name="evDesig" id="evComDesig" value="sim"> Terá designações normalmente</label>
+    <label class="rotulo">Oradores</label>
+    <label class="chk-linha"><input type="checkbox" id="evSemDiscurso"> Sem discurso público no fim de semana do período</label>
+    <p class="hint" id="evResumo" style="margin:10px 0 0"></p>
+    <p class="hint" style="margin:8px 0 0">Se já houver orador agendado, ele é guardado e volta se você apagar ou mudar o evento.</p>
+    <div class="acoes-jan">
+      <button class="dz-btn danger so-cong" id="evExcluir" onclick="excluirEvento()">Excluir</button>
+      <div class="esp"></div>
+      <button class="dz-btn" onclick="$('janEvento').hidden=true">Cancelar</button>
+      <button class="dz-btn pri so-cong" id="evSalvar" onclick="salvarEvento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script src="/assets/js/data.js?v=20260902-1"></script>
-<script src="/assets/shared/conta.js?v=20261109-2"></script>
+<script src="/assets/shared/conta.js?v=20261110-1"></script>
+<script src="/designacoes/regras.js?v=20261110-1"></script>
+<script src="/assets/shared/congregacao.js?v=20261110-2"></script>
+<script src="/assets/shared/inicio-congregacao.js?v=20261110-2"></script>
 <script>
 const $=id=>document.getElementById(id);
 const toast=(m,ms)=>DesignaUI.toast(m,ms);
@@ -202,10 +319,14 @@ async function aceitarConvite(params){
 
 // ── Navegação entre Início e Configurações ──
 function irSecao(){
-  const sec=location.hash==='#configuracoes'?'configuracoes':'painel';
+  const titulos={painel:'Início',pessoas:'Pessoas da congregação',eventos:'Eventos da congregação',configuracoes:'Configurações da congregação'};
+  const pedido=location.hash.slice(1);
+  const sec=titulos[pedido]?pedido:'painel';
   document.querySelectorAll('.secao').forEach(s=>s.hidden=s.id!=='sec-'+sec);
   document.querySelectorAll('[data-sec]').forEach(a=>a.classList.toggle('active',a.dataset.sec===sec));
-  $('tituloPagina').textContent=sec==='configuracoes'?'Configurações da congregação':'Início';
+  $('tituloPagina').textContent=titulos[sec];
+  if(vinc&&sec==='pessoas')renderPessoasCong();
+  if(vinc&&sec==='eventos')renderEventos();
   window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',irSecao);
@@ -262,6 +383,25 @@ function situacaoTerritorio(t){
   if(!uc)return{cls:'gry',txt:'nunca feito',ordem:99999};
   const d=diasDesde(uc);return{cls:d>=90?'red':d>=60?'ora':'grn',txt:d+' dias',ordem:d};
 }
+// Próximas reuniões já designadas (módulo Designações).
+async function painelDesignacoes(){
+  $('cardDesignacoes').hidden=false;
+  const div=$('listaDesignacoes');
+  try{
+    const[reunioes,desig,central]=await Promise.all([registros('desig_reunioes'),registros('desig_pessoas'),registros('cong_pessoas').catch(()=>[])]);
+    const pessoas=[...central,...desig.filter(d=>!central.some(c=>c.id===d.id))];
+    const nome=id=>pessoas.find(p=>p.id===id)?.nome||'?';
+    const rotulos={presidente:'Presidente',leitor:'Leitor',indicadores:'Indicadores',zoom:'Zoom',microfones:'Microfones',audio_video:'Áudio/vídeo'};
+    const prox=reunioes.filter(r=>r.data>=hojeISO()).sort((a,b)=>a.data.localeCompare(b.data)).slice(0,3);
+    if(!prox.length){vazio(div,'Nenhuma reunião designada ainda.');return;}
+    div.innerHTML='';
+    prox.forEach(r=>{
+      const partes=r.semReuniao?[r.motivo||'Sem reunião']:Object.keys(rotulos).filter(f=>(r.pessoas?.[f]||[]).length).map(f=>rotulos[f]+': '+r.pessoas[f].map(nome).join(', '));
+      div.appendChild(linha({...partesData(r.data),titulo:r.tipo==='fim'?'Fim de semana':'Meio de semana',detalhe:partes.join(' · ')||'Vagas ainda não preenchidas',href:'/designacoes'}));
+    });
+  }catch(e){vazio(div,'Não foi possível carregar.');}
+}
+
 async function painelTerritorios(){
   $('cardTerritorios').hidden=false;
   const div=$('resumoTerritorios');
@@ -293,6 +433,8 @@ function renderPainel(){
   if(semAcesso.length){$('cardSemAcesso').hidden=false;$('listaSemAcesso').textContent=semAcesso.map(([,m])=>m.nome).join(' e ')+': sem acesso. Peça ao proprietário da congregação.';}
   $('navOradores').hidden=!Conta.podeVer(vinc,'oradores');
   $('navTerritorios').hidden=!Conta.podeVer(vinc,'territorios');
+  $('navDesignacoes').hidden=!Conta.podeVer(vinc,'designacoes');
+  if(Conta.podeVer(vinc,'designacoes'))painelDesignacoes();
   if(Conta.podeVer(vinc,'oradores'))painelOradores();
   if(Conta.podeVer(vinc,'territorios'))painelTerritorios();
 }
@@ -380,7 +522,7 @@ async function removerMembro(userId,email){
 }
 
 async function convidar(){
-  const niveis={oradores:$('convOradores').value,territorios:$('convTerritorios').value};
+  const niveis={oradores:$('convOradores').value,territorios:$('convTerritorios').value,designacoes:$('convDesignacoes').value};
   const mods=Object.keys(niveis).filter(k=>niveis[k]);
   const ro=mods.filter(k=>niveis[k]==='ver');
   if(!mods.length)return toast('Escolha acesso a pelo menos um módulo.');
@@ -416,6 +558,8 @@ async function iniciar(){
     mostrar('vApp');
     DesignaUI.montarConta($('dzConta'),user,{sair});
     DesignaUI.aplicarTema();
+    // Quem só pode ver todos os módulos não altera pessoas nem eventos.
+    if(!Object.keys(Conta.MODULOS).some(m=>Conta.podeEditar(vinc,m)))document.body.classList.add('sem-cong');
     irSecao();renderPainel();renderConfig();
   }catch(e){erro(e.message);}
 }
