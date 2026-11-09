@@ -322,3 +322,77 @@
 
   revoke all on function public.get_workspace_share_identity(uuid),public.set_workspace_display_name(uuid,text),public.send_speaker_share_invite(uuid,text,jsonb),public.list_speaker_share_invites(),public.respond_speaker_share_invite(uuid,boolean) from public,anon;
   grant execute on function public.get_workspace_share_identity(uuid),public.set_workspace_display_name(uuid,text),public.send_speaker_share_invite(uuid,text,jsonb),public.list_speaker_share_invites(),public.respond_speaker_share_invite(uuid,boolean) to authenticated;
+
+
+  -- MÓDULOS (Oradores e Territórios) — seguro para executar novamente.
+  -- Cada integrante tem a lista de módulos que pode acessar. O proprietário sempre acessa todos.
+  -- Coleções que começam com "terr_" pertencem a Territórios; as demais, a Oradores.
+  alter table public.workspace_members add column if not exists modules text[] not null default array['oradores']::text[];
+  alter table public.workspace_invites add column if not exists modules text[] not null default array['oradores']::text[];
+  update public.workspace_members set modules=array['oradores','territorios'] where role='owner' and not ('territorios'=any(modules));
+
+  create or replace function public.has_workspace_module(target uuid,module_name text) returns boolean language sql security definer stable set search_path=public as $$
+    select exists(select 1 from public.workspace_members where workspace_id=target and user_id=auth.uid() and (role='owner' or module_name=any(modules)))
+  $$;
+  create or replace function public.can_access_collection(target uuid,coll text) returns boolean language sql security definer stable set search_path=public as $$
+    select public.has_workspace_module(target,case when coll like 'terr\_%' then 'territorios' else 'oradores' end)
+  $$;
+  revoke all on function public.has_workspace_module(uuid,text),public.can_access_collection(uuid,text) from public,anon;
+  grant execute on function public.has_workspace_module(uuid,text),public.can_access_collection(uuid,text) to authenticated;
+
+  do $$ declare pol record; begin for pol in select policyname from pg_policies where schemaname='public' and tablename='app_records' loop execute format('drop policy if exists %I on public.app_records',pol.policyname); end loop; end $$;
+  create policy "Equipe lê os dados" on public.app_records for select to authenticated using(public.can_access_collection(workspace_id,collection));
+  create policy "Equipe insere dados" on public.app_records for insert to authenticated with check(public.can_access_collection(workspace_id,collection) and owner_id=auth.uid());
+  create policy "Equipe atualiza dados" on public.app_records for update to authenticated using(public.can_access_collection(workspace_id,collection)) with check(public.can_access_collection(workspace_id,collection));
+  create policy "Equipe exclui dados" on public.app_records for delete to authenticated using(public.can_access_collection(workspace_id,collection));
+
+  -- Imagens dos cartões de território não são copiadas para a auditoria (ocupariam muito espaço).
+  create or replace function public.audit_app_record() returns trigger language plpgsql security definer set search_path=public as $$
+  declare pesado boolean := coalesce(new.collection,old.collection)='terr_tj_cards'; begin
+    insert into public.app_record_audit(workspace_id,record_id,collection,action,old_data,new_data,changed_by) values(coalesce(new.workspace_id,old.workspace_id),coalesce(new.id,old.id),coalesce(new.collection,old.collection),tg_op,case when tg_op<>'INSERT' and not pesado then old.data end,case when tg_op<>'DELETE' and not pesado then new.data end,auth.uid());
+    if tg_op='DELETE' then delete from public.app_record_trash where recover_until<now();insert into public.app_record_trash(workspace_id,record_id,collection,data,deleted_by) values(old.workspace_id,old.id,old.collection,old.data,auth.uid());return old;end if;return new;
+  end $$;
+
+  create or replace function public.list_workspace_members_modules(target_workspace uuid)
+  returns table(user_id uuid,email text,role text,modules text[]) language sql security definer stable set search_path=public,auth as $$
+    select m.user_id,u.email::text,m.role,case when m.role='owner' then array['oradores','territorios'] else m.modules end
+    from public.workspace_members m join auth.users u on u.id=m.user_id
+    where m.workspace_id=target_workspace and public.is_workspace_member(target_workspace) order by m.role desc,u.email
+  $$;
+
+  create or replace function public.set_member_modules(target_workspace uuid,target_user uuid,new_modules text[]) returns boolean language plpgsql security definer set search_path=public as $$
+  declare limpos text[]; begin
+    if not exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=auth.uid() and role='owner') then raise exception 'Apenas o proprietário pode alterar acessos'; end if;
+    if exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=target_user and role='owner') then raise exception 'O proprietário sempre tem acesso a tudo'; end if;
+    select coalesce(array_agg(distinct m),'{}') into limpos from unnest(new_modules) m where m in ('oradores','territorios');
+    if cardinality(limpos)=0 then raise exception 'Escolha pelo menos um módulo (ou remova o integrante)'; end if;
+    update public.workspace_members set modules=limpos where workspace_id=target_workspace and user_id=target_user;
+    return found;
+  end $$;
+
+  create or replace function public.create_workspace_invite_modules(target_workspace uuid,invite_modules text[]) returns uuid language plpgsql security definer set search_path=public as $$
+  declare invite_token uuid; limpos text[]; begin
+    if not exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=auth.uid() and role='owner') then raise exception 'Apenas o proprietário pode convidar pessoas'; end if;
+    select coalesce(array_agg(distinct m),'{}') into limpos from unnest(invite_modules) m where m in ('oradores','territorios');
+    if cardinality(limpos)=0 then raise exception 'Escolha pelo menos um módulo'; end if;
+    delete from public.workspace_invites where expires_at<now() or (created_by=auth.uid() and accepted_at is not null);
+    insert into public.workspace_invites(workspace_id,created_by,modules) values(target_workspace,auth.uid(),limpos) returning token into invite_token; return invite_token;
+  end $$;
+
+  -- Mesmo comportamento de antes; agora o convite também define os módulos liberados.
+  create or replace function public.accept_workspace_invite(invite_token uuid) returns uuid language plpgsql security definer set search_path=public as $$
+  declare wid uuid; mods text[]; begin
+    if auth.uid() is null then raise exception 'Entre com Google para aceitar'; end if;
+    perform 1 from auth.users where id=auth.uid() for update;
+    select workspace_id,modules into wid,mods from public.workspace_invites where token=invite_token and expires_at>now() and accepted_at is null for update;
+    if wid is null then raise exception 'Convite inválido, expirado ou já utilizado'; end if;
+    if exists(select 1 from public.workspace_members where user_id=auth.uid() and workspace_id<>wid) then
+      raise exception 'Esta conta já está vinculada a outra congregação e não pode entrar em outro workspace.';
+    end if;
+    insert into public.workspace_members(workspace_id,user_id,role,modules) values(wid,auth.uid(),'editor',coalesce(mods,array['oradores']))
+      on conflict(workspace_id,user_id) do update set modules=(select array_agg(distinct m) from unnest(public.workspace_members.modules||excluded.modules) m);
+    update public.workspace_invites set accepted_by=auth.uid(),accepted_at=now() where token=invite_token; return wid;
+  end $$;
+
+  revoke all on function public.list_workspace_members_modules(uuid),public.set_member_modules(uuid,uuid,text[]),public.create_workspace_invite_modules(uuid,text[]),public.accept_workspace_invite(uuid) from public,anon;
+  grant execute on function public.list_workspace_members_modules(uuid),public.set_member_modules(uuid,uuid,text[]),public.create_workspace_invite_modules(uuid,text[]),public.accept_workspace_invite(uuid) to authenticated;

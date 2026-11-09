@@ -52,7 +52,7 @@ function carregarBibliotecaQuadro(){
   if(window.jspdf?.jsPDF)return Promise.resolve(window.jspdf.jsPDF);
   if(!bibliotecaQuadroPromise)bibliotecaQuadroPromise=new Promise((resolve,reject)=>{
     const script=document.createElement('script');
-    script.src='assets/js/vendor/jspdf.umd.min.js?v=2.5.2';
+    script.src='/assets/js/vendor/jspdf.umd.min.js?v=2.5.2';
     script.onload=()=>window.jspdf?.jsPDF?resolve(window.jspdf.jsPDF):reject(new Error('Biblioteca de PDF indisponível.'));
     script.onerror=()=>{script.remove();reject(new Error('Não foi possível carregar o gerador de PDF. Verifique sua conexão e tente novamente.'));};
     document.head.appendChild(script);

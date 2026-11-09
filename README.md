@@ -1,11 +1,20 @@
-# Oradores
+# Designa
 
-Aplicativo estático para programação e histórico de discursos, preparado para Supabase e Vercel.
+Sistema da congregação com dois módulos, preparado para Supabase e Vercel:
+
+- **Oradores** (`/oradores`): programação e histórico de discursos.
+- **Territórios** (`/territorios`): registro de territórios, cartões de mapa, dirigentes e campanhas.
+
+A tela inicial (`/`) faz o login com Google e mostra os módulos liberados para a conta. O proprietário da congregação escolhe, na própria tela inicial, quem pode editar Oradores, Territórios ou os dois. O nome do sistema fica em `assets/shared/conta.js` (`APP_NOME`).
 
 ## Estrutura
 
 ```text
-index.html                    Estrutura das telas
+index.html                    Tela inicial: login, escolha do módulo e acessos da equipe
+oradores/index.html           Estrutura das telas do Oradores
+territorios/index.html        App de Territórios
+territorios/bridge.js         Liga o app de Territórios ao Supabase (coleções terr_*)
+assets/shared/conta.js        Login, congregação e módulos compartilhados
 assets/css/style.css          Tema, componentes e responsividade
 assets/js/app.js              Estado, navegação e utilitários
 assets/js/data.js             Catálogo estático de temas
@@ -18,7 +27,7 @@ supabase.sql                  Banco de dados e políticas RLS
 ## Implantação
 
 1. Crie um projeto no Supabase e execute [`supabase.sql`](./supabase.sql) no SQL Editor.
-2. Em Authentication → Providers, habilite Google e configure o Client ID e Client Secret. Em URL Configuration, cadastre a URL de produção da Vercel como Site URL e Redirect URL.
+2. Em Authentication → Providers, habilite Google e configure o Client ID e Client Secret. Em URL Configuration, cadastre a URL de produção da Vercel como Site URL e, em Redirect URLs, `https://SEU-DOMINIO/**` (o login pode voltar para `/`, `/oradores` ou `/territorios`).
 3. Na Vercel, importe este repositório e configure `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` (ou `SUPABASE_ANON_KEY`).
 4. Faça o deploy. A chave usada no navegador é pública por definição; cada conta Google só acessa seus próprios dados graças às políticas RLS.
 
@@ -53,3 +62,9 @@ having count(*) > 1;
 ```
 
 A atualização não escolhe nem exclui vínculos automaticamente. Uma conta nova que chega por convite entra diretamente na equipe convidada, sem criar um workspace pessoal antes.
+
+## Módulos e acessos
+
+Depois de atualizar, execute novamente todo o `supabase.sql`. Quem já estava na equipe continua só com **Oradores**; o proprietário acessa tudo. Na tela inicial, o proprietário marca para cada pessoa Oradores e/ou Territórios e pode criar convites já com os módulos escolhidos.
+
+Para trazer os dados da versão antiga de Territórios (Firebase), abra **Territórios → Config → Importar do Firebase antigo**, cole as credenciais antigas e clique em **Importar dados**. Faça isso uma vez só.

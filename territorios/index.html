@@ -1,0 +1,2762 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Territórios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="/assets/shared/conta.js?v=20261109-1"></script>
+<script src="/territorios/bridge.js?v=20261109-1"></script>
+<style>
+:root{
+  --bg:#0f0f13;
+  --surface:#16161d;
+  --surface2:#1e1e28;
+  --surface3:#252532;
+  --brd:#2a2a38;
+  --brd2:#363648;
+  --txt:#f0eff8;
+  --txt2:#9898b0;
+  --txt3:#5a5a70;
+  --accent:#7c6af7;
+  --accent2:#a594ff;
+  --accent-bg:rgba(124,106,247,.12);
+  --accent-brd:rgba(124,106,247,.3);
+  --red:#e05c6e;
+  --red-bg:rgba(224,92,110,.1);
+  --orange:#e8914a;
+  --orange-bg:rgba(232,145,74,.1);
+  --green:#4ecb8d;
+  --green-bg:rgba(78,203,141,.1);
+  --blue:#5ba8f5;
+  --blue-bg:rgba(91,168,245,.1);
+  --wap:#25D366;
+  --mono:'DM Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+  --display:'Syne',sans-serif;
+  --r-sm:8px;
+  --r-md:12px;
+  --r-lg:16px;
+  --r-xl:20px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --shadow-sm:0 2px 12px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh;line-height:1.5}
+::selection{background:var(--accent);color:#fff}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+
+/* ── HEADER ── */
+.hdr{
+  background:var(--surface);
+  border-bottom:1px solid var(--brd);
+  padding:0 20px;
+  position:sticky;top:0;z-index:200;
+  display:flex;align-items:center;gap:14px;
+  height:56px;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.hdr-logo{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--display);font-size:15px;font-weight:700;
+  letter-spacing:-.01em;color:var(--txt);flex:1;
+}
+.hdr-logo-icon{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),#b794f4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+}
+.hdr-logo-sub{font-family:var(--mono);font-size:9px;font-weight:400;color:var(--txt3);margin-top:1px;letter-spacing:.05em}
+.hdr-logo-wrap{display:flex;flex-direction:column}
+.sync-pill{
+  display:flex;align-items:center;gap:5px;
+  background:var(--surface2);border:1px solid var(--brd);
+  border-radius:20px;padding:4px 10px;
+}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--txt3);transition:background .4s;flex-shrink:0}
+.sdot.online{background:var(--green)}
+.sdot.syncing{background:var(--orange);animation:blink .7s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.slbl{font-family:var(--mono);font-size:9px;color:var(--txt3);letter-spacing:.04em}
+
+/* ── NAV ── */
+.nav{
+  background:var(--surface);
+  border-bottom:1px solid var(--brd);
+  display:flex;overflow-x:auto;
+  scrollbar-width:none;gap:2px;padding:0 16px;
+}
+.nav::-webkit-scrollbar{display:none}
+.ntab{
+  font-family:var(--display);font-size:12px;font-weight:600;
+  padding:14px 16px;
+  border-bottom:2px solid transparent;
+  cursor:pointer;white-space:nowrap;
+  color:var(--txt3);
+  transition:all .2s;flex-shrink:0;
+  letter-spacing:.01em;
+}
+.ntab:hover{color:var(--txt2)}
+.ntab.active{color:var(--accent2);border-bottom-color:var(--accent)}
+
+/* ── MAIN ── */
+.main{max-width:860px;margin:0 auto;padding:24px 16px 96px}
+.panel{display:none}.panel.active{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── EMPTY STATE ── */
+.empty-state{
+  text-align:center;padding:56px 24px;
+  border:1px dashed var(--brd2);border-radius:var(--r-xl);
+  background:var(--surface);margin-top:8px;
+}
+.es-icon{font-size:44px;margin-bottom:14px;filter:grayscale(.3)}
+.es-title{font-family:var(--display);font-size:18px;font-weight:700;margin-bottom:6px;color:var(--txt)}
+.es-sub{font-family:var(--mono);font-size:11px;color:var(--txt3)}
+
+/* ── STAT CARDS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat-card{
+  background:var(--surface);border:1px solid var(--brd);
+  border-radius:var(--r-md);padding:14px 16px;
+  transition:border-color .2s;
+}
+.stat-card:hover{border-color:var(--brd2)}
+.stat-n{font-family:var(--display);font-size:28px;font-weight:800;line-height:1;margin-bottom:4px}
+.stat-l{font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em}
+.c-red{color:var(--red)}.c-orange{color:var(--orange)}.c-green{color:var(--green)}.c-blue{color:var(--blue)}.c-mut{color:var(--txt3)}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.chip{
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  padding:5px 12px;border:1px solid var(--brd);
+  border-radius:20px;cursor:pointer;
+  background:transparent;color:var(--txt3);
+  white-space:nowrap;user-select:none;
+  transition:all .18s;letter-spacing:.03em;
+}
+.chip:hover{border-color:var(--brd2);color:var(--txt2)}
+.chip.on{background:var(--accent-bg);border-color:var(--accent-brd);color:var(--accent2)}
+.sbox{flex:1;min-width:160px}
+.sbox input{
+  width:100%;font-family:var(--mono);font-size:12px;
+  height:34px;padding:0 12px;
+  border:1px solid var(--brd);border-radius:var(--r-sm);
+  background:var(--surface2);color:var(--txt);outline:none;
+  transition:border-color .18s;
+}
+.sbox input:focus{border-color:var(--accent)}
+.sbox input::placeholder{color:var(--txt3)}
+
+/* ── LEGEND ── */
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.leg{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--txt3)}
+.ldot{width:8px;height:8px;border-radius:2px}
+
+/* ── TERRITORY LIST ── */
+.tlist{display:flex;flex-direction:column;gap:6px}
+.titem{
+  background:var(--surface);border:1px solid var(--brd);
+  border-radius:var(--r-md);overflow:hidden;
+  transition:border-color .18s;
+}
+.titem:hover{border-color:var(--brd2)}
+.thead{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;cursor:pointer;
+}
+.turg{width:3px;height:36px;border-radius:2px;flex-shrink:0}
+.u-red{background:var(--red)}.u-ora{background:var(--orange)}
+.u-grn{background:var(--green)}.u-blu{background:var(--blue)}.u-gry{background:var(--brd2)}
+.tnum{
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  width:40px;flex-shrink:0;color:var(--txt3);
+}
+.tdesc{font-family:var(--display);font-size:14px;font-weight:600;flex:1;min-width:0;color:var(--txt)}
+.tmeta{text-align:right;flex-shrink:0}
+.tdays{font-family:var(--mono);font-size:11px;font-weight:500}
+.twho{font-size:10px;color:var(--txt3);margin-top:2px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tchv{
+  width:22px;height:22px;border-radius:6px;
+  background:var(--surface2);border:1px solid var(--brd);
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;color:var(--txt3);margin-left:4px;
+  transition:all .2s;flex-shrink:0;
+}
+.tchv.open{background:var(--accent-bg);border-color:var(--accent-brd);color:var(--accent2);transform:rotate(90deg)}
+
+/* ── TERRITORY BODY ── */
+.tbody{display:none;border-top:1px solid var(--brd);padding:16px;background:var(--surface2)}
+.tbody.open{display:block;animation:fadeUp .2s ease}
+
+/* ── CARD IMAGE ── */
+.card-zone{margin-bottom:14px}
+.card-img-wrap{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--brd);margin-bottom:10px;background:var(--surface3)}
+.card-img{width:100%;display:block}
+.card-upload-btn{
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:11px;color:var(--txt3);
+  cursor:pointer;padding:14px 16px;
+  border:1px dashed var(--brd2);border-radius:var(--r-md);
+  margin-bottom:10px;transition:all .18s;background:transparent;
+}
+.card-upload-btn:hover{border-color:var(--accent-brd);color:var(--accent2);background:var(--accent-bg)}
+.card-upload-btn input{display:none}
+
+/* ── LAST CONCLUDED BADGE ── */
+.ult-concl{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--green-bg);border:1px solid rgba(78,203,141,.2);
+  border-radius:var(--r-sm);padding:5px 10px;
+  font-family:var(--mono);font-size:11px;color:var(--green);
+  margin-bottom:12px;
+}
+.ult-concl-none{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--surface3);border:1px solid var(--brd);
+  border-radius:var(--r-sm);padding:5px 10px;
+  font-family:var(--mono);font-size:11px;color:var(--txt3);
+  margin-bottom:12px;
+}
+
+/* ── WHATSAPP ── */
+.wap-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.btn-wap{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  padding:7px 14px;border-radius:var(--r-sm);
+  cursor:pointer;background:rgba(37,211,102,.15);
+  color:var(--wap);border:1px solid rgba(37,211,102,.3);
+  text-decoration:none;transition:all .18s;flex-shrink:0;
+}
+.btn-wap:hover{background:rgba(37,211,102,.25)}
+.btn-wap svg{width:14px;height:14px;fill:var(--wap);flex-shrink:0}
+.btn-wap-alt{background:rgba(18,140,126,.15);color:#128C7E;border-color:rgba(18,140,126,.3)}
+.btn-wap-alt:hover{background:rgba(18,140,126,.25)}
+.btn-wap-alt svg{fill:#128C7E}
+.wap-inp{
+  font-family:var(--mono);font-size:12px;height:32px;
+  padding:0 10px;border:1px solid var(--brd);
+  border-radius:var(--r-sm);background:var(--surface3);
+  color:var(--txt);width:148px;outline:none;
+}
+.wap-inp:focus{border-color:var(--wap)}
+.wap-inp::placeholder{color:var(--txt3)}
+.wap-hint{font-family:var(--mono);font-size:10px;color:var(--txt3)}
+
+/* ── DESIGNATION TABLE ── */
+.dtbl{width:100%;border-collapse:collapse;margin-bottom:12px}
+.dtbl th{
+  font-family:var(--mono);font-size:9px;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--txt3);
+  padding:6px 8px;text-align:left;
+  border-bottom:1px solid var(--brd);
+}
+.dtbl td{padding:5px 6px;border-bottom:1px solid var(--brd);vertical-align:middle}
+.dtbl tr:last-child td{border-bottom:none}
+.dtbl tr:hover td{background:rgba(255,255,255,.02)}
+.inp{
+  font-family:var(--sans);font-size:12px;height:30px;
+  padding:0 8px;border:1px solid var(--brd);
+  border-radius:6px;background:var(--surface3);
+  color:var(--txt);width:100%;outline:none;
+  transition:border-color .18s;
+}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:var(--txt3)}
+.inp-d{font-family:var(--mono);font-size:11px}
+.inp-d::-webkit-calendar-picker-indicator{filter:invert(.5)}
+.btn-del{
+  background:none;border:none;cursor:pointer;
+  color:var(--txt3);font-size:16px;line-height:1;
+  padding:2px 6px;transition:color .15s;border-radius:4px;
+}
+.btn-del:hover{color:var(--red);background:var(--red-bg)}
+
+/* ── BUTTONS ── */
+.bacts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.btn{
+  font-family:var(--display);font-size:11px;font-weight:600;
+  padding:6px 14px;border-radius:var(--r-sm);
+  cursor:pointer;transition:all .18s;border:1px solid;
+  letter-spacing:.01em;
+}
+.btn-add{background:transparent;border-color:var(--brd2);color:var(--txt3)}
+.btn-add:hover{border-color:var(--brd2);color:var(--txt);background:var(--surface3)}
+.btn-sv{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-sv:hover{background:var(--accent2);border-color:var(--accent2)}
+.btn-cl{background:var(--green-bg);border-color:rgba(78,203,141,.3);color:var(--green)}
+.btn-cl:hover{background:rgba(78,203,141,.2)}
+
+/* ── PANEL REGISTRAR ── */
+.ah{
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  text-transform:uppercase;letter-spacing:.07em;
+  color:var(--txt3);margin-bottom:10px;
+}
+.acard{
+  background:var(--surface);border:1px solid var(--brd);
+  border-radius:var(--r-md);padding:12px 16px;
+  margin-bottom:8px;display:flex;flex-direction:column;gap:10px;
+  transition:border-color .18s;
+}
+.acard:hover{border-color:var(--brd2)}
+.acard-top{display:flex;align-items:center;gap:12px}
+.abar{width:3px;height:40px;border-radius:2px;background:var(--blue);flex-shrink:0}
+.anum{font-family:var(--mono);font-size:12px;font-weight:500;min-width:44px;color:var(--txt2)}
+.ainfo{flex:1}
+.aname{font-family:var(--display);font-size:14px;font-weight:600;color:var(--txt)}
+.asince{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:2px}
+.aacts{display:flex;gap:6px;flex-wrap:wrap}
+.acard-wap{display:flex;gap:5px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--brd)}
+.btn-ch{
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;
+  background:var(--green-bg);border:1px solid rgba(78,203,141,.3);
+  color:var(--green);transition:all .18s;
+}
+.btn-ch:hover{background:rgba(78,203,141,.2)}
+.btn-cd{
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;
+  background:var(--blue-bg);border:1px solid rgba(91,168,245,.3);
+  color:var(--blue);transition:all .18s;
+}
+.btn-cd:hover{background:rgba(91,168,245,.2)}
+
+/* ── FORM CARD ── */
+.fcard{
+  background:var(--surface);border:1px solid var(--brd);
+  border-radius:var(--r-lg);padding:20px;margin-top:18px;
+}
+.ftit{
+  font-family:var(--display);font-size:13px;font-weight:700;
+  color:var(--txt);margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+}
+.ftit::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em}
+.fg .inp{height:36px}
+
+/* ── IMPORT AREA ── */
+.drop-area{
+  background:var(--surface);border:1px dashed var(--brd2);
+  border-radius:var(--r-lg);padding:32px;text-align:center;
+  cursor:pointer;transition:all .2s;margin-bottom:14px;
+}
+.drop-area:hover,.drop-area.drag{
+  border-color:var(--accent-brd);background:var(--accent-bg);
+}
+.drop-icon{font-size:36px;margin-bottom:12px;filter:grayscale(.2)}
+.drop-title{font-family:var(--display);font-size:15px;font-weight:700;margin-bottom:4px;color:var(--txt)}
+.drop-sub{font-family:var(--mono);font-size:10px;color:var(--txt3)}
+.imp-status{font-family:var(--mono);font-size:11px;padding:9px 14px;border-radius:var(--r-sm);margin-top:10px}
+.imp-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(78,203,141,.2)}
+.imp-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,92,110,.2)}
+
+/* ── CARDS DROP ── */
+.cards-drop{
+  background:var(--surface);border:1px dashed var(--brd2);
+  border-radius:var(--r-lg);padding:28px;text-align:center;
+  cursor:pointer;transition:all .2s;
+}
+.cards-drop:hover,.cards-drop.drag{
+  border-color:var(--accent-brd);background:var(--accent-bg);
+}
+.cards-progress{margin-top:12px;display:flex;flex-wrap:wrap;gap:5px}
+.card-item-preview{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--green-bg);border:1px solid rgba(78,203,141,.2);
+  border-radius:5px;padding:3px 9px;
+  font-family:var(--mono);font-size:10px;color:var(--green);
+}
+.card-item-err{background:var(--red-bg);border-color:rgba(224,92,110,.2);color:var(--red)}
+
+/* ── HISTORY ── */
+.hctrl{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.hctrl select{
+  font-family:var(--mono);font-size:11px;height:34px;
+  padding:0 10px;border:1px solid var(--brd);
+  border-radius:var(--r-sm);background:var(--surface2);
+  color:var(--txt);outline:none;
+  transition:border-color .18s;
+}
+.hctrl select:focus{border-color:var(--accent)}
+.htbl-wrap{overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--brd)}
+.htbl{width:100%;border-collapse:collapse;font-size:12px}
+.htbl th{
+  font-family:var(--mono);font-size:9px;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--txt3);
+  padding:10px 12px;text-align:left;
+  border-bottom:1px solid var(--brd);
+  background:var(--surface2);
+}
+.htbl td{padding:10px 12px;border-bottom:1px solid var(--brd);vertical-align:middle;color:var(--txt2)}
+.htbl tr:last-child td{border-bottom:none}
+.htbl tr:hover td{background:var(--surface2)}
+.hbadge{
+  display:inline-block;font-family:var(--mono);
+  font-size:9px;font-weight:500;padding:3px 8px;border-radius:4px;
+}
+.hbc{background:var(--green-bg);color:var(--green)}
+.hba{background:var(--blue-bg);color:var(--blue)}
+
+/* ── CONFIG ── */
+.ccard{
+  background:var(--surface);border:1px solid var(--brd);
+  border-radius:var(--r-lg);padding:20px;margin-bottom:14px;
+}
+.ctit{
+  font-family:var(--display);font-size:13px;font-weight:700;
+  color:var(--txt);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.ctit::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px}
+.crow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.crow label{font-family:var(--mono);font-size:10px;min-width:90px;color:var(--txt3)}
+.crow .inp{max-width:340px;height:34px}
+.chint{font-family:var(--mono);font-size:10px;color:var(--txt3);line-height:1.7}
+.chint strong{color:var(--txt2)}
+.cst{font-family:var(--mono);font-size:11px;padding:8px 12px;border-radius:var(--r-sm);margin-top:10px}
+.cst.ok{background:var(--green-bg);color:var(--green)}
+.cst.err{background:var(--red-bg);color:var(--red)}
+
+/* ── STATS PANEL ── */
+.s-section{margin-bottom:28px}
+.s-title{
+  font-family:var(--display);font-size:12px;font-weight:700;
+  color:var(--txt3);margin-bottom:12px;text-transform:uppercase;
+  letter-spacing:.06em;display:flex;align-items:center;gap:10px;
+}
+.s-title::after{content:'';flex:1;height:1px;background:var(--brd)}
+.s-big{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:28px}
+@media(min-width:560px){.s-big{grid-template-columns:repeat(4,1fr)}}
+.s-bigcard{
+  background:var(--surface);border:1px solid var(--brd);
+  border-radius:var(--r-md);padding:18px 16px;text-align:center;
+  transition:border-color .2s;
+}
+.s-bigcard:hover{border-color:var(--brd2)}
+.s-bignum{font-family:var(--display);font-size:32px;font-weight:800;line-height:1;margin-bottom:5px}
+.s-biglbl{font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em}
+.s-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.s-card{
+  background:var(--surface);border:1px solid var(--brd);
+  border-radius:var(--r-md);padding:12px 14px;
+  display:flex;align-items:center;gap:12px;
+  transition:border-color .18s;
+}
+.s-card:hover{border-color:var(--brd2)}
+.s-rank{font-family:var(--mono);font-size:15px;font-weight:500;min-width:22px;text-align:center}
+.s-rank.gold{color:#f0c040}.s-rank.silver{color:#9098a8}.s-rank.bronze{color:#c47840}
+.s-info{flex:1;min-width:0}
+.s-name{font-family:var(--display);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)}
+.s-sub{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:2px}
+.s-bar-wrap{background:var(--surface3);border-radius:3px;height:3px;margin-top:7px;overflow:hidden}
+.s-bar{height:3px;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.s-pessoa-list{border:1px solid var(--brd);border-radius:var(--r-md);overflow:hidden}
+.s-pessoa-row{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 16px;border-bottom:1px solid var(--brd);
+  background:var(--surface);transition:background .15s;
+}
+.s-pessoa-row:last-child{border-bottom:none}
+.s-pessoa-row:hover{background:var(--surface2)}
+.s-pessoa-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--accent-bg);border:1px solid var(--accent-brd);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  color:var(--accent2);flex-shrink:0;
+}
+.s-timeline{border:1px solid var(--brd);border-radius:var(--r-md);overflow:hidden}
+.s-trow{
+  display:grid;grid-template-columns:72px 1fr 50px;
+  align-items:center;padding:9px 14px;
+  border-bottom:1px solid var(--brd);
+}
+.s-trow:last-child{border-bottom:none}
+.s-trow:hover{background:var(--surface2)}
+.s-tmonth{font-family:var(--mono);font-size:10px;color:var(--txt3)}
+.s-tbar-wrap{padding:0 12px}
+.s-tcount{font-family:var(--mono);font-size:11px;font-weight:500;text-align:right;color:var(--txt2)}
+
+/* ── EXPORT BUTTON ── */
+.btn-exp{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-exp:hover{background:var(--accent2);border-color:var(--accent2)}
+
+/* ── CONTATOS ── */
+.contato-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 0;border-bottom:1px solid var(--brd);
+}
+.contato-row:last-child{border-bottom:none}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--surface2);border:1px solid var(--brd2);
+  color:var(--txt);
+  font-family:var(--mono);font-size:11px;
+  padding:10px 20px;border-radius:var(--r-md);
+  z-index:999;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;white-space:nowrap;
+  box-shadow:var(--shadow);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err-t{background:var(--red-bg);border-color:rgba(224,92,110,.3);color:var(--red)}
+
+/* ── MOBILE ── */
+@media(max-width:540px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .fgrid{grid-template-columns:1fr}
+  .dtbl th:nth-child(3),.dtbl td:nth-child(3){display:none}
+  .hdr-logo-sub{display:none}
+}
+
+/* ── DASHBOARD HEADER ── */
+.dash-header{
+  display:grid;
+  grid-template-columns:1fr 260px;
+  gap:0;
+  margin-bottom:20px;
+  background:var(--surface);
+  border:1px solid var(--brd);
+  border-radius:var(--r-xl);
+  overflow:hidden;
+  position:relative;
+}
+/* glows */
+.dash-header::before{
+  content:'';position:absolute;
+  top:-80px;right:160px;
+  width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle,rgba(124,106,247,.13) 0%,transparent 65%);
+  pointer-events:none;z-index:0;
+}
+.dash-header::after{
+  content:'';position:absolute;
+  bottom:-80px;left:20px;
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(91,168,245,.07) 0%,transparent 65%);
+  pointer-events:none;z-index:0;
+}
+
+/* LEFT PANEL */
+.dash-left{
+  padding:22px 24px;
+  display:flex;flex-direction:column;gap:0;
+  position:relative;z-index:1;
+}
+.dash-date-row{
+  display:flex;align-items:baseline;gap:10px;
+  margin-bottom:16px;
+}
+.dash-weekday{
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  color:var(--accent2);text-transform:uppercase;letter-spacing:.1em;
+}
+.dash-datestr{
+  font-family:var(--display);font-size:13px;font-weight:600;
+  color:var(--txt2);
+}
+
+.dash-ring-row{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+.dash-ring-wrap{flex-shrink:0}
+.dash-ring{width:80px;height:80px;filter:drop-shadow(0 0 12px rgba(124,106,247,.25))}
+.dash-ring-label{display:none}
+.dash-ring-info{}
+.dash-title{
+  font-family:var(--display);font-size:22px;font-weight:800;
+  color:var(--txt);line-height:1.1;margin-bottom:4px;
+}
+.dash-title span{color:var(--accent2)}
+.dash-sub{
+  font-family:var(--mono);font-size:10px;color:var(--txt3);
+  margin-bottom:12px;letter-spacing:.02em;
+}
+.dash-progress-bar{
+  width:100%;height:4px;background:var(--surface3);
+  border-radius:2px;overflow:hidden;margin-bottom:14px;
+}
+.dash-progress-fill{
+  height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--accent) 0%,var(--accent2) 50%,var(--green) 100%);
+  transition:width 1.2s cubic-bezier(.4,0,.2,1);
+}
+.dash-pills{display:flex;flex-wrap:wrap;gap:5px}
+.dash-pill{
+  font-family:var(--mono);font-size:10px;
+  padding:4px 10px;border-radius:20px;font-weight:500;
+  display:flex;align-items:center;gap:5px;
+}
+.dash-pill::before{content:'';width:6px;height:6px;border-radius:50%}
+.pill-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,92,110,.2)}
+.pill-red::before{background:var(--red)}
+.pill-blue{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(91,168,245,.2)}
+.pill-blue::before{background:var(--blue)}
+.pill-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(78,203,141,.2)}
+.pill-green::before{background:var(--green)}
+.pill-muted{background:var(--surface2);color:var(--txt3);border:1px solid var(--brd)}
+.pill-muted::before{background:var(--txt3)}
+
+/* RIGHT PANEL */
+.dash-right{
+  border-left:1px solid var(--brd);
+  background:var(--surface2);
+  padding:20px 18px;
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;
+}
+.dash-next-title{
+  font-family:var(--mono);font-size:9px;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--txt3);margin-bottom:12px;
+  display:flex;align-items:center;gap:6px;
+}
+.dash-next-title::before{
+  content:'';width:16px;height:1px;background:var(--brd2);display:inline-block;
+}
+.dash-next-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:var(--r-sm);
+  cursor:pointer;transition:all .18s;
+  margin-bottom:3px;border:1px solid transparent;
+}
+.dash-next-item:last-child{margin-bottom:0}
+.dash-next-item:hover{background:var(--surface3);border-color:var(--brd)}
+.dash-next-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px currentColor}
+.dash-next-info{flex:1;display:flex;flex-direction:column;min-width:0}
+.dash-next-num{
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  color:var(--txt2);flex-shrink:0;
+}
+.dash-next-desc{
+  font-size:11px;color:var(--txt3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dash-next-days{
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  flex-shrink:0;text-align:right;
+}
+.dash-right-footer{
+  margin-top:auto;padding-top:12px;
+  border-top:1px solid var(--brd);
+  font-family:var(--mono);font-size:9px;color:var(--txt3);
+  letter-spacing:.04em;text-align:center;
+}
+
+/* ── FILTERS BAR ── */
+.filters-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.filters-scroll{display:flex;gap:5px;flex-wrap:wrap;flex:1}
+.search-wrap{position:relative;flex-shrink:0}
+.search-icon{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  color:var(--txt3);display:flex;align-items:center;pointer-events:none;
+}
+.search-inp{
+  font-family:var(--mono);font-size:11px;
+  height:32px;padding:0 10px 0 30px;
+  border:1px solid var(--brd);border-radius:20px;
+  background:var(--surface2);color:var(--txt);
+  outline:none;width:160px;transition:all .2s;
+}
+.search-inp:focus{border-color:var(--accent);width:200px;background:var(--surface)}
+.search-inp::placeholder{color:var(--txt3)}
+
+/* ── LEGEND BAR ── */
+.legend-bar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+
+@media(max-width:580px){
+  .dash-header{grid-template-columns:1fr}
+  .dash-right{border-left:none;border-top:1px solid var(--brd);padding-left:0;padding-top:14px}
+  .search-inp{width:130px}.search-inp:focus{width:150px}
+}
+
+
+
+
+
+
+
+/* ── MENSAGENS WAP ── */
+.msg-card{
+  background:var(--surface2);border:1px solid var(--brd);
+  border-radius:var(--r-md);padding:12px 14px;margin-bottom:8px;
+}
+.msg-label{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.msg-label input{
+  font-family:var(--mono);font-size:11px;height:28px;padding:0 8px;
+  border:1px solid var(--brd);border-radius:6px;
+  background:var(--surface3);color:var(--txt);outline:none;flex:1;
+}
+.msg-label input:focus{border-color:var(--accent)}
+.msg-textarea{
+  width:100%;font-family:var(--mono);font-size:11px;line-height:1.6;
+  min-height:80px;padding:8px 10px;resize:vertical;
+  border:1px solid var(--brd);border-radius:6px;
+  background:var(--surface3);color:var(--txt);outline:none;
+}
+.msg-textarea:focus{border-color:var(--accent)}
+.msg-vars{font-family:var(--mono);font-size:9px;color:var(--txt3);margin-top:4px}
+.msg-vars span{
+  background:var(--surface);border:1px solid var(--brd2);
+  border-radius:4px;padding:1px 6px;margin-right:4px;color:var(--accent2);
+}
+.wap-btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.btn-wap-msg{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;
+  background:rgba(37,211,102,.12);color:var(--wap);
+  border:1px solid rgba(37,211,102,.25);text-decoration:none;
+  transition:all .18s;white-space:nowrap;
+}
+.btn-wap-msg:hover{background:rgba(37,211,102,.22)}
+.btn-wap-msg svg{width:13px;height:13px;fill:var(--wap);flex-shrink:0}
+.contato-item{
+  background:var(--surface2);border:1px solid var(--brd);
+  border-radius:var(--r-md);padding:12px 14px;margin-bottom:8px;
+  display:flex;align-items:center;gap:10px;
+}
+.contato-nome{font-family:var(--display);font-size:13px;font-weight:600;flex:1}
+.contato-num{font-family:var(--mono);font-size:10px;color:var(--txt3)}
+
+
+/* ── SELETOR DE CONTATO ── */
+.contato-sel-wrap{position:relative}
+.contato-sel{
+  width:100%;font-family:var(--sans);font-size:12px;height:30px;
+  padding:0 8px;border:1px solid var(--brd);border-radius:6px;
+  background:var(--surface3);color:var(--txt);outline:none;
+  cursor:pointer;transition:border-color .18s;appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a5a70'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;
+  padding-right:24px;
+}
+.contato-sel:focus{border-color:var(--accent)}
+.no-contatos-inline{
+  font-family:var(--mono);font-size:10px;color:var(--orange);
+  background:var(--orange-bg);border:1px solid rgba(232,145,74,.2);
+  border-radius:6px;padding:5px 10px;display:flex;align-items:center;gap:6px;
+  cursor:pointer;white-space:nowrap;
+}
+.no-contatos-inline:hover{background:rgba(232,145,74,.15)}
+
+
+/* ── WAP INLINE NA DESIGNAÇÃO ── */
+.desig-row{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:1px solid var(--brd)}
+.desig-row:last-child{border-bottom:none}
+.desig-fields{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.desig-fields .contato-sel{flex:1;min-width:120px}
+.desig-fields .inp-d{width:130px;flex-shrink:0}
+.desig-wap{display:flex;gap:5px;flex-wrap:wrap}
+.btn-wap-sm{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  padding:5px 10px;border-radius:var(--r-sm);cursor:pointer;
+  background:rgba(37,211,102,.12);color:var(--wap);
+  border:1px solid rgba(37,211,102,.25);text-decoration:none;
+  transition:all .18s;white-space:nowrap;
+}
+.btn-wap-sm:hover{background:rgba(37,211,102,.22)}
+.btn-wap-sm svg{width:12px;height:12px;fill:var(--wap);flex-shrink:0}
+
+
+/* ── BTN MSG COMPACTO ── */
+.btn-msg-zap{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;
+  background:rgba(37,211,102,.15);color:var(--wap);
+  border:1px solid rgba(37,211,102,.3);
+  transition:all .18s;white-space:nowrap;flex-shrink:0;
+}
+.btn-msg-zap:hover{background:rgba(37,211,102,.25)}
+.btn-msg-zap svg{width:14px;height:14px;fill:var(--wap)}
+
+/* ── MODAL ENVIAR MSG ── */
+.msg-modal-bg{
+  position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;padding:16px;
+}
+.msg-modal{
+  background:var(--surface);border:1px solid var(--brd2);
+  border-radius:var(--r-xl);padding:24px;
+  width:100%;max-width:420px;
+  animation:fadeUp .2s ease;
+}
+.msg-modal-title{
+  font-family:var(--display);font-size:16px;font-weight:800;
+  color:var(--txt);margin-bottom:4px;
+}
+.msg-modal-sub{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-bottom:16px}
+.msg-modal-card{
+  border-radius:var(--r-md);overflow:hidden;
+  border:1px solid var(--brd);margin-bottom:14px;
+  background:var(--surface3);
+}
+.msg-modal-card img{width:100%;display:block}
+.msg-modal-card-empty{
+  padding:16px;text-align:center;
+  font-family:var(--mono);font-size:10px;color:var(--txt3);
+}
+.msg-modal-hint{
+  font-family:var(--mono);font-size:10px;color:var(--orange);
+  background:var(--orange-bg);border:1px solid rgba(232,145,74,.2);
+  border-radius:var(--r-sm);padding:8px 12px;margin-bottom:14px;
+  display:flex;align-items:flex-start;gap:6px;line-height:1.5;
+}
+.msg-modal-btns{display:flex;flex-direction:column;gap:8px}
+.msg-modal-send{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px;border-radius:var(--r-md);cursor:pointer;
+  background:rgba(37,211,102,.15);color:var(--wap);
+  border:1px solid rgba(37,211,102,.3);
+  font-family:var(--display);font-size:13px;font-weight:700;
+  text-decoration:none;transition:all .18s;
+}
+.msg-modal-send:hover{background:rgba(37,211,102,.25)}
+.msg-modal-send svg{width:18px;height:18px;fill:var(--wap)}
+.msg-modal-close{
+  padding:10px;border-radius:var(--r-md);cursor:pointer;
+  background:transparent;color:var(--txt3);
+  border:1px solid var(--brd);
+  font-family:var(--mono);font-size:11px;text-align:center;
+  transition:all .18s;
+}
+.msg-modal-close:hover{background:var(--surface2);color:var(--txt)}
+
+
+.btn-ordem{
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  padding:5px 10px;border:1px solid var(--brd);border-radius:20px;
+  cursor:pointer;background:transparent;color:var(--txt3);
+  white-space:nowrap;user-select:none;transition:all .18s;
+  display:inline-flex;align-items:center;gap:4px;flex-shrink:0;
+}
+.btn-ordem:hover{border-color:var(--brd2);color:var(--txt2)}
+.btn-ordem.on{background:var(--accent-bg);border-color:var(--accent-brd);color:var(--accent2)}
+
+datalist{display:none}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-logo-icon">🗺️</div>
+    <div class="hdr-logo-wrap">
+      <span>Territórios</span>
+      <span class="hdr-logo-sub">S-13 · REGISTRO DE TERRITÓRIOS</span>
+    </div>
+  </div>
+  <a href="/" title="Início — escolher módulo" style="margin-left:auto;margin-right:8px;font-family:var(--mono);font-size:11px;color:var(--txt2);text-decoration:none;border:1px solid var(--border, rgba(255,255,255,.15));border-radius:20px;padding:5px 11px">⌂ Início</a>
+  <div class="sync-pill">
+    <div class="sdot" id="sdot"></div>
+    <span class="slbl" id="slbl">offline</span>
+  </div>
+</div>
+
+<nav class="nav">
+  <div class="ntab active" onclick="switchTab('indicar')">Indicar</div>
+  <div class="ntab" onclick="switchTab('registrar')">Registrar</div>
+  <div class="ntab" onclick="switchTab('historico')">Histórico</div>
+  <div class="ntab" onclick="switchTab('stats')">Estatísticas</div>
+  <div class="ntab" onclick="switchTab('importar')">Importar</div>
+  <div class="ntab" onclick="switchTab('config')">Config</div>
+</nav>
+
+<div class="main">
+
+<!-- ══ INDICAR ══ -->
+<div class="panel active" id="panel-indicar">
+  <div id="statsBar"></div>
+  <div id="indicarContent"></div>
+</div>
+
+<!-- ══ REGISTRAR ══ -->
+<div class="panel" id="panel-registrar">
+  <div class="ah">Em andamento agora</div>
+  <div id="listAtivos"><div style="text-align:center;padding:24px;font-family:var(--mono);font-size:11px;color:var(--txt3)">…</div></div>
+  <div class="fcard">
+    <div class="ftit">Registro manual</div>
+    <div class="fgrid">
+      <div class="fg"><label>Território nº</label><input class="inp" id="rN" list="dlN" autocomplete="off" placeholder="Ex: 29"></div>
+      <div class="fg"><label>Designado para</label>
+        <div id="rNmWrap">
+          <input class="inp" id="rNm" list="dlP" autocomplete="off" placeholder="Nome">
+        </div>
+      </div>
+      <div class="fg"><label>Data designação</label><input class="inp inp-d" id="rDD" type="date"></div>
+      <div class="fg"><label>Data conclusão</label><input class="inp inp-d" id="rDC" type="date"></div>
+    </div>
+    <button class="btn btn-sv" onclick="regManual()">Salvar registro</button>
+  </div>
+</div>
+
+<!-- ══ HISTÓRICO ══ -->
+<div class="panel" id="panel-historico">
+  <div class="hctrl">
+    <select id="hB" onchange="renderHist()"><option value="">Todos os bairros</option></select>
+    <select id="hP" onchange="renderHist()"><option value="">Todas as pessoas</option></select>
+    <button class="btn btn-exp" onclick="exportXLSX()">↓ Exportar .xlsx</button>
+  </div>
+  <div class="htbl-wrap">
+    <table class="htbl">
+      <thead><tr><th>Terr.</th><th>Bairro</th><th>Pessoa</th><th>Designação</th><th>Conclusão</th><th>Status</th></tr></thead>
+      <tbody id="histBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ ESTATÍSTICAS ══ -->
+<div class="panel" id="panel-stats">
+  <div id="statsContent"><div style="text-align:center;padding:24px;font-family:var(--mono);font-size:11px;color:var(--txt3)">Carregando…</div></div>
+</div>
+
+<!-- ══ IMPORTAR ══ -->
+<div class="panel" id="panel-importar">
+  <div class="ccard">
+    <div class="ctit">1 · Planilha .xlsx</div>
+    <div class="drop-area" id="xlsxDrop"
+      onclick="document.getElementById('xlsxFile').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="handleXlsxDrop(event)">
+      <div class="drop-icon">📊</div>
+      <div class="drop-title">Clique ou arraste a planilha aqui</div>
+      <div class="drop-sub">Aceita .xlsx — detecta automaticamente o ano de serviço</div>
+    </div>
+    <input type="file" id="xlsxFile" accept=".xlsx" style="display:none" onchange="importXLSX(this.files[0])">
+    <div id="xlsxStatus"></div>
+
+  </div>
+  <div class="ccard">
+    <div class="ctit">2 · Cartões de mapa</div>
+    <p class="chint" style="margin-bottom:12px">Arraste as imagens — o app detecta o número pelo nome do arquivo e salva na nuvem da congregação.</p>
+    <div class="cards-drop" id="cardsDrop"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="handleCardsDrop(event)"
+      onclick="document.getElementById('cardsFile').click()">
+      <div class="drop-icon">🗺️</div>
+      <div class="drop-title">Clique ou arraste as imagens</div>
+      <div class="drop-sub">PNG, JPG, WEBP · pode selecionar vários de uma vez</div>
+    </div>
+    <input type="file" id="cardsFile" accept="image/*" multiple style="display:none" onchange="handleCardsFiles(this.files)">
+    <div class="cards-progress" id="cardsProgress"></div>
+  </div>
+</div>
+
+<!-- ══ CONFIG ══ -->
+<div class="panel" id="panel-config">
+
+  <!-- CONTA -->
+  <div class="ccard" id="fbStatusCard">
+    <div class="ctit" id="fbStatusTitle">Conta · Conectando…</div>
+    <div id="fbStatusBody">
+      <p class="chint" style="margin-bottom:6px">Carregando…</p>
+    </div>
+    <div class="crow" style="margin-top:10px"><label>Nome cong.</label><input class="inp" id="cfgCong" placeholder="Ex: Bom Jesus" style="max-width:280px;height:34px" oninput="congName=this.value;localStorage.setItem('tj_cong',this.value);renderAll()"></div>
+  </div>
+
+  <!-- IMPORTAR DO FIREBASE ANTIGO -->
+  <div class="ccard" id="fbConnCard">
+    <div class="ctit">Importar do Firebase antigo</div>
+    <p class="chint" style="margin-bottom:14px">Use uma vez para trazer territórios, cartões, dirigentes, mensagens e campanhas da versão antiga.<br>Cole as mesmas credenciais que você usava antes. Os dados atuais daqui serão substituídos pelos do Firebase.</p>
+    <div class="crow"><label>API Key</label><input class="inp" id="cA" placeholder="AIzaSy…" spellcheck="false"></div>
+    <div class="crow"><label>Project ID</label><input class="inp" id="cP" placeholder="meu-projeto-123" spellcheck="false"></div>
+    <div class="crow"><label>App ID</label><input class="inp" id="cI" placeholder="1:123…:web:abc…" spellcheck="false"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-sv" id="btnConectar" onclick="importarDoFirebase()">Importar dados</button>
+    </div>
+    <div class="cst" id="cSt" style="display:none"></div>
+  </div>
+
+  <!-- CONTATOS WHATSAPP -->
+  <div class="ccard">
+    <div class="ctit">Dirigentes · WhatsApp</div>
+    <p class="chint" style="margin-bottom:12px">Cadastre os dirigentes. Os botões aparecem em cada território.</p>
+    <div id="contatosList"></div>
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:100px">
+        <label style="font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em">Nome</label>
+        <input class="inp" id="ctNm" placeholder="Ex: João" style="height:34px">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em">Número</label>
+        <input class="inp" id="ctNum" placeholder="5531999998888" style="width:160px;height:34px;font-family:var(--mono);font-size:11px">
+      </div>
+      <button class="btn btn-sv" onclick="addContato()" style="height:34px">Adicionar</button>
+    </div>
+    <p class="chint" style="margin-top:6px">Código país + DDD + número (ex: 5531999998888)</p>
+  </div>
+
+  <!-- MENSAGENS WHATSAPP -->
+  <div class="ccard">
+    <div class="ctit">Mensagens · WhatsApp</div>
+    <p class="chint" style="margin-bottom:14px">
+      Personalize as mensagens. Use as variáveis abaixo para inserir dados automaticamente.<br>
+      <span style="color:var(--accent2)">{dirigente}</span> · <span style="color:var(--accent2)">{territorio}</span> · <span style="color:var(--accent2)">{bairro}</span> · <span style="color:var(--accent2)">{data}</span>
+    </p>
+    <div id="msgsList"></div>
+    <button class="btn btn-add" onclick="addMensagem()" style="margin-top:4px">+ Nova mensagem</button>
+  </div>
+
+  <!-- CAMPANHAS -->
+  <div class="ccard">
+    <div class="ctit">Campanhas</div>
+    <p class="chint" style="margin-bottom:12px">Cadastre campanhas com sigla e nome. A sigla aparece como opção ao designar um território.</p>
+    <div id="campanhasList"></div>
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em">Sigla</label>
+        <input class="inp" id="cpSigla" placeholder="CC" style="width:70px;height:34px;font-family:var(--mono);text-transform:uppercase" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px">
+        <label style="font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em">Nome completo</label>
+        <input class="inp" id="cpNome" placeholder="Campanha de Celebração" style="height:34px">
+      </div>
+      <button class="btn btn-sv" onclick="addCampanha()" style="height:34px">Adicionar</button>
+    </div>
+  </div>
+
+  <!-- GERENCIAR TERRITÓRIOS -->
+  <div class="ccard">
+    <div class="ctit">Gerenciar Territórios</div>
+    <p class="chint" style="margin-bottom:10px">Adicionar novo território ao banco de dados.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em">Número</label>
+        <input class="inp" id="addTerrN" placeholder="Ex: 45" style="width:80px;height:34px;font-family:var(--mono)">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px">
+        <label style="font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em">Bairro / Descrição</label>
+        <input class="inp" id="addTerrDesc" placeholder="Ex: Centro" style="height:34px">
+      </div>
+      <label class="card-upload-btn" style="margin:0;padding:0 14px;height:34px;border-radius:var(--r-sm);flex-shrink:0">
+        <span id="addTerrImgTxt">📎 Imagem</span>
+        <input type="file" accept="image/*" id="addTerrImg" onchange="document.getElementById('addTerrImgTxt').textContent='✓ '+this.files[0]?.name.slice(0,12)">
+      </label>
+      <button class="btn btn-sv" onclick="addTerrNovo()" style="height:34px">Adicionar</button>
+    </div>
+    <div style="border-top:1px solid var(--brd);padding-top:14px">
+      <p class="chint" style="margin-bottom:10px">Renumerar território existente (altera número e imagem no banco).</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em">Número atual</label>
+          <select class="inp" id="renumAtual" style="height:34px;cursor:pointer;min-width:170px">
+            <option value="">— Selecionar —</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-family:var(--mono);font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em">Novo número</label>
+          <input class="inp" id="renumNovo" placeholder="Ex: 46" style="width:100px;height:34px;font-family:var(--mono)">
+        </div>
+        <button class="btn btn-sv" onclick="renumerarTerr()" style="height:34px">Renumerar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DADOS -->
+  <div class="ccard">
+    <div class="ctit">Dados locais</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-add" onclick="limparTudo()">Limpar todos os dados</button>
+      <button class="btn btn-add" onclick="limparCartoes()">Limpar cartões</button>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /main -->
+
+<div class="toast" id="toast"></div>
+<datalist id="dlP"></datalist>
+<datalist id="dlN"></datalist>
+
+<script>
+const XLSX_B64 = "";
+
+// ── STORAGE KEYS ──
+let   KEY_DADOS   = 'tj_dados_v1'; // updated to 'tj_dados_v1_PROJECTID' after login
+let   KEY_CARDS   = 'tj_cards_v1'; // updated to 'tj_cards_v1_PROJECTID' after login
+const KEY_CFG     = 'tj_firebase_v1';
+const KEY_CONTATOS= 'tj_contatos_v1';
+
+// ── STATE ──
+let dados    = [];   // populated after import
+let cards    = {};   // local overrides {n: dataURL}
+let db       = null;
+let storage  = null; // Firebase Storage
+const docId  = 'dados';   // fixed — isolation comes from Firebase project
+let anoAtual = null;       // extracted from imported xlsx (e.g. 2026)
+let congName = '';             // congregation name set in config
+let activeTab= 'indicar';
+let bFiltro  = '';
+let ordemCres = false; // false=urgência, true=crescente por número
+
+// ── PERSIST ──
+function salvarDados(){ try{localStorage.setItem(KEY_DADOS,JSON.stringify(dados));if(anoAtual)localStorage.setItem('tj_ano',anoAtual);}catch(e){} }
+function salvarCards(){ try{localStorage.setItem(KEY_CARDS,JSON.stringify(cards));}catch(e){} }
+
+function carregarTudo(){
+  try{ const s=localStorage.getItem(KEY_DADOS); if(s) dados=JSON.parse(s); }catch(e){}
+  try{ const a=localStorage.getItem('tj_ano'); if(a) anoAtual=parseInt(a); }catch(e){}
+  try{ const cn=localStorage.getItem('tj_cong'); if(cn) congName=cn; }catch(e){}
+  try{ const s=localStorage.getItem(KEY_CARDS); if(s) cards=JSON.parse(s); }catch(e){}
+}
+
+// ── FIREBASE ──
+function setSyncStatus(s){
+  document.getElementById('sdot').className='sdot '+s;
+  document.getElementById('slbl').textContent=s==='online'?'online':s==='syncing'?'salvando…':'offline';
+}
+function initFirebase(cfg){
+  try{
+    if(firebase.apps.length) firebase.apps[0].delete();
+    const app=firebase.initializeApp(cfg);
+    db=firebase.firestore(app);
+    storage=firebase.storage(app);
+    // docId is always 'dados' — project isolation via Firebase project
+    sincFB(); setSyncStatus('online');
+    const ss=document.getElementById('storageStatus'); if(ss){ ss.style.display='none'; }
+  }catch(e){ setSyncStatus('offline'); console.error(e); }
+}
+async function sincFB(){
+  if(!db)return; setSyncStatus('syncing');
+  try{
+    let docRef = db.collection('tj').doc(docId);
+    let snap = await docRef.get();
+
+    // Migration: if 'dados' doc doesn't exist but old 'bj2026' does, migrate it
+    if(!snap.exists){
+      const oldSnap = await db.collection('tj').doc('bj2026').get();
+      if(oldSnap.exists){
+        const oldData = oldSnap.data();
+        await docRef.set({dados: oldData.dados||[], updatedAt: new Date().toISOString()});
+        snap = await docRef.get();
+        toast('Dados migrados para o novo formato ✓');
+      }
+    }
+
+    if(snap.exists){
+      const r=snap.data();
+      if(r.dados&&r.dados.length){dados=r.dados;salvarDados();}
+      renderAll();
+    } else {
+      await pushFB();
+    }
+    setSyncStatus('online');
+
+    // Listener: dados da planilha
+    docRef.onSnapshot(s=>{
+      if(!s.exists)return;
+      const r=s.data();
+      if(r.dados) dados=r.dados;
+      salvarDados(); renderAll();
+    });
+
+    // Listener: cartões
+    db.collection('tj_cards').onSnapshot(snapshot=>{
+      snapshot.docChanges().forEach(change=>{
+        const n = change.doc.id;
+        if(change.type === 'removed'){
+          delete cardsCache[n]; delete cards[n];
+        } else {
+          const img = change.doc.data().img;
+          if(img){ cardsCache[n]=img; cards[n]=img; }
+        }
+      });
+      if(snapshot.docChanges().length > 0){ salvarCards(); renderAll(); }
+    });
+
+    // Listener: contatos e mensagens (tj_config)
+    db.collection('tj_config').onSnapshot(snapshot=>{
+      snapshot.docChanges().forEach(change=>{
+        const id = change.doc.id;
+        if(id === 'contatos'){
+          const lista = change.doc.data().lista || [];
+          _contatosCache = lista;
+          localStorage.setItem(KEY_CONTATOS, JSON.stringify(lista));
+          renderContatos(); renderAll();
+        }
+        if(id === 'mensagens'){
+          const lista = change.doc.data().lista;
+          if(lista){ _msgsCache=lista; localStorage.setItem(KEY_MSGS, JSON.stringify(lista)); renderMensagens(); }
+        }
+        if(id === 'campanhas'){
+          const lista = change.doc.data().lista;
+          if(lista){ _campCache=lista; localStorage.setItem(KEY_CAMP, JSON.stringify(lista)); renderCampanhas(); }
+        }
+      });
+    });
+
+    // Carrega contatos e mensagens do Firestore
+    // Se Firestore vazio mas tem dados locais, sobe os locais
+    try{
+      const snapC = await db.collection('tj_config').doc('contatos').get();
+      if(snapC.exists){
+        const lista = snapC.data().lista||[];
+        _contatosCache=lista;
+        localStorage.setItem(KEY_CONTATOS,JSON.stringify(lista));
+        renderContatos(); renderAll();
+      } else {
+        // Sobe dados locais pro Firestore
+        const local=JSON.parse(localStorage.getItem(KEY_CONTATOS)||'[]');
+        if(local.length){
+          await db.collection('tj_config').doc('contatos').set({lista:local,updatedAt:new Date().toISOString()});
+          _contatosCache=local;
+          toast('Contatos sincronizados ✓');
+        }
+      }
+    }catch(e){ console.error('Contatos sync error:',e); }
+    try{
+      const snapM = await db.collection('tj_config').doc('mensagens').get();
+      if(snapM.exists){
+        const lista=snapM.data().lista;
+        if(lista){ _msgsCache=lista; localStorage.setItem(KEY_MSGS,JSON.stringify(lista)); renderMensagens(); }
+      } else {
+        const local=JSON.parse(localStorage.getItem(KEY_MSGS)||'null');
+        if(local) await db.collection('tj_config').doc('mensagens').set({lista:local,updatedAt:new Date().toISOString()});
+      }
+    }catch(e){ console.error('Msgs sync error:',e); }
+    try{
+      const snapCp = await db.collection('tj_config').doc('campanhas').get();
+      if(snapCp.exists){
+        const lista=snapCp.data().lista;
+        if(lista){ _campCache=lista; localStorage.setItem(KEY_CAMP,JSON.stringify(lista)); }
+      } else {
+        const local=JSON.parse(localStorage.getItem(KEY_CAMP)||'null');
+        if(local) await db.collection('tj_config').doc('campanhas').set({lista:local,updatedAt:new Date().toISOString()});
+      }
+    }catch(e){ console.error('Camp sync error:',e); }
+
+  }catch(e){ setSyncStatus('offline'); console.error(e); }
+}
+async function pushFB(){
+  if(!db)return; setSyncStatus('syncing');
+  try{ await db.collection('tj').doc(docId).set({dados,updatedAt:new Date().toISOString()}); setSyncStatus('online'); }
+  catch(e){ setSyncStatus('offline'); }
+}
+
+// ── UTILS ──
+const hoje   = ()=>new Date().toISOString().slice(0,10);
+const diasDe = ds=>{ if(!ds)return null; return Math.floor((new Date()-(new Date(ds+'T00:00:00')))/86400000); };
+const fmtD   = ds=>{ if(!ds)return'—'; const[y,m,d]=ds.split('-'); return d+'/'+m+'/'+y; };
+
+function ultConcl(t){
+  // Última data de conclusão preenchida = "Última data concluída"
+  const cs=t.designacoes.filter(d=>d.concl);
+  return cs.length ? cs[cs.length-1].concl : null;
+}
+function emAndamento(t){
+  if(!t.designacoes.length)return false;
+  const u=t.designacoes[t.designacoes.length-1];
+  return !!(u.desig && !u.concl);
+}
+function urgencia(t){
+  if(emAndamento(t)) return 'blu';
+  const uc=ultConcl(t); if(!uc)return 'gry';
+  const d=diasDe(uc); if(d>=90)return 'red'; if(d>=60)return 'ora'; return 'grn';
+}
+function prioridade(t){ return{red:4,gry:3,ora:2,grn:1,blu:-1}[urgencia(t)]; }
+function diasLbl(t){
+  if(emAndamento(t)){ const u=t.designacoes[t.designacoes.length-1]; return{txt:'com '+(u.nome||'?').split('/')[0],cls:'c-blue'}; }
+  const uc=ultConcl(t); if(!uc)return{txt:'nunca feito',cls:'c-mut'};
+  const d=diasDe(uc); return{txt:d+' dias',cls:d>=90?'red':d>=60?'ora':'grn'};
+}
+function todasPessoas(){
+  const s=new Set();
+  dados.forEach(t=>t.designacoes.forEach(d=>{ if(d.nome) d.nome.split('/').forEach(n=>s.add(n.trim().split('(')[0].trim())); }));
+  return [...s].sort();
+}
+function renderDL(){
+  document.getElementById('dlP').innerHTML=todasPessoas().map(n=>`<option value="${n}">`).join('');
+  document.getElementById('dlN').innerHTML=dados.map(t=>`<option value="${t.n}">`).join('');
+}
+
+// ── STATS ──
+function renderDashHeader(){
+  if(!dados.length) return '';
+
+  const total  = dados.length;
+  const red    = dados.filter(t=>urgencia(t)==='red').length;
+  const and_   = dados.filter(t=>emAndamento(t)).length;
+  const ok     = dados.filter(t=>urgencia(t)==='grn').length;
+  const nv     = dados.filter(t=>urgencia(t)==='gry').length;
+  const concl  = dados.filter(t=>!!ultConcl(t)).length;
+  const anoServico = anoAtual ? `Ano de Serviço ${anoAtual}` : '';
+  const pct    = total ? Math.round(concl/total*100) : 0;
+
+  // SVG ring
+  const r=32, circ=2*Math.PI*r;
+  const dash_=circ*(pct/100), gap_=circ-dash_;
+
+  // próximos a indicar (não em andamento, ordenados por urgência + dias)
+  const proximos = dados
+    .filter(t=>!emAndamento(t))
+    .sort((a,b)=>prioridade(b)-prioridade(a))
+    .slice(0,4);
+
+  // data
+  const agora = new Date();
+  const dias  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const semana= dias[agora.getDay()];
+  const data  = `${agora.getDate()} ${meses[agora.getMonth()]} ${agora.getFullYear()}`;
+
+  return `
+  <div class="dash-header">
+    <div class="dash-left">
+      <div class="dash-date-row">
+        <span class="dash-weekday">${semana}</span>
+        <span class="dash-datestr">${data}</span>
+      </div>
+
+      <div class="dash-ring-row">
+        <div class="dash-ring-wrap">
+          <svg class="dash-ring" viewBox="0 0 80 80">
+            <defs>
+              <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#7c6af7"/>
+                <stop offset="100%" stop-color="#4ecb8d"/>
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <circle cx="40" cy="40" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="5"/>
+            <circle cx="40" cy="40" r="${r}" fill="none" stroke="url(#rg)" stroke-width="5"
+              stroke-linecap="round" filter="url(#glow)"
+              stroke-dasharray="${dash_.toFixed(1)} ${gap_.toFixed(1)}"
+              transform="rotate(-90 40 40)"/>
+            <text x="40" y="37" text-anchor="middle" fill="var(--txt)"
+              style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800">${pct}%</text>
+            <text x="40" y="50" text-anchor="middle" fill="var(--txt3)"
+              style="font-family:'DM Mono',monospace;font-size:7px">cobertos</text>
+          </svg>
+        </div>
+        <div class="dash-ring-info">
+          <div class="dash-title">${congName||'Territórios'}</div>
+          <div class="dash-sub">${['S-13',anoServico,total+' territórios'].filter(Boolean).join(' · ')}</div>
+          <div class="dash-progress-bar">
+            <div class="dash-progress-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="dash-pills">
+            ${red?`<span class="dash-pill pill-red">${red} urgente${red!==1?'s':''}</span>`:''}
+            ${and_?`<span class="dash-pill pill-blue">${and_} andamento</span>`:''}
+            ${ok?`<span class="dash-pill pill-green">${ok} em dia</span>`:''}
+            ${nv?`<span class="dash-pill pill-muted">${nv} nunca feito${nv!==1?'s':''}</span>`:''}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-right">
+      <div class="dash-next-title">Próximos a indicar</div>
+      ${proximos.map(t=>{
+        const dl=diasLbl(t), urg=urgencia(t);
+        const dot=urg==='red'?'var(--red)':urg==='ora'?'var(--orange)':urg==='grn'?'var(--green)':'var(--txt3)';
+        const dayColor=urg==='red'?'var(--red)':urg==='ora'?'var(--orange)':urg==='grn'?'var(--green)':'var(--txt3)';
+        return`<div class="dash-next-item" onclick="abrirTerritorio('${t.n}')">
+          <div class="dash-next-dot" style="background:${dot};color:${dot}"></div>
+          <div class="dash-next-info">
+            <span class="dash-next-num">${t.n}</span>
+            <span class="dash-next-desc">${t.desc}</span>
+          </div>
+          <span class="dash-next-days" style="color:${dayColor}">${dl.txt}</span>
+        </div>`;
+      }).join('')}
+      <div class="dash-right-footer">toque para ir direto ao território</div>
+    </div>
+  </div>`;
+}
+
+// ── BAIRRO CHIPS ──
+function bairroChips(){
+  const bs=[...new Set(dados.map(t=>t.desc).filter(Boolean))];
+  return`
+  <div class="filters-bar">
+    <div class="filters-scroll" id="bchips">
+      <div class="chip${bFiltro===''?' on':''}" onclick="setBairro('')">Todos</div>
+      ${bs.map(b=>`<div class="chip${bFiltro===b?' on':''}" onclick="setBairro('${b}')">${b.replace('Vitalino Fonseca','V.Fonseca')}</div>`).join('')}
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+      <button class="btn-ordem${ordemCres?' on':''}" onclick="toggleOrdem()" title="Alternar ordenação">
+        ${ordemCres ? '↑ Número' : '↓ Urgência'}
+      </button>
+      <div class="search-wrap">
+        <div class="search-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+        <input class="search-inp" type="text" id="srch" placeholder="Buscar território…" oninput="renderIndicar()">
+      </div>
+    </div>
+  </div>
+  <div class="legend-bar">
+    <div class="leg"><div class="ldot" style="background:var(--red)"></div>+90 dias</div>
+    <div class="leg"><div class="ldot" style="background:var(--orange)"></div>60–90 dias</div>
+    <div class="leg"><div class="ldot" style="background:var(--green)"></div>&lt;60 dias</div>
+    <div class="leg"><div class="ldot" style="background:var(--blue)"></div>Em andamento</div>
+    <div class="leg"><div class="ldot" style="background:var(--brd2)"></div>Nunca feito</div>
+  </div>`;
+}
+
+// ── WHATSAPP SVG ──
+const wapSVG=`<svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.554 4.103 1.522 5.825L.057 23.885a.5.5 0 00.615.617l6.158-1.479A11.93 11.93 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.925 0-3.73-.509-5.29-1.4l-.379-.222-3.927.943.977-3.845-.247-.396A9.96 9.96 0 012 12c0-5.514 4.487-10 10-10s10 4.486 10 10-4.486 10-10 10z"/></svg>`;
+
+// Gera botões WhatsApp para uma linha de designação específica
+function wapInline(terr, nomeContato){
+  if(!nomeContato) return '';
+  const contatos = getContatos();
+  const msgs = getMensagens();
+  const c = contatos.find(x=>x.nome===nomeContato);
+  if(!c) return '';
+  return msgs.map(msg=>{
+    const texto = processarMsg(msg.texto, terr, c);
+    const url = `https://wa.me/${c.num}?text=${encodeURIComponent(texto)}`;
+    return`<a class="btn-wap-sm" href="${url}" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.554 4.103 1.522 5.825L.057 23.885a.5.5 0 00.615.617l6.158-1.479A11.93 11.93 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.925 0-3.73-.509-5.29-1.4l-.379-.222-3.927.943.977-3.845-.247-.396A9.96 9.96 0 012 12c0-5.514 4.487-10 10-10s10 4.486 10 10-4.486 10-10 10z"/></svg>
+      ${msg.label}
+    </a>`;
+  }).join('');
+}
+
+function wapButtons(n, desc){
+  const contatos = getContatos();
+  const msgs     = getMensagens();
+  const terr     = dados.find(x=>x.n===n);
+  if(!contatos.length){
+    return`<div class="wap-btn-row"><span class="wap-hint">Cadastre dirigentes em Config para enviar mensagens.</span></div>`;
+  }
+  const wapIcon = `<svg viewBox="0 0 24 24" width="13" height="13" style="flex-shrink:0;fill:#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.554 4.103 1.522 5.825L.057 23.885a.5.5 0 00.615.617l6.158-1.479A11.93 11.93 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.925 0-3.73-.509-5.29-1.4l-.379-.222-3.927.943.977-3.845-.247-.396A9.96 9.96 0 012 12c0-5.514 4.487-10 10-10s10 4.486 10 10-4.486 10-10 10z"/></svg>`;
+  let html = '';
+  contatos.forEach(c=>{
+    html += `<div style="margin-bottom:12px;padding:10px 12px;background:var(--surface3);border-radius:var(--r-md);border:1px solid var(--brd)">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        ${wapIcon}
+        <span style="font-family:var(--display);font-size:12px;font-weight:700;color:var(--txt)">${c.nome}</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--txt3);margin-left:auto">${c.num}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">`;
+    msgs.forEach((msg,i)=>{
+      const texto = processarMsg(msg.texto, terr, c);
+      const url = `https://wa.me/${c.num}?text=${encodeURIComponent(texto)}`;
+      html += `<a class="btn-wap-msg" href="${url}" target="_blank" rel="noopener">${wapIcon}${msg.label}</a>`;
+    });
+    html += `</div></div>`;
+  });
+  return html;
+}
+
+// ── CARD IMAGE ZONE ──
+// Cache de URLs do Storage {n: url}
+// ── CARTÕES: comprime e salva no Firestore (sem Storage, sem CORS) ──
+// Cache local em memória {n: dataURL}
+const cardsCache = {};
+
+// Comprime imagem para JPEG q=0.88, max 1600px — fica ~150-400KB
+function comprimirImagem(file, callback){
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1600;
+      let w = img.width, h = img.height;
+      if(w > MAX){ h = Math.round(h*MAX/w); w = MAX; }
+      const canvas = document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      callback(canvas.toDataURL('image/jpeg', 0.88));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function salvarCartaoFirestore(n, dataURL){
+  if(!db) return false;
+  try{
+    await db.collection('tj_cards').doc(String(n)).set({
+      img: dataURL,
+      updatedAt: new Date().toISOString()
+    });
+    cardsCache[n] = dataURL;
+    // Atualiza localStorage também
+    cards[n] = dataURL; salvarCards();
+    return true;
+  }catch(e){
+    console.error('Erro ao salvar cartão:', e);
+    return false;
+  }
+}
+
+async function buscarCartaoFirestore(n){
+  if(cardsCache[n]) return cardsCache[n];
+  if(cards[n]){ cardsCache[n]=cards[n]; return cards[n]; } // cache local
+  if(!db) return null;
+  try{
+    const snap = await db.collection('tj_cards').doc(String(n)).get();
+    if(snap.exists){
+      const img = snap.data().img;
+      cardsCache[n] = img;
+      cards[n] = img; salvarCards();
+      return img;
+    }
+  }catch(e){}
+  return null;
+}
+
+function cardZone(n){
+  const pid = 'card-ph-'+String(n).replace(/[^a-z0-9]/gi,'_');
+
+  // Já tem no cache → mostra imediatamente
+  const cached = cardsCache[n] || cards[n];
+  if(cached){
+    return`<div class="card-zone">
+      <div class="card-img-wrap"><img src="${cached}" style="width:100%;display:block;border-radius:7px" loading="lazy"></div>
+      <label class="card-upload-btn" style="font-size:10px;margin-top:6px">
+        🔄 Substituir cartão
+        <input type="file" accept="image/*" onchange="uploadCardSingle('${n}',this.files[0])">
+      </label>
+    </div>`;
+  }
+
+  // Busca no Firestore de forma assíncrona
+  setTimeout(()=>{
+    buscarCartaoFirestore(n).then(img=>{
+      const el = document.getElementById(pid);
+      if(!el || !img) return;
+      el.innerHTML=`<div class="card-img-wrap"><img src="${img}" style="width:100%;display:block;border-radius:7px" loading="lazy"></div>
+        <label class="card-upload-btn" style="font-size:10px;margin-top:6px">
+          🔄 Substituir cartão
+          <input type="file" accept="image/*" onchange="uploadCardSingle('${n}',this.files[0])">
+        </label>`;
+    });
+  }, 80);
+
+  return`<div class="card-zone" id="${pid}">
+    <label class="card-upload-btn">
+      📎 Adicionar cartão do território ${n}
+      <input type="file" accept="image/*" onchange="uploadCardSingle('${n}',this.files[0])">
+    </label>
+  </div>`;
+}
+
+// ── INDICAR ──
+function renderIndicar(){
+  const el=document.getElementById('indicarContent');
+  const sb=document.getElementById('statsBar');
+
+  // Sem Firebase conectado — mostra empty state pedindo configuração
+  if(!db){
+    if(sb) sb.innerHTML='';
+    el.innerHTML=`<div class="empty-state">
+      <div class="es-icon">🔌</div>
+      <div class="es-title">Não conectado</div>
+      <div class="es-sub">Conectando à nuvem da congregação… Se demorar, recarregue a página.</div>
+    </div>`;
+    return;
+  }
+
+  if(!dados.length){
+    if(sb) sb.innerHTML='';
+    el.innerHTML=`<div class="empty-state">
+      <div class="es-icon">📋</div>
+      <div class="es-title">Nenhum dado carregado</div>
+      <div class="es-sub">Vá em <strong>Importar</strong> e carregue a planilha .xlsx</div>
+    </div>`;
+    return;
+  }
+  document.getElementById('statsBar').innerHTML=renderDashHeader();
+  const busca=(document.getElementById('srch')||{}).value?.toLowerCase()||'';
+  let lista=[...dados];
+  if(bFiltro) lista=lista.filter(t=>t.desc===bFiltro);
+  if(busca) lista=lista.filter(t=>String(t.n).includes(busca)||t.desc.toLowerCase().includes(busca)||t.designacoes.some(d=>d.nome&&d.nome.toLowerCase().includes(busca)));
+  if(ordemCres){
+    lista.sort((a,b)=>parseInt(a.n)-parseInt(b.n)||String(a.n).localeCompare(String(b.n)));
+  } else {
+    lista.sort((a,b)=>{
+      const pa=prioridade(a),pb=prioridade(b);
+      if(pa!==pb)return pb-pa;
+      const ua=ultConcl(a)||'0000-00-00',ub=ultConcl(b)||'0000-00-00';
+      return ua<ub?-1:ua>ub?1:0;
+    });
+  }
+  const urg2cls={red:'u-red',ora:'u-ora',grn:'u-grn',blu:'u-blu',gry:'u-gry'};
+  el.innerHTML=bairroChips()+`<div class="tlist">`+lista.map(t=>{
+    const urg=urgencia(t),dl=diasLbl(t);
+    const ult=t.designacoes.length?t.designacoes[t.designacoes.length-1]:null;
+    const uc=ultConcl(t);
+    const _cts = getContatos();
+    const rows = t.designacoes.map((d,i)=>{
+      let seletor;
+      if(!_cts.length){
+        // Sem contatos: campo livre
+        seletor=`<div style="display:flex;flex-direction:column;gap:4px;flex:1">
+          <div class="no-contatos-inline" onclick="switchTab('config');toast('Cadastre os dirigentes em Config')">⚠ Cadastre dirigentes</div>
+          <input class="inp" placeholder="ou digite ex: Lucas/Ramon ou Lucas(CC)" value="${esc(d.nome||'')}"
+            style="font-size:11px" onchange="updD('${t.n}',${i},'nome',this.value)">
+        </div>`;
+      } else {
+        // Com contatos: seletor principal + campo extra para parceiro/observação
+        // Separa nome base de sufixo: "Lucas/Ramon" -> base="Lucas", extra="/Ramon"
+        // "Marcelo(CC)" -> base="Marcelo", extra="(CC)"
+        const nomeCompleto = d.nome||'';
+        const matchExtra = nomeCompleto.match(/^([^/(]+)(.*)/);
+        const nomeBase = matchExtra ? matchExtra[1].trim() : nomeCompleto;
+        const nomeExtra = matchExtra ? matchExtra[2].trim() : '';
+        const opts=_cts.map(c=>`<option value="${esc(c.nome)}" ${c.nome===nomeBase?'selected':''}>${esc(c.nome)}</option>`).join('');
+        seletor=`<div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0">
+          <select class="contato-sel" onchange="updNomeBase('${t.n}',${i},this.value)">
+            <option value="">— Selecionar —</option>${opts}
+          </select>
+          <input class="inp" placeholder="+ parceiro ou (CC) ex: /Ramon ou (CC)" value="${esc(nomeExtra)}"
+            style="font-size:10px;height:26px" onchange="updNomeExtra('${t.n}',${i},this.value)">
+        </div>`;
+      }
+      const camps = getCampanhas();
+      const campOpts = camps.map(c=>`<option value="${esc(c.sigla)}" ${c.sigla===d.camp?'selected':''}>${c.sigla} – ${c.nome}</option>`).join('');
+      const campSel = camps.length ? `
+        <select class="contato-sel" style="width:auto;min-width:80px;flex-shrink:0;font-family:var(--mono);font-size:10px"
+          onchange="updD('${t.n}',${i},'camp',this.value)">
+          <option value="">Sem camp.</option>${campOpts}
+        </select>` : '';
+      const wapBtns = wapInline(t, d.nome);
+      return`<div class="desig-row">
+        <div class="desig-fields">
+          ${seletor}
+          ${campSel}
+          <input class="inp inp-d" type="date" value="${d.desig||''}" onchange="updD('${t.n}',${i},'desig',this.value)" style="width:140px">
+          <input class="inp inp-d" type="date" value="${d.concl||''}" onchange="updD('${t.n}',${i},'concl',this.value)" style="width:140px">
+          <button class="btn-del" onclick="delD('${t.n}',${i})">×</button>
+        </div>
+        ${d.camp ? `<div style="font-family:var(--mono);font-size:10px;color:var(--accent2)">🏷 ${d.camp} – ${camps.find(c=>c.sigla===d.camp)?.nome||''}</div>` : ''}
+        ${wapBtns ? `<div class="desig-wap">${wapBtns}</div>` : ''}
+      </div>`;
+    }).join('');
+    return`<div class="titem">
+      <div class="thead" onclick="toggleT('${t.n}')">
+        <div class="turg ${urg2cls[urg]}"></div>
+        <div class="tnum">${t.n}</div>
+        <div class="tdesc">${t.desc||'—'}</div>
+        <div class="tmeta">
+          <div class="tdays ${dl.cls}">${dl.txt}</div>
+          ${ult?`<div class="twho">${esc(ult.nome||'')}${ult.camp?` <span style="font-family:var(--mono);font-size:9px;color:var(--accent2);opacity:.8">(${ult.camp})</span>`:''}</div>`:''}
+        </div>
+        <div class="tchv" id="chv-${t.n}">▶</div>
+      </div>
+      <div class="tbody" id="body-${t.n}">
+        ${cardZone(t.n)}
+        ${uc ? `<div class="ult-concl">✓ Última conclusão: <strong>${fmtD(uc)}</strong></div>` : `<div class="ult-concl-none">— Nunca concluído</div>`}
+        <div style="margin-bottom:8px">
+          <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3);margin-bottom:6px;display:grid;grid-template-columns:1fr 140px 140px 28px;gap:6px;padding:0 2px">
+            <span>Dirigente</span><span>Designação</span><span>Conclusão</span><span></span>
+          </div>
+          ${rows}
+        </div>
+        <div class="bacts">
+          <button class="btn btn-add" onclick="addD('${t.n}')">+ Adicionar designação</button>
+          ${emAndamento(t)?`<button class="btn btn-cl" onclick="conclHj('${t.n}')">✓ Concluir hoje</button>`:''}
+          <button class="btn btn-sv" onclick="svTerr('${t.n}')">Salvar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('')+`</div>`;
+}
+
+function esc(s){ return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function toggleT(n){ const b=document.getElementById('body-'+n),c=document.getElementById('chv-'+n); const o=b.classList.toggle('open'); c.classList.toggle('open',o); c.textContent=o?'▼':'▶'; }
+function setBairro(b){ bFiltro=b; renderIndicar(); }
+function toggleOrdem(){ ordemCres=!ordemCres; renderIndicar(); }
+function abrirTerritorio(n){ bFiltro=''; renderIndicar(); setTimeout(()=>{ const el=document.getElementById('body-'+n); if(el){ el.closest('.titem').scrollIntoView({behavior:'smooth',block:'start'}); setTimeout(()=>{ if(!el.classList.contains('open')) toggleT(n); },400); } },100); }
+function updD(n,i,f,v){ const t=dados.find(x=>x.n===n); if(t) t.designacoes[i][f]=v; }
+function updNomeBase(n,i,base){
+  const t=dados.find(x=>x.n===n); if(!t) return;
+  const atual=t.designacoes[i].nome||'';
+  // Mantém o sufixo (/Ramon, (CC) etc) e troca só o nome base
+  const matchExtra=atual.match(/^[^/(]+(.*)/);
+  const extra=matchExtra?matchExtra[1].trim():'';
+  t.designacoes[i].nome=extra?`${base}${extra}`:base;
+}
+function updNomeExtra(n,i,extra){
+  const t=dados.find(x=>x.n===n); if(!t) return;
+  const atual=t.designacoes[i].nome||'';
+  const matchBase=atual.match(/^([^/(]+)/);
+  const base=matchBase?matchBase[1].trim():'';
+  if(!extra){ t.designacoes[i].nome=base; return; }
+  // Formata: se começa com / ou (, mantém; se não, adiciona /
+  const sep=extra.startsWith('/')||extra.startsWith('(')?'':'/';
+  t.designacoes[i].nome=`${base}${sep}${extra}`;
+}
+function addD(n){ const t=dados.find(x=>x.n===n); if(t){ t.designacoes.push({nome:'',desig:hoje(),concl:''}); renderIndicar(); setTimeout(()=>{ toggleT(n); document.getElementById('body-'+n).scrollIntoView({behavior:'smooth',block:'nearest'}); },50); } }
+function delD(n,i){ const t=dados.find(x=>x.n===n); if(t){ t.designacoes.splice(i,1); svTerr(n); } }
+function conclHj(n){ const t=dados.find(x=>x.n===n); if(!t)return; t.designacoes[t.designacoes.length-1].concl=hoje(); svTerr(n); }
+function svTerr(n){ salvarDados(); pushFB(); toast('Salvo ✓'); renderAll(); }
+
+// ── REGISTRAR ──
+function renderRegistrar(){
+  // Atualiza seletor de nome no form manual
+  const wrap=document.getElementById('rNmWrap');
+  if(wrap){
+    const cts=getContatos();
+    if(cts.length){
+      wrap.innerHTML=`<select class="inp" id="rNm" style="height:36px;cursor:pointer">
+        <option value="">— Selecionar dirigente —</option>
+        ${cts.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join('')}
+      </select>`;
+    } else {
+      wrap.innerHTML=`<input class="inp" id="rNm" list="dlP" autocomplete="off" placeholder="Nome">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--orange);margin-top:4px">Cadastre dirigentes em <strong>Config</strong> para selecioná-los.</div>`;
+    }
+  }
+  const at=dados.filter(t=>emAndamento(t)).sort((a,b)=>(a.designacoes.at(-1).desig||'')<(b.designacoes.at(-1).desig||'')?-1:1);
+  const el=document.getElementById('listAtivos');
+  if(!at.length){ el.innerHTML='<div class="empty">Nenhum território em andamento.</div>'; return; }
+  el.innerHTML=at.map(t=>{
+    const u=t.designacoes[t.designacoes.length-1];
+    const d=diasDe(u.desig);
+    const temContatos = getContatos().length > 0;
+    return`<div class="acard">
+      <div class="acard-top">
+        <div class="abar"></div>
+        <div class="anum">${t.n}</div>
+        <div class="ainfo">
+          <div class="aname">${esc(u.nome||'—')}</div>
+          <div class="asince">${t.desc} · desde ${fmtD(u.desig)} (${d}d)</div>
+        </div>
+        <div class="aacts">
+          <button class="btn-msg-zap" onclick="abrirModalMsg('${t.n}')">
+            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967c-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.554 4.103 1.522 5.825L.057 23.885a.5.5 0 00.615.617l6.158-1.479A11.93 11.93 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.925 0-3.73-.509-5.29-1.4l-.379-.222-3.927.943.977-3.845-.247-.396A9.96 9.96 0 012 12c0-5.514 4.487-10 10-10s10 4.486 10 10-4.486 10-10 10z"/></svg>
+            Msg
+          </button>
+          <button class="btn-ch" onclick="conclRap('${t.n}')">✓ Hoje</button>
+          <button class="btn-cd" onclick="conclDt('${t.n}')">Data…</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('rDD').value=hoje();
+}
+function conclRap(n){ const t=dados.find(x=>x.n===n); if(!t)return; t.designacoes.at(-1).concl=hoje(); salvarDados(); pushFB(); toast('Concluído!'); renderAll(); }
+function conclDt(n){ const d=prompt('Data de conclusão (AAAA-MM-DD):',hoje()); if(!d)return; const t=dados.find(x=>x.n===n); if(!t)return; t.designacoes.at(-1).concl=d; salvarDados(); pushFB(); toast('Concluído!'); renderAll(); }
+function regManual(){
+  const n=document.getElementById('rN').value.trim();
+  const nm=document.getElementById('rNm').value.trim();
+  const dd=document.getElementById('rDD').value;
+  const dc=document.getElementById('rDC').value;
+  if(!n||!nm||!dd){ toast('Preencha território, nome e data de designação',true); return; }
+  const t=dados.find(x=>x.n===n||x.n===String(parseInt(n)));
+  if(!t){ toast('Território não encontrado',true); return; }
+  t.designacoes.push({nome:nm,desig:dd,concl:dc||''});
+  salvarDados(); pushFB(); toast('Registrado!');
+  ['rN','rNm','rDC'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+}
+
+// ── HISTÓRICO ──
+function renderHist(){
+  const bairros=[...new Set(dados.map(t=>t.desc).filter(Boolean))].sort();
+  const pessoas=todasPessoas();
+  const curB=document.getElementById('hB').value, curP=document.getElementById('hP').value;
+  document.getElementById('hB').innerHTML='<option value="">Todos os bairros</option>'+bairros.map(b=>`<option value="${b}"${b===curB?' selected':''}>${b}</option>`).join('');
+  document.getElementById('hP').innerHTML='<option value="">Todas as pessoas</option>'+pessoas.map(p=>`<option value="${p}"${p===curP?' selected':''}>${p}</option>`).join('');
+  const rows=[];
+  dados.forEach(t=>{
+    if(curB&&t.desc!==curB)return;
+    t.designacoes.forEach(d=>{ if(curP&&!d.nome?.toLowerCase().includes(curP.toLowerCase()))return; rows.push({n:t.n,desc:t.desc,nome:d.nome,desig:d.desig,concl:d.concl}); });
+  });
+  rows.sort((a,b)=>(b.desig||'')<(a.desig||'')?-1:1);
+  document.getElementById('histBody').innerHTML=rows.map(r=>`<tr>
+    <td style="font-family:var(--mono);font-weight:500">${r.n}</td>
+    <td>${r.desc||'—'}</td><td>${r.nome||'—'}</td>
+    <td style="font-family:var(--mono)">${fmtD(r.desig)}</td>
+    <td style="font-family:var(--mono)">${fmtD(r.concl)}</td>
+    <td>${r.concl?'<span class="hbadge hbc">Concluído</span>':'<span class="hbadge hba">Em andamento</span>'}</td>
+  </tr>`).join('')||'<tr><td colspan="6" class="empty">Nenhum registro</td></tr>';
+}
+
+// ── EXPORT XLSX ──
+// Reproduz exatamente a formatação do formulário S-13-T:
+// - Cabeçalho cinza com bordas medium
+// - Cada território: 2 linhas, colunas A-B-C mescladas, nome na linha de cima, datas na de baixo
+// - "Última data concluída" = última conclusão preenchida (automático)
+function exportXLSX(){
+  if(!dados.length){ toast('Importe a planilha primeiro',true); return; }
+
+  const wb = XLSX.utils.book_new();
+  const ANO = anoAtual || new Date().getFullYear();
+
+  // SheetJS cell helper
+  const C = (v, t='s') => ({v, t});
+  const ws = {};
+  const merges = [];
+  let R = 0; // current row (0-indexed)
+
+  function fmtDate(s){
+    if(!s) return '';
+    try{ const d=new Date(s+'T00:00:00'); return isNaN(d)?s:`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
+    catch(e){ return s; }
+  }
+
+  // Styles (SheetJS Pro needed for full styles, but we can set basic ones)
+  function setCell(row, col, value, opts={}){
+    const addr = XLSX.utils.encode_cell({r:row, c:col});
+    ws[addr] = { v: value, t: typeof value==='number'?'n':'s' };
+  }
+
+  function merge(r1,c1,r2,c2){ merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}}); }
+
+  function writeHeader(sr){
+    // Row 0: title
+    setCell(sr,0,'REGISTRO DE DESIGNAÇÃO DE TERRITÓRIO');
+    merge(sr,0,sr,12);
+    // Row 1: Ano de Serviço
+    setCell(sr+1,0,'Ano de Serviço:'); merge(sr+1,0,sr+1,2);
+    setCell(sr+1,3,ANO,'n');
+    // Row 2: blank
+    // Row 3: headers row 1
+    setCell(sr+3,0,'Terr.\nn.º');   merge(sr+3,0,sr+4,0);
+    setCell(sr+3,1,'Descrição');    merge(sr+3,1,sr+4,1);
+    setCell(sr+3,2,'Última data concluída*'); merge(sr+3,2,sr+4,2);
+    for(let i=0;i<5;i++){
+      const c=3+i*2;
+      setCell(sr+3,c,'Designado para'); merge(sr+3,c,sr+3,c+1);
+    }
+    // Row 4: sub-headers
+    for(let i=0;i<5;i++){
+      const c=3+i*2;
+      setCell(sr+4,c,'Data da designação');
+      setCell(sr+4,c+1,'Data da conclusão');
+    }
+    return sr+5;
+  }
+
+  function writeTerr(t, sr){
+    const uc = [...t.designacoes].reverse().find(d=>d.concl)?.concl || '';
+    // A,B,C mescladas nas 2 linhas
+    setCell(sr,0, t.n);         merge(sr,0,sr+1,0);
+    setCell(sr,1, t.desc);      merge(sr,1,sr+1,1);
+    setCell(sr,2, fmtDate(uc)); merge(sr,2,sr+1,2);
+    // 5 colunas de designação
+    for(let i=0;i<5;i++){
+      const col=3+i*2;
+      const d = t.designacoes[i];
+      if(d){
+        setCell(sr,   col,   d.nome||''); merge(sr,col,sr,col+1);
+        setCell(sr+1, col,   fmtDate(d.desig||''));
+        setCell(sr+1, col+1, fmtDate(d.concl||''));
+      } else {
+        setCell(sr,   col, ''); merge(sr,col,sr,col+1);
+        setCell(sr+1, col, '');
+        setCell(sr+1, col+1, '');
+      }
+    }
+    return sr+2;
+  }
+
+  // Write sections of 20
+  for(let s=0; s<dados.length; s+=20){
+    R = writeHeader(R);
+    const sec = dados.slice(s, s+20);
+    for(const t of sec) R = writeTerr(t, R);
+    // Footer note
+    setCell(R,0,'*Ao iniciar uma nova folha, use esta coluna para registrar a data em que cada território foi concluído pela última vez.');
+    merge(R,0,R,12);
+    R += 2;
+  }
+
+  // Set sheet range
+  ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:R,c:12}});
+  ws['!merges'] = merges;
+  ws['!cols'] = [{wch:8},{wch:16},{wch:20},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14}];
+
+  XLSX.utils.book_append_sheet(wb, ws, String(ANO));
+  XLSX.writeFile(wb, `Territorios-${anoAtual||'S13'}-${hoje()}.xlsx`);
+  toast('Exportado!');
+}
+
+// ── IMPORTAR XLSX ──
+function handleXlsxDrop(ev){ ev.preventDefault(); document.getElementById('xlsxDrop').classList.remove('drag'); importXLSX(ev.dataTransfer.files[0]); }
+function importXLSX(file){ if(!file)return; const r=new FileReader(); r.onload=e=>parseXLSX(e.target.result); r.readAsArrayBuffer(file); }
+
+function parseXLSX(ab){
+  try{
+    const wb=XLSX.read(ab,{type:'array',cellDates:true});
+    const wsName = wb.SheetNames.find(n=>/^20\d{2}$/.test(n)) || wb.SheetNames[0];
+    const ws=wb.Sheets[wsName];
+    if(!ws){ xlsxStatus('Nenhuma aba encontrada no arquivo',false); return; }
+
+    // raw:true preserves Date objects from cellDates:true
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+
+    const fmtDt=v=>{
+      if(v==null||v==='')return'';
+      // JS Date object (cellDates:true gives these)
+      if(v instanceof Date){
+        if(isNaN(v))return'';
+        const y=v.getFullYear(),m=String(v.getMonth()+1).padStart(2,'0'),d=String(v.getDate()).padStart(2,'0');
+        return`${y}-${m}-${d}`;
+      }
+      const str=String(v).trim();
+      if(!str)return'';
+      if(/^\d{4}-\d{2}-\d{2}$/.test(str))return str;
+      const m1=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if(m1)return`${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+      try{ const d=new Date(str); if(!isNaN(d))return d.toISOString().slice(0,10); }catch(e){}
+      return'';
+    };
+
+    const isTerritoryRow=r=>{
+      const n=r[0], desc=r[1];
+      if(n==null||desc==null||String(desc).trim()==='')return false;
+      const ns=String(n).trim();
+      // Must match number pattern, possibly with parentheses like "63(44)"
+      if(!/^\d+[\w()]*$/.test(ns))return false;
+      const ds=String(desc).trim();
+      // Exclude header/note rows
+      if(/REGISTRO|Terr|Ano de|concluída|designação|Descrição|^\*/i.test(ds))return false;
+      return true;
+    };
+
+    const novo=[];
+    let i=0;
+    while(i<rows.length){
+      const r1=rows[i];
+      if(isTerritoryRow(r1)){
+        const r2=rows[i+1]||[];
+        const nStr=String(r1[0]).trim();
+        const desc=String(r1[1]).trim();
+        // Cols: 0=nº, 1=desc, 2=ult_concl(ignored-calc auto), 3=nome1, 4=_, 5=nome2, ...
+        // r2: 3=desig1, 4=concl1, 5=desig2, 6=concl2, ...
+        const desg=[];
+        for(let j=0;j<5;j++){
+          const nome=r1[3+j*2];
+          if(nome&&String(nome).trim()){
+            desg.push({
+              nome: String(nome).trim(),
+              desig: fmtDt(r2[3+j*2]),
+              concl: fmtDt(r2[4+j*2])
+            });
+          }
+        }
+        novo.push({n:nStr, desc, designacoes:desg});
+        i+=2; // skip the second row of this territory
+      } else {
+        i++;
+      }
+    }
+
+    // Extract service year from header row if possible
+    for(const row of rows){
+      if(row[0]&&/Ano de Servi/i.test(String(row[0]))){
+        for(const v of row){ if(v&&/^20\d{2}$/.test(String(v).trim())){ anoAtual=parseInt(v); break; } }
+        if(anoAtual) break;
+      }
+    }
+    if(novo.length<3){
+      xlsxStatus(`Apenas ${novo.length} territórios encontrados. Verifique se o arquivo .xlsx é correto.`,false);
+      return;
+    }
+    dados=novo; salvarDados(); pushFB(); renderAll();
+    xlsxStatus(`✓ ${novo.length} territórios importados da aba "${wsName}"!`,true);
+  }catch(e){ xlsxStatus('Erro ao ler o arquivo: '+e.message,false); }
+}
+function xlsxStatus(msg,ok){
+  const el=document.getElementById('xlsxStatus');
+  el.className='imp-status '+(ok?'imp-ok':'imp-err'); el.textContent=msg;
+}
+
+// ── CARTÕES (leitura automática do número) ──
+// Usa OCR simples via canvas: lê pixels da região do número no cartão
+function handleCardsDrop(ev){ ev.preventDefault(); document.getElementById('cardsDrop').classList.remove('drag'); handleCardsFiles(ev.dataTransfer.files); }
+function handleCardsFiles(files){
+  if(!files||!files.length)return;
+  const progress=document.getElementById('cardsProgress');
+  progress.innerHTML=`<p style="font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:8px">Processando ${files.length} imagem(ns)…</p>`;
+  [...files].forEach(file=>processCardImage(file));
+}
+function uploadCardSingle(n, file){
+  if(!file) return;
+  if(!db){ toast('Sem conexão com a nuvem. Recarregue a página.', true); return; }
+  toast(`Comprimindo cartão ${n}…`);
+  comprimirImagem(file, async dataURL=>{
+    setSyncStatus('syncing');
+    const ok = await salvarCartaoFirestore(n, dataURL);
+    if(ok){
+      setSyncStatus('online');
+      toast(`Cartão ${n} salvo ✓`);
+      renderAll();
+    } else {
+      setSyncStatus('offline');
+      toast(`Erro ao salvar cartão ${n}`, true);
+    }
+  });
+}
+
+async function processCardImage(file){
+  let num = extractNumFromFilename(file.name);
+  if(!num){
+    num = prompt(`Não consegui detectar o número de "${file.name}".\nDigite o número do território:`);
+    if(!num){ addCardPreview(file.name, false); return; }
+    num = num.trim();
+  }
+  if(!db){ addCardPreview(`${num} (sem conexão)`, false); return; }
+  comprimirImagem(file, async dataURL=>{
+    const ok = await salvarCartaoFirestore(num, dataURL);
+    addCardPreview(num, ok);
+    if(ok) renderAll();
+  });
+}
+
+function extractNumFromFilename(name){
+  const clean=name.replace(/\.(png|jpg|jpeg|webp)$/i,'');
+  // "territorio_01" or "territorio_1" pattern
+  const mTerr=clean.match(/territorio[_\s-]*0*(\d+)/i);
+  if(mTerr) return String(parseInt(mTerr[1]));
+  // Pure number
+  if(/^\d+$/.test(clean)) return String(parseInt(clean));
+  // Starts with number (possibly zero-padded)
+  const m1=clean.match(/^0*(\d+)/);
+  if(m1) return String(parseInt(m1[1]));
+  // Number after dash or underscore
+  const m2=clean.match(/[-_\s]0*(\d+)[-_\s.]?$/);
+  if(m2) return String(parseInt(m2[1]));
+  // Any number
+  const m3=clean.match(/0*(\d+)/);
+  if(m3) return String(parseInt(m3[1]));
+  return null;
+}
+
+function addCardPreview(label, ok){
+  const el=document.getElementById('cardsProgress');
+  el.innerHTML=(el.innerHTML||'')+`<span class="card-item-preview${ok?'':' card-item-err'}">${ok?'✓':'✗'} ${label}</span>`;
+}
+
+// ── CONTATOS ──
+// ── CONTATOS ──
+// ── CONTATOS: localStorage + Firestore ──
+let _contatosCache = null; // cache em memória
+
+function getContatos(){
+  if(_contatosCache !== null) return _contatosCache;
+  try{ const s=localStorage.getItem(KEY_CONTATOS); _contatosCache=s?JSON.parse(s):[]; }catch(e){ _contatosCache=[]; }
+  return _contatosCache;
+}
+async function saveContatos(c){
+  _contatosCache = c;
+  localStorage.setItem(KEY_CONTATOS, JSON.stringify(c));
+  // Salva no Firestore para sincronizar entre dispositivos
+  if(db){
+    try{
+      await db.collection('tj_config').doc('contatos').set({lista:c, updatedAt:new Date().toISOString()});
+    }catch(e){ console.error('Erro ao salvar contatos:', e); }
+  }
+}
+async function carregarContatosFirestore(){
+  if(!db) return;
+  try{
+    const snap = await db.collection('tj_config').doc('contatos').get();
+    if(snap.exists){
+      const lista = snap.data().lista || [];
+      _contatosCache = lista;
+      localStorage.setItem(KEY_CONTATOS, JSON.stringify(lista));
+      renderContatos(); renderAll();
+    }
+  }catch(e){ console.error('Erro ao carregar contatos:', e); }
+}
+function addContato(){
+  const n=document.getElementById('ctNm').value.trim(), num=document.getElementById('ctNum').value.trim().replace(/\D/g,'');
+  if(!n||!num){toast('Preencha nome e número',true);return;}
+  const c=getContatos(); c.push({nome:n,num}); saveContatos(c);
+  document.getElementById('ctNm').value=''; document.getElementById('ctNum').value='';
+  renderContatos(); toast('Contato salvo!');
+}
+function renderContatos(){
+  const c=getContatos(), el=document.getElementById('contatosList');
+  if(!c.length){el.innerHTML='<p class="chint" style="margin-bottom:8px">Nenhum dirigente cadastrado ainda.</p>';return;}
+  el.innerHTML=c.map((x,i)=>`<div class="contato-item">
+    <div class="contato-nome">${x.nome}</div>
+    <div class="contato-num">${x.num}</div>
+    <button class="btn-del" onclick="delContato(${i})">×</button>
+  </div>`).join('');
+  renderMensagens();
+}
+function delContato(i){ const c=getContatos(); c.splice(i,1); saveContatos(c); renderContatos(); renderAll(); }
+
+// ── MENSAGENS ──
+const KEY_MSGS = 'tj_msgs_v1';
+const MSGS_PADRAO = [
+  {
+    label: '📍 Indicação de território',
+    texto: 'Olá, {dirigente}! Este é o seu território para a próxima saída de campo. Qualquer dúvida, leia o QR Code ou me contate. 🙏'
+  },
+  {
+    label: '✅ Perguntar conclusão',
+    texto: 'Olá, tudo bem {dirigente}? Gostaria de saber se você terminou o cartão {territorio} ({bairro}). 😊'
+  }
+];
+let _msgsCache = null;
+function getMensagens(){
+  if(_msgsCache !== null) return _msgsCache;
+  try{ const s=localStorage.getItem(KEY_MSGS); _msgsCache=s?JSON.parse(s):JSON.parse(JSON.stringify(MSGS_PADRAO)); }
+  catch(e){ _msgsCache=JSON.parse(JSON.stringify(MSGS_PADRAO)); }
+  return _msgsCache;
+}
+async function saveMensagens(m){
+  _msgsCache = m;
+  localStorage.setItem(KEY_MSGS, JSON.stringify(m));
+  if(db){
+    try{
+      await db.collection('tj_config').doc('mensagens').set({lista:m, updatedAt:new Date().toISOString()});
+    }catch(e){ console.error('Erro ao salvar mensagens:', e); }
+  }
+}
+async function carregarMensagensFirestore(){
+  if(!db) return;
+  try{
+    const snap = await db.collection('tj_config').doc('mensagens').get();
+    if(snap.exists){
+      const lista = snap.data().lista || JSON.parse(JSON.stringify(MSGS_PADRAO));
+      _msgsCache = lista;
+      localStorage.setItem(KEY_MSGS, JSON.stringify(lista));
+      renderMensagens();
+    }
+  }catch(e){ console.error('Erro ao carregar mensagens:', e); }
+}
+function addMensagem(){
+  const m=getMensagens(); m.push({label:'Nova mensagem',texto:'Olá, {dirigente}!'});
+  saveMensagens(m); renderMensagens(); toast('Mensagem adicionada!');
+}
+function delMensagem(i){ const m=getMensagens(); m.splice(i,1); saveMensagens(m); renderMensagens(); toast('Mensagem removida.'); }
+function salvarMensagem(i){
+  const m=getMensagens();
+  const label=document.getElementById('msg-label-'+i)?.value||m[i].label;
+  const texto=document.getElementById('msg-texto-'+i)?.value||m[i].texto;
+  m[i]={label,texto}; saveMensagens(m); toast('Mensagem salva!');
+}
+function renderMensagens(){
+  const el=document.getElementById('msgsList'); if(!el)return;
+  const m=getMensagens();
+  el.innerHTML=m.map((msg,i)=>`
+    <div class="msg-card">
+      <div class="msg-label">
+        <input id="msg-label-${i}" value="${esc(msg.label)}" placeholder="Nome da mensagem">
+        <button class="btn-del" onclick="delMensagem(${i})">×</button>
+      </div>
+      <textarea class="msg-textarea" id="msg-texto-${i}" placeholder="Texto da mensagem...">${esc(msg.texto)}</textarea>
+      <div class="msg-vars">Variáveis: <span>{dirigente}</span><span>{territorio}</span><span>{bairro}</span><span>{data}</span></div>
+      <button class="btn btn-sv" onclick="salvarMensagem(${i})" style="margin-top:8px;font-size:10px">Salvar</button>
+    </div>
+  `).join('');
+}
+
+// ── PROCESSAR MENSAGEM ──
+function processarMsg(template, terr, contato){
+  const ult = terr?.designacoes?.slice(-1)[0];
+  const data = ult?.desig ? fmtD(ult.desig) : '';
+  return template
+    .replace(/\{dirigente\}/gi, contato?.nome || '')
+    .replace(/\{territorio\}/gi, terr?.n || '')
+    .replace(/\{bairro\}/gi, terr?.desc || '')
+    .replace(/\{data\}/gi, data);
+}
+
+// ── CONFIG ──
+// ── CONFIG / FIREBASE ──
+function setCfgSt(m,ok){
+  const el=document.getElementById('cSt');
+  el.style.display = m ? 'block' : 'none';
+  el.className='cst '+(ok?'ok':'err');
+  el.textContent=m;
+}
+
+let contaInfo = null; // {user, vinculo} depois do login
+
+function atualizarStatusCard(){
+  const title=document.getElementById('fbStatusTitle');
+  const body=document.getElementById('fbStatusBody');
+  if(!title) return;
+  if(contaInfo && db){
+    title.textContent='Conta · Conectado';
+    title.style.color='var(--green)';
+    body.innerHTML='';
+    const linha=(rotulo,valor)=>{
+      const d=document.createElement('div');
+      d.style.cssText='font-family:var(--mono);font-size:11px;color:var(--txt2);margin-bottom:4px';
+      const r=document.createElement('span');r.style.color='var(--txt3)';r.textContent=rotulo+': ';
+      d.appendChild(r);d.appendChild(document.createTextNode(valor));body.appendChild(d);
+    };
+    linha('Conta',contaInfo.user.email||'Conta Google');
+    linha('Congregação',contaInfo.vinculo.nome);
+    const s=document.createElement('div');
+    s.style.cssText='font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:6px';
+    s.textContent='Dados salvos na nuvem e compartilhados com quem tem acesso a Territórios.';
+    body.appendChild(s);
+  } else {
+    title.textContent='Conta · Desconectado';
+    title.style.color='var(--txt3)';
+    body.innerHTML='<p class="chint">Sem conexão. Recarregue a página.</p>';
+  }
+}
+
+// Copia tudo do Firebase antigo para a nuvem nova (usar uma vez).
+async function importarDoFirebase(){
+  const apiKey    = document.getElementById('cA').value.trim();
+  const projectId = document.getElementById('cP').value.trim();
+  const appId     = document.getElementById('cI').value.trim();
+  if(!apiKey||!projectId||!appId){ setCfgSt('Preencha os 3 campos.',false); return; }
+  if(!db){ setCfgSt('Sem conexão com a nuvem. Recarregue a página.',false); return; }
+  if(!confirm('Importar do Firebase "'+projectId+'"? Os dados de Territórios desta congregação serão substituídos pelos do Firebase.')) return;
+  const btn=document.getElementById('btnConectar');
+  btn.disabled=true;
+  let antigo=null;
+  try{
+    setCfgSt('Conectando ao Firebase antigo…',true);
+    antigo=firebase.initializeApp({apiKey,projectId,appId,authDomain:`${projectId}.firebaseapp.com`,storageBucket:`${projectId}.appspot.com`,messagingSenderId:''},'importacao_'+Date.now());
+    const fdb=firebase.firestore(antigo);
+
+    let snap=await fdb.collection('tj').doc('dados').get();
+    if(!snap.exists) snap=await fdb.collection('tj').doc('bj2026').get();
+    const lista=snap.exists?(snap.data().dados||[]):[];
+    setCfgSt(`Copiando ${lista.length} registros de territórios…`,true);
+    await db.collection('tj').doc(docId).set({dados:lista,updatedAt:new Date().toISOString()});
+
+    const cfgSnap=await fdb.collection('tj_config').get();
+    for(const d of cfgSnap.docs) await db.collection('tj_config').doc(d.id).set(d.data());
+
+    const cardsSnap=await fdb.collection('tj_cards').get();
+    let i=0;
+    for(const d of cardsSnap.docs){
+      i++; setCfgSt(`Copiando cartões de mapa… ${i}/${cardsSnap.size}`,true);
+      await db.collection('tj_cards').doc(d.id).set(d.data());
+    }
+    setCfgSt(`Pronto! ${lista.length} registros, ${cardsSnap.size} cartões e ${cfgSnap.size} configurações importados. Recarregando…`,true);
+    setTimeout(()=>location.reload(),2500);
+  }catch(err){
+    console.error(err);
+    setCfgSt('Erro ao importar: '+(err.message||'verifique as credenciais.'),false);
+    btn.disabled=false;
+  }finally{
+    try{ if(antigo) await antigo.delete(); }catch(e){}
+  }
+}
+
+// Versão antiga (Firebase direto) — não é mais usada; mantida só como referência.
+async function conectarFirebase_antigo(){
+  const apiKey    = document.getElementById('cA').value.trim();
+  const projectId = document.getElementById('cP').value.trim();
+  const appId     = document.getElementById('cI').value.trim();
+  if(!apiKey||!projectId||!appId){ setCfgSt('Preencha os 3 campos.',false); return; }
+
+  setCfgSt('Conectando…',true);
+  document.getElementById('btnConectar').disabled=true;
+
+  try{
+    if(firebase.apps.length) await firebase.apps[0].delete();
+    const app=firebase.initializeApp({
+      apiKey,projectId,appId,
+      authDomain:`${projectId}.firebaseapp.com`,
+      storageBucket:`${projectId}.appspot.com`,
+      messagingSenderId:''
+    });
+    db      = firebase.firestore(app);
+    storage = firebase.storage(app);
+    // docId fixed as 'dados'
+
+    // Isola localStorage por projeto
+    KEY_DADOS = 'tj_dados_v1_'+projectId;
+    KEY_CARDS = 'tj_cards_v1_'+projectId;
+    dados=[]; cards=[];
+    carregarTudo();
+
+    // Testa conexão
+    await db.collection('tj').doc(docId).get();
+
+    const cfg={apiKey,projectId,appId,
+      authDomain:`${projectId}.firebaseapp.com`,
+      storageBucket:`${projectId}.appspot.com`,
+      messagingSenderId:''};
+    localStorage.setItem(KEY_CFG, JSON.stringify(cfg));
+
+    setSyncStatus('online');
+    setCfgSt('Conectado com sucesso!',true);
+    setTimeout(()=>setCfgSt('',true),3000);
+    atualizarStatusCard();
+    sincFB();
+    renderAll();
+  }catch(err){
+    console.error(err);
+    setCfgSt('Erro: verifique as credenciais.',false);
+    document.getElementById('btnConectar').disabled=false;
+    try{ if(firebase.apps.length) firebase.apps[0].delete(); }catch(e){}
+    db=null; storage=null;
+    setSyncStatus('offline');
+  }
+}
+
+function desconectarFirebase(){
+  if(!confirm('Desconectar do banco atual? Os dados locais são mantidos.'))return;
+  try{ if(firebase.apps.length) firebase.apps[0].delete(); }catch(e){}
+  db=null; storage=null;
+  localStorage.removeItem(KEY_CFG);
+  setSyncStatus('offline');
+  atualizarStatusCard();
+  setCfgSt('',false);
+  toast('Desconectado.');
+}
+
+// manter compatibilidade com código legado
+function salvarCfg(){ importarDoFirebase(); }
+function setCfgSt_old(m,ok){ setCfgSt(m,ok); }
+
+function limparTudo(){ if(!confirm('Apagar todos os dados e cartões?'))return; dados=[]; cards={}; salvarDados(); salvarCards(); renderAll(); toast('Dados apagados.'); }
+function limparCartoes(){ if(!confirm('Apagar todos os cartões?'))return; cards={}; Object.keys(cardsCache).forEach(k=>delete cardsCache[k]); salvarCards(); renderAll(); toast('Cartões limpos.'); }
+
+
+// ── MODAL ENVIAR MENSAGEM ──
+function abrirModalMsg(n){
+  const t = dados.find(x=>x.n===n);
+  if(!t) return;
+  const u = t.designacoes[t.designacoes.length-1];
+  const contatos = getContatos();
+  if(!contatos.length){ toast('Cadastre dirigentes em Config primeiro', true); switchTab('config'); return; }
+  // Tenta achar pelo nome, se não achar usa o primeiro da lista
+  const contato = contatos.find(c=>c.nome===u?.nome) || null;
+  const msgs = getMensagens();
+  const imgUrl = cardsCache[n] || cards[n] || null;
+
+  const botoesMsg = msgs.map((msg,i)=>{
+    const texto = processarMsg(msg.texto, t, contato);
+    const url = `https://wa.me/${contato.num}?text=${encodeURIComponent(texto)}`;
+    return`<a class="msg-modal-send" href="${url}" target="_blank" rel="noopener" onclick="setTimeout(fecharModalMsg,500)">
+      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.554 4.103 1.522 5.825L.057 23.885a.5.5 0 00.615.617l6.158-1.479A11.93 11.93 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.925 0-3.73-.509-5.29-1.4l-.379-.222-3.927.943.977-3.845-.247-.396A9.96 9.96 0 012 12c0-5.514 4.487-10 10-10s10 4.486 10 10-4.486 10-10 10z"/></svg>
+      ${msg.label}
+    </a>`;
+  }).join('');
+
+  const cardHtml = imgUrl
+    ? `<div class="msg-modal-card"><img src="${imgUrl}" alt="Cartão ${n}"></div>
+       <div class="msg-modal-hint">📎 Salve ou copie a imagem acima e anexe no WhatsApp ao enviar a indicação.</div>`
+    : `<div class="msg-modal-card"><div class="msg-modal-card-empty">Sem cartão cadastrado para o território ${n}</div></div>`;
+
+  const modal = document.createElement('div');
+  modal.className = 'msg-modal-bg';
+  modal.id = 'msgModal';
+  modal.innerHTML = `
+    <div class="msg-modal">
+      <div class="msg-modal-title">Território ${n} — ${t.desc}</div>
+      <div class="msg-modal-sub">${contatoEfetivo.nome ? `Dirigente: ${contatoEfetivo.nome} · ${contatoEfetivo.num}` : 'Selecione o dirigente abaixo'}</div>
+      ${cardHtml}
+      ${seletorContato}
+      <div class="msg-modal-btns" id="${contato ? '' : 'modalMsgsBtnsOculto'}">
+        ${contato ? botoesMsg : ''}
+        <button class="msg-modal-close" onclick="fecharModalMsg()">Fechar</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e=>{ if(e.target===modal) fecharModalMsg(); });
+  document.body.appendChild(modal);
+}
+
+function atualizarModalMsgs(n){
+  const sel = document.getElementById('modalContatoSel');
+  const btnDiv = document.getElementById('modalMsgsBtns');
+  if(!sel || !btnDiv) return;
+  const nomeSel = sel.value;
+  const c = getContatos().find(x=>x.nome===nomeSel);
+  const t = dados.find(x=>x.n===n);
+  const msgs = getMensagens();
+  if(!c || !t){ btnDiv.innerHTML=''; return; }
+  btnDiv.innerHTML = msgs.map(msg=>{
+    const texto = processarMsg(msg.texto, t, c);
+    const url = `https://wa.me/${c.num}?text=${encodeURIComponent(texto)}`;
+    return`<a class="msg-modal-send" href="${url}" target="_blank" rel="noopener" onclick="setTimeout(fecharModalMsg,500)">
+      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.554 4.103 1.522 5.825L.057 23.885a.5.5 0 00.615.617l6.158-1.479A11.93 11.93 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.925 0-3.73-.509-5.29-1.4l-.379-.222-3.927.943.977-3.845-.247-.396A9.96 9.96 0 012 12c0-5.514 4.487-10 10-10s10 4.486 10 10-4.486 10-10 10z"/></svg>
+      ${msg.label}
+    </a>`;
+  }).join('') + `<button class="msg-modal-close" onclick="fecharModalMsg()">Fechar</button>`;
+}
+
+function fecharModalMsg(){
+  const m = document.getElementById('msgModal');
+  if(m) m.remove();
+}
+
+
+// ── CAMPANHAS ──
+const KEY_CAMP = 'tj_camp_v1';
+let _campCache = null;
+const CAMP_PADRAO = [
+  {sigla:'CC', nome:'Campanha de Celebração'},
+  {sigla:'CM', nome:'Campanha Memorial'}
+];
+
+function getCampanhas(){
+  if(_campCache!==null) return _campCache;
+  try{ const s=localStorage.getItem(KEY_CAMP); _campCache=s?JSON.parse(s):JSON.parse(JSON.stringify(CAMP_PADRAO)); }
+  catch(e){ _campCache=JSON.parse(JSON.stringify(CAMP_PADRAO)); }
+  return _campCache;
+}
+async function saveCampanhas(c){
+  _campCache=c;
+  localStorage.setItem(KEY_CAMP,JSON.stringify(c));
+  if(db){
+    try{ await db.collection('tj_config').doc('campanhas').set({lista:c,updatedAt:new Date().toISOString()}); }
+    catch(e){ console.error('Erro ao salvar campanhas:',e); }
+  }
+}
+function addCampanha(){
+  const sigla=document.getElementById('cpSigla').value.trim().toUpperCase();
+  const nome=document.getElementById('cpNome').value.trim();
+  if(!sigla||!nome){toast('Preencha sigla e nome',true);return;}
+  const c=getCampanhas();
+  if(c.find(x=>x.sigla===sigla)){toast('Sigla já existe',true);return;}
+  c.push({sigla,nome}); saveCampanhas(c);
+  document.getElementById('cpSigla').value='';
+  document.getElementById('cpNome').value='';
+  renderCampanhas(); toast('Campanha salva!');
+}
+function delCampanha(i){
+  const c=getCampanhas(); c.splice(i,1); saveCampanhas(c); renderCampanhas();
+}
+function renderCampanhas(){
+  const el=document.getElementById('campanhasList'); if(!el) return;
+  const c=getCampanhas();
+  if(!c.length){el.innerHTML='<p class="chint" style="margin-bottom:8px">Nenhuma campanha cadastrada.</p>';return;}
+  el.innerHTML=c.map((x,i)=>`
+    <div class="contato-item">
+      <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent2);min-width:44px">${x.sigla}</div>
+      <div class="contato-nome" style="font-size:12px">${x.nome}</div>
+      <button class="btn-del" onclick="delCampanha(${i})">×</button>
+    </div>`).join('');
+}
+
+// ── GERENCIAR TERRITÓRIOS ──
+async function addTerrNovo(){
+  const n    = document.getElementById('addTerrN').value.trim();
+  const desc = document.getElementById('addTerrDesc').value.trim();
+  const imgFile = document.getElementById('addTerrImg').files[0];
+  if(!n || !desc){ toast('Preencha número e bairro', true); return; }
+  if(dados.find(x=>x.n===n)){ toast('Território '+n+' já existe', true); return; }
+  dados.push({n, desc, designacoes:[]});
+  salvarDados();
+  const resetForm = ()=>{
+    document.getElementById('addTerrN').value='';
+    document.getElementById('addTerrDesc').value='';
+    document.getElementById('addTerrImg').value='';
+    document.getElementById('addTerrImgTxt').textContent='📎 Imagem';
+    preencherRenumSelect(); renderAll();
+  };
+  if(imgFile){
+    toast('Comprimindo imagem…');
+    comprimirImagem(imgFile, async dataURL=>{
+      if(db) await salvarCartaoFirestore(n, dataURL);
+      await pushFB();
+      toast('Território '+n+' adicionado com imagem ✓');
+      resetForm();
+    });
+  } else {
+    await pushFB();
+    toast('Território '+n+' adicionado ✓');
+    resetForm();
+  }
+}
+
+async function renumerarTerr(){
+  const atual = document.getElementById('renumAtual').value;
+  const novo  = document.getElementById('renumNovo').value.trim();
+  if(!atual){ toast('Selecione o território atual', true); return; }
+  if(!novo){  toast('Digite o novo número', true); return; }
+  if(atual===novo){ toast('O número já é esse', true); return; }
+  if(dados.find(x=>x.n===novo)){ toast('Território '+novo+' já existe', true); return; }
+  const t = dados.find(x=>x.n===atual);
+  if(!t){ toast('Território não encontrado', true); return; }
+  t.n = novo;
+  salvarDados();
+  if(db){
+    try{
+      const snapOld = await db.collection('tj_cards').doc(String(atual)).get();
+      if(snapOld.exists){
+        const img = snapOld.data().img;
+        await db.collection('tj_cards').doc(String(novo)).set({img, updatedAt:new Date().toISOString()});
+        await db.collection('tj_cards').doc(String(atual)).delete();
+      }
+    }catch(e){ console.error('Erro ao mover imagem:', e); }
+  }
+  if(cardsCache[atual]){ cardsCache[novo]=cardsCache[atual]; delete cardsCache[atual]; }
+  if(cards[atual])     { cards[novo]=cards[atual];           delete cards[atual];      salvarCards(); }
+  await pushFB();
+  toast('Renumerado: '+atual+' → '+novo+' ✓');
+  document.getElementById('renumAtual').value='';
+  document.getElementById('renumNovo').value='';
+  preencherRenumSelect(); renderAll();
+}
+
+function preencherRenumSelect(){
+  const sel = document.getElementById('renumAtual'); if(!sel) return;
+  const ordered = [...dados].sort((a,b)=>parseInt(a.n)-parseInt(b.n)||String(a.n).localeCompare(String(b.n)));
+  sel.innerHTML = '<option value="">— Selecionar —</option>'+
+    ordered.map(t=>`<option value="${esc(t.n)}">${t.n} — ${esc(t.desc)}</option>`).join('');
+}
+
+// ── TABS ──
+function switchTab(t){
+  document.querySelectorAll('.ntab').forEach((el,i)=>el.classList.toggle('active',['indicar','registrar','historico','stats','importar','config'][i]===t));
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  activeTab=t;
+  if(t==='registrar') renderRegistrar();
+  else if(t==='historico') renderHist();
+  else if(t==='config'){ renderContatos(); renderMensagens(); renderCampanhas(); atualizarStatusCard(); preencherRenumSelect(); const ci=document.getElementById('cfgCong'); if(ci) ci.value=congName||''; }
+  else if(t==='stats') renderStats();
+}
+
+// ── RENDER ALL ──
+function renderAll(){
+  renderDL();
+  if(activeTab==='indicar') renderIndicar();
+  else if(activeTab==='registrar') renderRegistrar();
+  else if(activeTab==='historico') renderHist();
+  else if(activeTab==='stats') renderStats();
+}
+
+
+// ── ESTATÍSTICAS ──
+function renderStats(){
+  const el = document.getElementById('statsContent');
+  if(!dados.length){
+    el.innerHTML='<div class="empty-state"><div class="es-icon">📊</div><div class="es-title">Sem dados</div><div class="es-sub">Importe a planilha primeiro</div></div>';
+    return;
+  }
+
+  // ── Contagens gerais ──
+  const totalDesig   = dados.reduce((s,t)=>s+t.designacoes.length, 0);
+  const totalConcl   = dados.reduce((s,t)=>s+t.designacoes.filter(d=>d.concl).length, 0);
+  const totalAndando = dados.filter(t=>emAndamento(t)).length;
+  const totalNunca   = dados.filter(t=>!ultConcl(t)&&!emAndamento(t)).length;
+
+  // ── Por bairro ──
+  const bairroMap = {};
+  dados.forEach(t=>{
+    const b = t.desc||'Sem bairro';
+    if(!bairroMap[b]) bairroMap[b]={designacoes:0,concluidos:0,territorios:0};
+    bairroMap[b].territorios++;
+    t.designacoes.forEach(d=>{
+      bairroMap[b].designacoes++;
+      if(d.concl) bairroMap[b].concluidos++;
+    });
+  });
+  const bairros = Object.entries(bairroMap).sort((a,b)=>b[1].designacoes-a[1].designacoes);
+  const maxBDesig = bairros[0]?.[1]?.designacoes||1;
+
+  // ── Por território (cartão mais trabalhado) ──
+  const terrRank = [...dados].map(t=>({
+    n:t.n, desc:t.desc,
+    total:t.designacoes.length,
+    concl:t.designacoes.filter(d=>d.concl).length
+  })).sort((a,b)=>b.total-a.total).slice(0,10);
+  const maxTDesig = terrRank[0]?.total||1;
+
+  // ── Por pessoa ──
+  const pessoaMap = {};
+  dados.forEach(t=>{
+    t.designacoes.forEach(d=>{
+      if(!d.nome) return;
+      // split por / para contar parceiros individualmente
+      d.nome.split('/').forEach(raw=>{
+        const p = raw.trim().split('(')[0].trim();
+        if(!p) return;
+        if(!pessoaMap[p]) pessoaMap[p]={total:0,concl:0,bairros:new Set()};
+        pessoaMap[p].total++;
+        if(d.concl) pessoaMap[p].concl++;
+        pessoaMap[p].bairros.add(t.desc);
+      });
+    });
+  });
+  const pessoas = Object.entries(pessoaMap)
+    .map(([n,v])=>({nome:n,total:v.total,concl:v.concl,bairros:v.bairros.size}))
+    .sort((a,b)=>b.total-a.total).slice(0,10);
+  const maxPDesig = pessoas[0]?.total||1;
+
+  // ── Linha do tempo por mês ──
+  const mesMap = {};
+  dados.forEach(t=>{
+    t.designacoes.forEach(d=>{
+      if(d.concl){
+        const m = d.concl.slice(0,7); // yyyy-mm
+        mesMap[m] = (mesMap[m]||0)+1;
+      }
+    });
+  });
+  const meses = Object.entries(mesMap).sort((a,b)=>a[0]<b[0]?-1:1).slice(-12);
+  const maxMes = Math.max(...meses.map(m=>m[1]),1);
+  const mesNome = m=>{
+    const [y,mo]=m.split('-');
+    const nomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    return nomes[parseInt(mo)-1]+'/'+y.slice(2);
+  };
+
+  // ── Território sem fazer há mais tempo ──
+  const maisAntigos = dados
+    .filter(t=>ultConcl(t)&&!emAndamento(t))
+    .map(t=>({n:t.n,desc:t.desc,dias:diasDe(ultConcl(t))}))
+    .sort((a,b)=>b.dias-a.dias).slice(0,5);
+
+  // ── Render ──
+  const rankIcon = i => i===0?'<span class="s-rank gold">①</span>':i===1?'<span class="s-rank silver">②</span>':i===2?'<span class="s-rank bronze">③</span>':`<span class="s-rank">${i+1}</span>`;
+
+  el.innerHTML = `
+    <!-- Números gerais -->
+    <div class="s-big">
+      <div class="s-bigcard"><div class="s-bignum" style="color:var(--blue)">${dados.length}</div><div class="s-biglbl">Territórios</div></div>
+      <div class="s-bigcard"><div class="s-bignum" style="color:var(--green)">${totalConcl}</div><div class="s-biglbl">Conclusões</div></div>
+      <div class="s-bigcard"><div class="s-bignum" style="color:var(--orange)">${totalDesig}</div><div class="s-biglbl">Designações</div></div>
+      <div class="s-bigcard"><div class="s-bignum mut">${totalNunca}</div><div class="s-biglbl">Nunca feitos</div></div>
+    </div>
+
+    <!-- Bairros mais trabalhados -->
+    <div class="s-section">
+      <div class="s-title">Bairros mais trabalhados</div>
+      <div class="s-grid">
+        ${bairros.map(([b,v],i)=>`
+          <div class="s-card">
+            ${rankIcon(i)}
+            <div class="s-info">
+              <div class="s-name">${b}</div>
+              <div class="s-sub">${v.designacoes} designações · ${v.territorios} cartões</div>
+              <div class="s-bar-wrap"><div class="s-bar" style="width:${Math.round(v.designacoes/maxBDesig*100)}%;background:var(--blu)"></div></div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Cartões mais trabalhados -->
+    <div class="s-section">
+      <div class="s-title">Cartões mais trabalhados</div>
+      <div class="s-grid">
+        ${terrRank.map((t,i)=>`
+          <div class="s-card">
+            ${rankIcon(i)}
+            <div class="s-info">
+              <div class="s-name">Terr. ${t.n} — ${t.desc}</div>
+              <div class="s-sub">${t.total} designações · ${t.concl} concluídas</div>
+              <div class="s-bar-wrap"><div class="s-bar" style="width:${Math.round(t.total/maxTDesig*100)}%;background:var(--grn)"></div></div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Pessoas mais ativas -->
+    <div class="s-section">
+      <div class="s-title">Pessoas mais ativas</div>
+      <div style="border:1px solid var(--brd);border-radius:10px;overflow:hidden">
+        ${pessoas.map((p,i)=>`
+          <div class="s-pessoa-row">
+            ${rankIcon(i)}
+            <div class="s-pessoa-avatar">${p.nome.slice(0,2).toUpperCase()}</div>
+            <div class="s-info">
+              <div class="s-name">${p.nome}</div>
+              <div class="s-sub">${p.total} designações · ${p.concl} concluídas · ${p.bairros} bairro${p.bairros!==1?'s':''}</div>
+              <div class="s-bar-wrap"><div class="s-bar" style="width:${Math.round(p.total/maxPDesig*100)}%;background:var(--ora)"></div></div>
+            </div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:500;color:var(--txt)">${p.total}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Conclusões por mês -->
+    ${meses.length ? `
+    <div class="s-section">
+      <div class="s-title">Conclusões por mês</div>
+      <div class="s-timeline">
+        ${meses.map(([m,n])=>`
+          <div class="s-trow">
+            <div class="s-tmonth">${mesNome(m)}</div>
+            <div class="s-tbar-wrap"><div class="s-bar-wrap"><div class="s-bar" style="width:${Math.round(n/maxMes*100)}%"></div></div></div>
+            <div class="s-tcount">${n}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Territórios mais antigos -->
+    ${maisAntigos.length ? `
+    <div class="s-section">
+      <div class="s-title">Aguardando há mais tempo</div>
+      <div class="s-grid">
+        ${maisAntigos.map((t,i)=>`
+          <div class="s-card">
+            ${rankIcon(i)}
+            <div class="s-info">
+              <div class="s-name">Terr. ${t.n} — ${t.desc}</div>
+              <div class="s-sub" style="color:${t.dias>=90?'var(--red)':t.dias>=60?'var(--ora)':'var(--mut)'}">${t.dias} dias sem visita</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+}
+
+// ── TOAST ──
+function toast(m,err=false){
+  const el=document.getElementById('toast');
+  el.textContent=m;
+  el.classList.toggle('err-t', err);
+  el.classList.add('show'); setTimeout(()=>{ el.classList.remove('show'); el.classList.remove('err-t'); },2300);
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', async function(){
+  renderAll();
+  // Pré-preenche a importação com as credenciais antigas, se ainda estiverem salvas neste navegador.
+  const cfgAntiga=JSON.parse(localStorage.getItem(KEY_CFG)||'null');
+  if(cfgAntiga?.apiKey){
+    try{
+      document.getElementById('cA').value=cfgAntiga.apiKey;
+      document.getElementById('cP').value=cfgAntiga.projectId||'';
+      document.getElementById('cI').value=cfgAntiga.appId||'';
+    }catch(e){}
+  }
+  try{
+    // Login e permissão vêm da conta (mesma do Oradores). Sem acesso, volta para a tela inicial.
+    const ctx=await TerritoriosBridge.iniciar();
+    if(!ctx) return;
+    contaInfo={user:ctx.user,vinculo:ctx.vinculo};
+    // Cache local separado por congregação.
+    KEY_DADOS = 'tj_dados_v1_ws_'+ctx.vinculo.workspaceId;
+    KEY_CARDS = 'tj_cards_v1_ws_'+ctx.vinculo.workspaceId;
+    dados=[]; cards={};
+    carregarTudo();
+    if(!congName) congName=ctx.vinculo.nome;
+    try{ const ci=document.getElementById('cfgCong'); if(ci) ci.value=congName||''; }catch(e){}
+    db=ctx.db;
+    setSyncStatus('online');
+    atualizarStatusCard();
+    await sincFB();
+    renderAll();
+  }catch(e){
+    console.error(e);
+    setSyncStatus('offline');
+    toast('Não foi possível conectar: '+e.message, true);
+  }
+});
+
+</script>
+
+</body>
+</html>
