@@ -108,12 +108,27 @@ async function loadDiscursantes(){
   renderMinha();
 }
 
-function saidasDiscursante(d){
+// Discursos cadastrados manualmente na aba Minha Cong. (os que ficam salvos no banco).
+function saidasProprias(d){
   const saidas=Array.isArray(d.saidas)?d.saidas.filter(s=>s&&s.data).map(s=>({...s,id:String(s.id||Date.now()+Math.random())})):[];
   if(d.proxSaida&&!saidas.some(s=>s.data===d.proxSaida&&String(s.destino||'')===String(d.destino||''))){
     saidas.push({id:'legacy',data:d.proxSaida,destino:d.destino||'',obs:d.obs||''});
   }
   return saidas.sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+}
+
+// Discursos do irmão na programação da própria congregação (puxados automaticamente, não são salvos aqui).
+function saidasDaProgramacao(d){
+  const nome=normalizarTexto(d.nome),minha=normalizarCongregacao(cfg.cong);
+  if(!nome||!Array.isArray(programa))return [];
+  return programa.filter(p=>p&&p.data&&!p.semDiscurso&&normalizarTexto(p.nome)===nome&&(!p.congregacao||normalizarCongregacao(p.congregacao)===minha))
+    .map(p=>({id:'prog_'+p.id,data:p.data,destino:cfg.cong||'Própria congregação',obs:'',auto:true}));
+}
+
+function saidasDiscursante(d){
+  const proprias=saidasProprias(d);
+  const auto=saidasDaProgramacao(d).filter(a=>!proprias.some(s=>s.data===a.data));
+  return [...proprias,...auto].sort((a,b)=>String(a.data).localeCompare(String(b.data)));
 }
 
 function saidasFuturasDiscursante(d,hoje=isoLocal(new Date())){
@@ -215,7 +230,9 @@ function renderMinha(){
         const item=document.createElement('div');item.className='outbound-date';
         const data=document.createElement('strong');data.textContent=fD(saida.data);
         const destino=document.createElement('span');destino.textContent=saida.destino||'Destino não informado';
-        item.appendChild(data);item.appendChild(destino);listaSaidas.appendChild(item);
+        item.appendChild(data);item.appendChild(destino);
+        if(saida.auto){const tag=document.createElement('span');tag.className='badge bpur';tag.style.cssText='margin-left:auto;font-size:10px';tag.textContent='programação';tag.title='Puxado automaticamente da programação da congregação';item.appendChild(tag);}
+        listaSaidas.appendChild(item);
         if(saida.obs){const obs=document.createElement('div');obs.className='outbound-note';obs.textContent=saida.obs;listaSaidas.appendChild(obs);}
       });
       info.appendChild(listaSaidas);
@@ -306,7 +323,7 @@ function novoDiscursante(){
 // Mostra (ou esconde) o seletor "Qual discurso editar" e o botão de excluir.
 function mostrarSeletorSaidas(d,selecionadaId){
   const field=document.getElementById('dcSaidaField'),sel=document.getElementById('dcSaidaSel'),del=document.getElementById('dcDelSaidaBtn');
-  const saidas=d?saidasDiscursante(d):[];
+  const saidas=d?saidasProprias(d):[];
   sel.innerHTML='';
   if(!saidas.length){field.style.display='none';del.style.display='none';return;}
   const hoje=isoLocal(new Date());
@@ -329,7 +346,7 @@ function preencherSaida(saida){
 function onDcSaidaSelect(){
   const d=discursantes.find(x=>x.id===document.getElementById('dcId').value);if(!d)return;
   const v=document.getElementById('dcSaidaSel').value;
-  preencherSaida(saidasDiscursante(d).find(s=>s.id===v)||null);
+  preencherSaida(saidasProprias(d).find(s=>s.id===v)||null);
 }
 
 function camposSaidas(saidas){
@@ -341,9 +358,9 @@ async function excluirSaidaDiscursante(){
   if(!db)return toast('Supabase não conectado!');
   const id=document.getElementById('dcId').value,saidaId=document.getElementById('dcSaidaSel').value;
   const d=discursantes.find(x=>x.id===id);if(!d||!saidaId)return;
-  const saida=saidasDiscursante(d).find(s=>s.id===saidaId);if(!saida)return;
+  const saida=saidasProprias(d).find(s=>s.id===saidaId);if(!saida)return;
   if(!(await confirmarModal('Excluir discurso','Excluir o discurso de '+fD(saida.data)+' — '+(saida.destino||'Destino não informado')+'?','Excluir',true)))return;
-  const data=camposSaidas(saidasDiscursante(d).filter(s=>s.id!==saidaId));
+  const data=camposSaidas(saidasProprias(d).filter(s=>s.id!==saidaId));
   try{
     await FF.upd(FF.doc(db,'discursantes',id),data);
   }catch(error){return toast('Falha ao excluir: '+error.message);}
@@ -354,7 +371,8 @@ async function excluirSaidaDiscursante(){
 
 function editDiscursante(id){
   const d=discursantes.find(x=>x.id===id);if(!d)return;
-  const proxima=proximaSaidaDiscursante(d)||saidasDiscursante(d).slice(-1)[0]||null;
+  const proprias=saidasProprias(d),hoje=isoLocal(new Date());
+  const proxima=proprias.find(s=>s.data>=hoje)||proprias.slice(-1)[0]||null;
   document.getElementById('dcId').value=id;
   document.getElementById('dcOradorId').value=d.oradorId||'';
   document.getElementById('dcUlt').value=d.ultSaida||'';
@@ -389,7 +407,7 @@ async function saveDiscursante(){
   const nome=o?o.nome:(discursantes.find(d=>d.id===id)?.nome||'');
   const tel=o?o.tel||'':'';
   const existente=discursantes.find(d=>d.id===id),novaData=document.getElementById('dcProx').value||null;
-  let saidas=existente?saidasDiscursante(existente):[];
+  let saidas=existente?saidasProprias(existente):[];
   if(novaData){
     const compromisso={id:saidaId||String(Date.now()),data:novaData,destino:document.getElementById('dcDest').value.trim(),obs:document.getElementById('dcObs').value.trim()};
     if(saidaId){const pos=saidas.findIndex(s=>s.id===saidaId);if(pos>=0)saidas[pos]=compromisso;else saidas.push(compromisso);}else saidas.push(compromisso);
