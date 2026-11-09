@@ -1,0 +1,15 @@
+{
+  "name": "Designa",
+  "short_name": "Designa",
+  "description": "Oradores e territórios da congregação em um só lugar.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f7fb",
+  "theme_color": "#2563eb",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/assets/images/oradores-speaker-logo.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }
+  ]
+}

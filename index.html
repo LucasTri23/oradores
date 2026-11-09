@@ -2,111 +2,179 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Designa</title>
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" href="/assets/images/oradores-speaker-logo.png">
+<link rel="apple-touch-icon" href="/assets/images/oradores-speaker-logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261109-2">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
+<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
-:root{--bg:#0b1120;--surf:#111a2e;--surf2:#18233b;--border:#22314f;--txt:#f1f5f9;--txt2:#cbd5e1;--txt3:#8a9bb8;--pri:#3b82f6;--pri2:#60a5fa;--grn:#22c55e;--red:#ef4444;--amb:#f59e0b}
-@media (prefers-color-scheme:light){:root{--bg:#f4f6fb;--surf:#ffffff;--surf2:#f1f4f9;--border:#dbe2ee;--txt:#0f172a;--txt2:#334155;--txt3:#64748b;--pri:#2563eb;--pri2:#1d4ed8}}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
-.wrap{max-width:880px;margin:0 auto;padding:28px 16px 48px}
-header{display:flex;align-items:center;gap:12px;margin-bottom:28px}
-header img{width:38px;height:38px;border-radius:10px}
-header h1{font-size:20px;font-weight:800}
-header small{display:block;font-size:12px;color:var(--txt3);font-weight:500;margin-top:2px}
-header .acc{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt3);min-width:0}
-header .acc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
-.btn{font:inherit;font-size:13px;font-weight:600;border-radius:9px;padding:9px 14px;cursor:pointer;border:1px solid var(--border);background:var(--surf);color:var(--txt);display:inline-flex;align-items:center;gap:6px;text-decoration:none}
-.btn:hover{border-color:var(--pri)}
-.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
-.btn.sm{font-size:12px;padding:6px 10px}
-.btn.danger{color:var(--red)}
-.btn:disabled{opacity:.6;cursor:default}
-.card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:20px}
-.center{max-width:420px;margin:60px auto 0;text-align:center}
-.center p{color:var(--txt2);font-size:14px;line-height:1.6;margin:10px 0 18px}
-.modulos{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:28px}
-.modulo{display:block;text-decoration:none;color:inherit;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:22px;transition:border-color .15s,transform .15s}
-a.modulo:hover{border-color:var(--pri);transform:translateY(-2px)}
-.modulo .ico{font-size:30px;margin-bottom:10px}
-.modulo h2{font-size:18px;font-weight:700;margin-bottom:6px}
-.modulo p{font-size:13px;color:var(--txt2);line-height:1.5}
-.modulo .go{margin-top:14px;font-size:13px;font-weight:700;color:var(--pri2)}
-.modulo.off{opacity:.55;cursor:not-allowed}
-.modulo.off .go{color:var(--txt3)}
-h3{font-size:15px;font-weight:700;margin-bottom:4px}
-.hint{font-size:12px;color:var(--txt3);margin-bottom:14px;line-height:1.5}
-.membro{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border)}
-.membro .email{flex:1;min-width:160px;font-size:13px;overflow-wrap:anywhere}
-.membro .email small{display:block;color:var(--txt3);font-size:11px}
-.chk{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--txt2);cursor:pointer;user-select:none}
-.chk input{accent-color:var(--pri);width:15px;height:15px}
-.convite{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
-.err{color:var(--red);font-size:13px;margin-top:12px}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--surf2);border:1px solid var(--border);color:var(--txt);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100% - 32px);text-align:center}
-.toast.show{opacity:1}
-[hidden]{display:none!important}
-@media (max-width:560px){header .acc span{display:none}}
+.center{max-width:430px;margin:8vh auto 0;text-align:center}
+.center .dz-card{padding:32px 26px}
+.center img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 7px 12px rgba(37,99,235,.22))}
+.center h1{font:700 24px 'Space Grotesk',sans-serif;color:var(--pur3);margin:6px 0 4px}
+.center p{color:var(--whi3);font-size:13px;line-height:1.6;margin:8px 0 20px}
+.err{color:var(--red);font-size:12px;margin-top:12px}
+.hello h1{font:700 26px 'Space Grotesk',sans-serif;letter-spacing:-.02em;margin:0 0 4px}
+.hello p{color:var(--whi3);font-size:13px;margin:0 0 22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.sec-head h2{display:flex;align-items:center;gap:8px;font:700 15px 'Space Grotesk',sans-serif;margin:0}
+.sec-head h2 svg{width:18px;height:18px;color:var(--pur)}
+.sec-head a{font:600 12px Inter,sans-serif;color:var(--pur);text-decoration:none;white-space:nowrap}
+.linha{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);text-decoration:none;color:inherit}
+.linha:first-of-type{border-top:0}
+.linha .dt{flex:0 0 auto;min-width:52px;text-align:center;background:var(--surf2);border-radius:8px;padding:5px 6px;font:700 13px 'Space Grotesk',sans-serif;color:var(--whi)}
+.linha .dt small{display:block;font:600 9px Inter,sans-serif;color:var(--whi3);text-transform:uppercase}
+.linha .tx{flex:1;min-width:0}
+.linha .tx strong{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linha .tx span{display:block;font-size:11px;color:var(--whi3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vazio{font-size:12px;color:var(--whi3);padding:10px 0}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.num{background:var(--surf2);border-radius:10px;padding:10px;text-align:center}
+.num b{display:block;font:700 22px 'Space Grotesk',sans-serif}
+.num small{font-size:10px;color:var(--whi3);font-weight:600}
+.num.red b{color:var(--red)}.num.blu b{color:var(--pur)}.num.gry b{color:var(--whi3)}
+.sub{font:700 10px Inter,sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--whi3);margin:14px 0 4px}
+.tag{flex:0 0 auto;font:600 10px Inter,sans-serif;padding:3px 8px;border-radius:20px}
+.tag.red{background:color-mix(in srgb,var(--red) 12%,transparent);color:var(--red)}
+.tag.ora{background:color-mix(in srgb,var(--amber) 14%,transparent);color:var(--amber)}
+.tag.blu{background:var(--pur-dim);color:var(--pur)}
+.tag.gry{background:var(--surf2);color:var(--whi3)}
+.modulo-off{opacity:.6}
+.cfg{display:grid;gap:14px;max-width:820px}
+.cfg h2{font:700 15px 'Space Grotesk',sans-serif;margin:0 0 4px}
+.cfg .hint{font-size:12px;color:var(--whi3);margin:0 0 14px;line-height:1.5}
+.campo{display:flex;gap:8px;flex-wrap:wrap}
+.campo input{flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surf);color:var(--whi);font:500 13px Inter,sans-serif}
+.campo input:focus{outline:2px solid var(--pur-dim);border-color:var(--pur)}
+.membro{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--border)}
+.membro .email{flex:1;min-width:170px;font-size:13px;overflow-wrap:anywhere}
+.membro .email small{display:block;color:var(--whi3);font-size:11px;margin-top:2px}
+.acesso{display:flex;flex-direction:column;gap:3px;font:600 10px Inter,sans-serif;color:var(--whi3);text-transform:uppercase;letter-spacing:.05em}
+.acesso select{padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surf);color:var(--whi);font:500 12px Inter,sans-serif;text-transform:none;letter-spacing:0}
+.convite{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-top:6px;padding-top:14px;border-top:1px solid var(--border)}
+.secao[hidden]{display:none}
 </style>
 </head>
-<body>
-<div class="wrap">
-  <header>
+<body class="dz-shell">
+
+<!-- Login / sem congregação (sem menu) -->
+<div id="vLogin" class="center" hidden>
+  <div class="dz-card">
     <img src="/assets/images/oradores-speaker-logo.png" alt="">
-    <div><h1 id="appNome">Designa</h1><small id="congNome">Organização da congregação</small></div>
-    <div class="acc" id="acc" hidden><span id="accEmail"></span><button class="btn sm" onclick="sair()">Sair</button></div>
-  </header>
-
-  <!-- Carregando -->
-  <div id="vCarregando" class="center"><p>Carregando…</p></div>
-
-  <!-- Login -->
-  <div id="vLogin" class="center card" hidden>
-    <h3>Bem-vindo</h3>
-    <p>Entre com sua conta Google para acessar os módulos da sua congregação.</p>
-    <button class="btn pri" onclick="entrar()">Entrar com Google</button>
+    <h1 class="nomeApp">Designa</h1>
+    <p>Oradores e territórios da congregação em um só lugar. Entre com sua conta Google.</p>
+    <button class="dz-btn pri" onclick="entrar()">Entrar com Google</button>
     <div class="err" id="loginErr" hidden></div>
   </div>
-
-  <!-- Sem congregação -->
-  <div id="vSemCong" class="center card" hidden>
-    <h3>Você ainda não faz parte de uma congregação</h3>
-    <p>Abra um convite enviado pelo responsável da sua congregação, ou crie a sua.</p>
-    <button class="btn pri" id="criarBtn" onclick="criarCongregacao()">Criar minha congregação</button>
-  </div>
-
-  <!-- Módulos -->
-  <div id="vModulos" hidden>
-    <div class="modulos" id="listaModulos"></div>
-
-    <div class="card" id="painelDono" hidden>
-      <h3>Equipe e acessos</h3>
-      <p class="hint">Escolha o que cada pessoa pode editar. Você, como proprietário, sempre acessa tudo.</p>
-      <div id="listaMembros"></div>
-      <div class="convite">
-        <strong style="font-size:13px">Convidar alguém para:</strong>
-        <label class="chk"><input type="checkbox" id="convOradores" checked> Oradores</label>
-        <label class="chk"><input type="checkbox" id="convTerritorios"> Territórios</label>
-        <button class="btn pri sm" id="convBtn" onclick="convidar()">Criar link de convite</button>
-      </div>
-      <p class="hint" style="margin:8px 0 0">O link vale por 24 horas e pode ser usado uma vez.</p>
-    </div>
-  </div>
-
-  <div class="err" id="erroGeral" hidden></div>
 </div>
-<div class="toast" id="toast"></div>
+<div id="vSemCong" class="center" hidden>
+  <div class="dz-card">
+    <img src="/assets/images/oradores-speaker-logo.png" alt="">
+    <h1>Bem-vindo</h1>
+    <p>Você ainda não faz parte de uma congregação. Abra o convite enviado pelo responsável da sua congregação, ou crie a sua.</p>
+    <button class="dz-btn pri" id="criarBtn" onclick="criarCongregacao()">Criar minha congregação</button>
+    <p style="margin:14px 0 0"><button class="dz-btn" onclick="sair()">Sair da conta</button></p>
+  </div>
+</div>
+<div id="vCarregando" class="center"><p style="color:var(--whi3)">Carregando…</p></div>
 
-<script src="/assets/shared/conta.js?v=20261109-1"></script>
+<!-- App -->
+<div id="vApp" hidden>
+  <header class="dz-header">
+    <div class="dz-logo"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span class="nomeApp">Designa</span><small class="nomeCong"></small></div>
+    <div class="dz-page-title" id="tituloPagina">Início</div>
+    <div class="dz-actions">
+      <button class="dz-icon-btn" data-dz-tema onclick="DesignaUI.alternarTema()"></button>
+      <div id="dzConta"></div>
+    </div>
+  </header>
+  <nav class="dz-nav">
+    <a class="dz-brand" href="/"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span><span class="nomeApp">Designa</span><small class="nomeCong"></small></span></a>
+    <a class="dz-tab active" data-sec="painel" href="#painel"><i data-lucide="layout-dashboard"></i><span>Início</span></a>
+    <div class="dz-nav-sep">Módulos</div>
+    <a class="dz-tab" id="navOradores" href="/oradores"><i data-lucide="mic"></i><span>Oradores</span></a>
+    <a class="dz-tab" id="navTerritorios" href="/territorios"><i data-lucide="map"></i><span>Territórios</span></a>
+    <div class="dz-nav-sep">Congregação</div>
+    <a class="dz-tab" data-sec="configuracoes" href="#configuracoes"><i data-lucide="settings"></i><span>Configurações</span></a>
+  </nav>
+
+  <main class="dz-main">
+    <!-- PAINEL -->
+    <section class="secao" id="sec-painel">
+      <div class="hello"><h1 id="saudacao">Olá</h1><p id="resumoAcesso"></p></div>
+      <div class="grid" id="painelGrid">
+        <div class="dz-card" id="cardDiscursos" hidden>
+          <div class="sec-head"><h2><i data-lucide="mic"></i> Próximos discursos</h2><a href="/oradores">Abrir Oradores →</a></div>
+          <div id="listaDiscursos"><div class="vazio">Carregando…</div></div>
+        </div>
+        <div class="dz-card" id="cardFora" hidden>
+          <div class="sec-head"><h2><i data-lucide="send"></i> Discursos fora</h2><a href="/oradores">Ver todos →</a></div>
+          <div id="listaFora"><div class="vazio">Carregando…</div></div>
+        </div>
+        <div class="dz-card" id="cardTerritorios" hidden>
+          <div class="sec-head"><h2><i data-lucide="map"></i> Territórios</h2><a href="/territorios">Abrir Territórios →</a></div>
+          <div id="resumoTerritorios"><div class="vazio">Carregando…</div></div>
+        </div>
+        <div class="dz-card modulo-off" id="cardSemAcesso" hidden>
+          <div class="sec-head"><h2><i data-lucide="lock"></i> Outros módulos</h2></div>
+          <div id="listaSemAcesso" class="vazio"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONFIGURAÇÕES DA CONGREGAÇÃO -->
+    <section class="secao" id="sec-configuracoes" hidden>
+      <div class="cfg">
+        <div class="dz-card">
+          <h2>Nome da congregação</h2>
+          <p class="hint">Aparece no Oradores, nos Territórios e para outras congregações que recebem oradores de vocês.</p>
+          <div class="campo"><input id="cfgNome" maxlength="80" placeholder="Ex.: Central - Pedro Leopoldo"><button class="dz-btn pri" id="cfgNomeBtn" onclick="salvarNome()">Salvar</button></div>
+        </div>
+        <div class="dz-card">
+          <h2>Seu acesso</h2>
+          <p class="hint" id="meuAcesso"></p>
+        </div>
+        <div class="dz-card" id="painelDono" hidden>
+          <h2>Equipe e acessos</h2>
+          <p class="hint">Escolha o que cada pessoa pode fazer em cada módulo: <strong>Editar</strong>, <strong>Só ver</strong> ou <strong>Sem acesso</strong>. Você, como proprietário, sempre pode tudo.</p>
+          <div id="listaMembros"></div>
+          <div class="convite">
+            <strong style="font-size:13px;flex-basis:100%">Convidar alguém</strong>
+            <label class="acesso">Oradores<select id="convOradores"><option value="editar">Editar</option><option value="ver">Só ver</option><option value="">Sem acesso</option></select></label>
+            <label class="acesso">Territórios<select id="convTerritorios"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
+            <button class="dz-btn pri" id="convBtn" onclick="convidar()"><i data-lucide="user-plus"></i> Criar link de convite</button>
+          </div>
+          <p class="hint" style="margin:10px 0 0">O link vale por 24 horas e pode ser usado uma vez.</p>
+        </div>
+        <div class="dz-card">
+          <h2>Instalar no celular</h2>
+          <p class="hint" style="margin:0">No Android (Chrome): menu ⋮ → <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>. No iPhone (Safari): botão Compartilhar → <strong>Adicionar à Tela de Início</strong>. O Designa abre em tela cheia, como um aplicativo.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="err" id="erroGeral" hidden style="text-align:center;margin:30px 16px"></div>
+
+<script src="/assets/js/data.js?v=20260902-1"></script>
+<script src="/assets/shared/conta.js?v=20261109-2"></script>
 <script>
 const $=id=>document.getElementById(id);
+const toast=(m,ms)=>DesignaUI.toast(m,ms);
 let vinc=null,user=null;
+const MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const hojeISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const diasDesde=iso=>iso?Math.floor((new Date()-new Date(iso+'T00:00:00'))/864e5):null;
 
-function toast(msg,ms=3500){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),ms);}
-function mostrar(id){['vCarregando','vLogin','vSemCong','vModulos'].forEach(v=>$(v).hidden=v!==id);}
+function mostrar(id){['vCarregando','vLogin','vSemCong','vApp'].forEach(v=>$(v).hidden=v!==id);}
 function erro(msg){mostrar('');$('erroGeral').textContent=msg;$('erroGeral').hidden=false;}
 
 async function entrar(){
@@ -125,60 +193,181 @@ async function criarCongregacao(){
 async function aceitarConvite(params){
   const token=params.get('equipe');if(!token)return;
   params.delete('equipe');
-  history.replaceState({},'',location.pathname+(params.toString()?'?'+params:''));
+  history.replaceState({},'',location.pathname+(params.toString()?'?'+params:'')+location.hash);
   const sb=await Conta.supabase();
   const{error}=await sb.rpc('accept_workspace_invite',{invite_token:token});
   if(error)toast('Não foi possível aceitar o convite: '+error.message,8000);
   else toast('Convite aceito. Bem-vindo à equipe!',5000);
 }
 
-function renderModulos(){
-  const div=$('listaModulos');div.innerHTML='';
-  const icones={oradores:'🎤',territorios:'🗺️'};
-  Object.entries(Conta.MODULOS).forEach(([chave,m])=>{
-    const liberado=vinc.modulos.includes(chave);
-    const el=document.createElement(liberado?'a':'div');
-    el.className='modulo'+(liberado?'':' off');
-    if(liberado)el.href=m.caminho;
-    const ico=document.createElement('div');ico.className='ico';ico.textContent=icones[chave]||'📁';
-    const h=document.createElement('h2');h.textContent=m.nome;
-    const p=document.createElement('p');p.textContent=m.descricao;
-    const go=document.createElement('div');go.className='go';go.textContent=liberado?'Abrir →':'Sem acesso — peça ao proprietário';
-    el.append(ico,h,p,go);div.appendChild(el);
-  });
+// ── Navegação entre Início e Configurações ──
+function irSecao(){
+  const sec=location.hash==='#configuracoes'?'configuracoes':'painel';
+  document.querySelectorAll('.secao').forEach(s=>s.hidden=s.id!=='sec-'+sec);
+  document.querySelectorAll('[data-sec]').forEach(a=>a.classList.toggle('active',a.dataset.sec===sec));
+  $('tituloPagina').textContent=sec==='configuracoes'?'Configurações da congregação':'Início';
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',irSecao);
+
+// ── Painel ──
+function linha({dia,mes,titulo,detalhe,href,tag}){
+  const a=document.createElement(href?'a':'div');a.className='linha';if(href)a.href=href;
+  const dt=document.createElement('div');dt.className='dt';dt.textContent=dia;
+  if(mes){const s=document.createElement('small');s.textContent=mes;dt.appendChild(s);}
+  const tx=document.createElement('div');tx.className='tx';
+  const st=document.createElement('strong');st.textContent=titulo;const sp=document.createElement('span');sp.textContent=detalhe||'';
+  tx.append(st,sp);a.append(dt,tx);
+  if(tag){const t=document.createElement('span');t.className='tag '+tag.cls;t.textContent=tag.txt;a.appendChild(t);}
+  return a;
+}
+const partesData=iso=>({dia:iso.slice(8,10),mes:MESES[+iso.slice(5,7)-1]});
+function vazio(div,txt){div.innerHTML='';const v=document.createElement('div');v.className='vazio';v.textContent=txt;div.appendChild(v);}
+
+async function registros(colecao){
+  const sb=await Conta.supabase();
+  const{data,error}=await sb.from('app_records').select('id,data').eq('workspace_id',vinc.workspaceId).eq('collection',colecao);
+  if(error)throw error;
+  return (data||[]).map(r=>({id:r.id,...r.data}));
 }
 
+async function painelOradores(){
+  $('cardDiscursos').hidden=false;$('cardFora').hidden=false;
+  const hoje=hojeISO();
+  try{
+    const [programa,discursantes]=await Promise.all([registros('programa'),registros('discursantes')]);
+    const prox=programa.filter(p=>p.data>=hoje&&!p.semDiscurso&&p.nome).sort((a,b)=>a.data.localeCompare(b.data)).slice(0,4);
+    const div=$('listaDiscursos');
+    if(!prox.length)vazio(div,'Nenhum discurso agendado.');
+    else{div.innerHTML='';prox.forEach(p=>{
+      const tema=p.especial?(p.tema||p.especialTitulo||'Discurso especial'):(p.temaNum?('Nº '+p.temaNum+' — '+(TEMAS[p.temaNum]||p.tema||'')):'Tema a definir');
+      div.appendChild(linha({...partesData(p.data),titulo:p.nome+(p.congregacao?' · '+p.congregacao:''),detalhe:tema,href:'/oradores'}));
+    });}
+    const fora=discursantes.flatMap(d=>{
+      const s=Array.isArray(d.saidas)?d.saidas.filter(x=>x&&x.data):[];
+      if(d.proxSaida&&!s.some(x=>x.data===d.proxSaida))s.push({data:d.proxSaida,destino:d.destino});
+      return s.filter(x=>x.data>=hoje).map(x=>({...x,nome:d.nome||'Orador'}));
+    }).sort((a,b)=>a.data.localeCompare(b.data)).slice(0,5);
+    const df=$('listaFora');
+    if(!fora.length)vazio(df,'Nenhum discurso fora agendado.');
+    else{df.innerHTML='';fora.forEach(s=>df.appendChild(linha({...partesData(s.data),titulo:s.nome,detalhe:'→ '+(s.destino||'Destino não informado'),href:'/oradores'})));}
+  }catch(e){vazio($('listaDiscursos'),'Não foi possível carregar.');vazio($('listaFora'),'Não foi possível carregar.');}
+}
+
+// Mesmas regras do app de Territórios: em andamento, 60+ e 90+ dias desde a última conclusão.
+function situacaoTerritorio(t){
+  const ds=t.designacoes||[];const u=ds[ds.length-1];
+  if(u&&u.desig&&!u.concl)return{cls:'blu',txt:'com '+String(u.nome||'?').split('/')[0].trim(),ordem:-1,desde:u.desig};
+  const cs=ds.filter(d=>d.concl);const uc=cs.length?cs[cs.length-1].concl:null;
+  if(!uc)return{cls:'gry',txt:'nunca feito',ordem:99999};
+  const d=diasDesde(uc);return{cls:d>=90?'red':d>=60?'ora':'grn',txt:d+' dias',ordem:d};
+}
+async function painelTerritorios(){
+  $('cardTerritorios').hidden=false;
+  const div=$('resumoTerritorios');
+  try{
+    const docs=await registros('terr_tj');
+    const dados=(docs.find(d=>d.id==='dados')||{}).dados||[];
+    if(!dados.length){vazio(div,'Nenhum território cadastrado ainda. Importe a planilha ou os dados antigos em Territórios → Config.');return;}
+    const lista=dados.map(t=>({t,s:situacaoTerritorio(t)}));
+    const andamento=lista.filter(x=>x.s.cls==='blu');
+    const atrasados=lista.filter(x=>x.s.cls==='red').length,nunca=lista.filter(x=>x.s.cls==='gry').length;
+    div.innerHTML='';
+    const nums=document.createElement('div');nums.className='nums';
+    [['blu',andamento.length,'em andamento'],['red',atrasados,'90+ dias'],['gry',nunca,'nunca feitos']].forEach(([c,n,l])=>{const x=document.createElement('div');x.className='num '+c;const b=document.createElement('b');b.textContent=n;const s=document.createElement('small');s.textContent=l;x.append(b,s);nums.appendChild(x);});
+    div.appendChild(nums);
+    const sub=t=>{const s=document.createElement('div');s.className='sub';s.textContent=t;div.appendChild(s);};
+    const item=({t,s})=>linha({dia:String(t.n),mes:'nº',titulo:t.desc||('Território '+t.n),detalhe:s.cls==='blu'?('Designado em '+(s.desde||'').split('-').reverse().join('/')):'',href:'/territorios',tag:s});
+    if(andamento.length){sub('Em andamento');andamento.slice(0,4).forEach(x=>div.appendChild(item(x)));}
+    const parados=lista.filter(x=>x.s.cls!=='blu').sort((a,b)=>b.s.ordem-a.s.ordem).slice(0,4);
+    if(parados.length){sub('Mais tempo sem trabalhar');parados.forEach(x=>div.appendChild(item(x)));}
+  }catch(e){vazio(div,'Não foi possível carregar.');}
+}
+
+function renderPainel(){
+  const h=new Date().getHours();
+  const nome=(user.user_metadata?.full_name||user.user_metadata?.name||'').split(' ')[0];
+  $('saudacao').textContent=(h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+(nome?', '+nome:'');
+  $('resumoAcesso').textContent='Congregação '+vinc.nome+'.';
+  const semAcesso=Object.entries(Conta.MODULOS).filter(([k])=>!Conta.podeVer(vinc,k));
+  if(semAcesso.length){$('cardSemAcesso').hidden=false;$('listaSemAcesso').textContent=semAcesso.map(([,m])=>m.nome).join(' e ')+': sem acesso. Peça ao proprietário da congregação.';}
+  $('navOradores').hidden=!Conta.podeVer(vinc,'oradores');
+  $('navTerritorios').hidden=!Conta.podeVer(vinc,'territorios');
+  if(Conta.podeVer(vinc,'oradores'))painelOradores();
+  if(Conta.podeVer(vinc,'territorios'))painelTerritorios();
+}
+
+// ── Configurações ──
+const NIVEL_TXT={editar:'Editar',ver:'Só ver','':'Sem acesso'};
+function nivel(mods,ro,m){return !mods.includes(m)?'':ro.includes(m)?'ver':'editar';}
+function descreverAcesso(v){
+  if(v.role==='owner')return 'Você é o proprietário: pode editar tudo e gerenciar a equipe.';
+  return Object.entries(Conta.MODULOS).map(([k,m])=>m.nome+': '+NIVEL_TXT[nivel(v.modulos,v.somenteLeitura,k)]).join(' · ')+'.';
+}
+function renderConfig(){
+  $('cfgNome').value=vinc.nome;
+  const pode=Conta.podeEditar(vinc,'oradores')||Conta.podeEditar(vinc,'territorios');
+  $('cfgNome').disabled=!pode;$('cfgNomeBtn').hidden=!pode;
+  $('meuAcesso').textContent=descreverAcesso(vinc);
+  if(vinc.role==='owner'){$('painelDono').hidden=false;renderMembros();}
+}
+
+async function salvarNome(){
+  const nome=$('cfgNome').value.trim();if(nome.length<2)return toast('Informe o nome da congregação.');
+  const b=$('cfgNomeBtn');b.disabled=true;
+  try{
+    const sb=await Conta.supabase();
+    const{error}=await sb.rpc('set_workspace_display_name',{target_workspace:vinc.workspaceId,new_name:nome});
+    if(error)throw error;
+    // Mantém o nome usado dentro do Oradores igual.
+    if(Conta.podeEditar(vinc,'oradores')){
+      const{data:cfgRow}=await sb.from('app_records').select('data').eq('workspace_id',vinc.workspaceId).eq('collection','config').eq('id','app').maybeSingle();
+      if(cfgRow)await sb.from('app_records').upsert({id:'app',workspace_id:vinc.workspaceId,collection:'config',data:{...cfgRow.data,cong:nome},owner_id:user.id},{onConflict:'workspace_id,collection,id'});
+    }
+    vinc.nome=nome;document.querySelectorAll('.nomeCong').forEach(e=>e.textContent=nome);
+    toast('✓ Nome atualizado.');
+  }catch(e){toast('Não foi possível salvar: '+e.message,6000);}
+  finally{b.disabled=false;}
+}
+
+function seletorNivel(valor,aoMudar){
+  const s=document.createElement('select');
+  ['editar','ver',''].forEach(v=>s.add(new Option(NIVEL_TXT[v],v)));
+  s.value=valor;s.onchange=aoMudar;return s;
+}
 async function renderMembros(){
   const sb=await Conta.supabase();
-  const{data,error}=await sb.rpc('list_workspace_members_modules',{target_workspace:vinc.workspaceId});
+  const{data,error}=await sb.rpc('list_workspace_access',{target_workspace:vinc.workspaceId});
   const div=$('listaMembros');div.innerHTML='';
-  if(error){div.textContent='Não foi possível carregar a equipe: '+error.message;return;}
+  if(error){vazio(div,'Não foi possível carregar a equipe. Se o banco ainda não foi atualizado, rode o supabase.sql novamente.');return;}
   (data||[]).forEach(m=>{
     const row=document.createElement('div');row.className='membro';
     const info=document.createElement('div');info.className='email';
     info.textContent=(m.email||'Conta Google')+(m.user_id===user.id?' (você)':'');
-    const papel=document.createElement('small');papel.textContent=m.role==='owner'?'Proprietário — acesso a tudo':'Editor';info.appendChild(papel);
+    const papel=document.createElement('small');papel.textContent=m.role==='owner'?'Proprietário — pode tudo':'Integrante';info.appendChild(papel);
     row.appendChild(info);
     if(m.role!=='owner'){
-      Object.entries(Conta.MODULOS).forEach(([chave,mod])=>{
-        const lbl=document.createElement('label');lbl.className='chk';
-        const cb=document.createElement('input');cb.type='checkbox';cb.checked=(m.modules||[]).includes(chave);cb.dataset.mod=chave;
-        cb.onchange=()=>salvarModulos(m.user_id,row,cb);
-        lbl.append(cb,document.createTextNode(' '+mod.nome));row.appendChild(lbl);
+      const selects={};
+      Object.entries(Conta.MODULOS).forEach(([k,mod])=>{
+        const lbl=document.createElement('label');lbl.className='acesso';lbl.textContent=mod.nome;
+        const s=seletorNivel(nivel(m.modules||[],m.readonly||[],k),()=>salvarAcesso(m,selects,s));
+        s.dataset.anterior=s.value;selects[k]=s;lbl.appendChild(s);row.appendChild(lbl);
       });
-      const rem=document.createElement('button');rem.className='btn sm danger';rem.textContent='Remover';
+      const rem=document.createElement('button');rem.className='dz-btn danger';rem.textContent='Remover';
       rem.onclick=()=>removerMembro(m.user_id,m.email);row.appendChild(rem);
     }
     div.appendChild(row);
   });
 }
 
-async function salvarModulos(userId,row,alterado){
-  const mods=[...row.querySelectorAll('input[data-mod]')].filter(c=>c.checked).map(c=>c.dataset.mod);
-  if(!mods.length){alterado.checked=true;return toast('A pessoa precisa ter pelo menos um módulo. Para tirar todo o acesso, use Remover.',6000);}
+async function salvarAcesso(m,selects,alterado){
+  const mods=Object.keys(selects).filter(k=>selects[k].value);
+  const ro=Object.keys(selects).filter(k=>selects[k].value==='ver');
+  if(!mods.length){alterado.value=alterado.dataset.anterior;return toast('A pessoa precisa ter acesso a pelo menos um módulo. Para tirar todo o acesso, use Remover.',6000);}
   const sb=await Conta.supabase();
-  const{error}=await sb.rpc('set_member_modules',{target_workspace:vinc.workspaceId,target_user:userId,new_modules:mods});
-  if(error){alterado.checked=!alterado.checked;return toast('Erro ao salvar: '+error.message,6000);}
+  const{error}=await sb.rpc('set_member_access',{target_workspace:vinc.workspaceId,target_user:m.user_id,new_modules:mods,new_readonly:ro});
+  if(error){alterado.value=alterado.dataset.anterior;return toast('Erro ao salvar: '+error.message,6000);}
+  alterado.dataset.anterior=alterado.value;
   toast('✓ Acesso atualizado.');
 }
 
@@ -191,15 +380,17 @@ async function removerMembro(userId,email){
 }
 
 async function convidar(){
-  const mods=[['oradores','convOradores'],['territorios','convTerritorios']].filter(([,id])=>$(id).checked).map(([m])=>m);
-  if(!mods.length)return toast('Marque pelo menos um módulo.');
+  const niveis={oradores:$('convOradores').value,territorios:$('convTerritorios').value};
+  const mods=Object.keys(niveis).filter(k=>niveis[k]);
+  const ro=mods.filter(k=>niveis[k]==='ver');
+  if(!mods.length)return toast('Escolha acesso a pelo menos um módulo.');
   const b=$('convBtn');b.disabled=true;
   try{
     const sb=await Conta.supabase();
-    const{data,error}=await sb.rpc('create_workspace_invite_modules',{target_workspace:vinc.workspaceId,invite_modules:mods});
+    const{data,error}=await sb.rpc('create_workspace_invite_access',{target_workspace:vinc.workspaceId,invite_modules:mods,invite_readonly:ro});
     if(error)throw error;
     const url=location.origin+'/?equipe='+encodeURIComponent(data);
-    const nomes=mods.map(m=>Conta.MODULOS[m].nome).join(' e ');
+    const nomes=mods.map(m=>Conta.MODULOS[m].nome+(ro.includes(m)?' (só ver)':'')).join(' e ');
     const share={title:'Convite — '+APP_NOME,text:'Entre com sua conta Google para acessar '+nomes+' da congregação '+vinc.nome+':',url};
     if(navigator.share)await navigator.share(share);
     else{await navigator.clipboard.writeText(url);toast('Link copiado. Ele dura 24 horas e tem uso único.',5000);}
@@ -208,26 +399,27 @@ async function convidar(){
 }
 
 async function iniciar(){
-  document.title=APP_NOME;$('appNome').textContent=APP_NOME;
+  document.title=APP_NOME;document.querySelectorAll('.nomeApp').forEach(e=>e.textContent=APP_NOME);
+  DesignaUI.aplicarTema();DesignaUI.registrarApp();
   try{
     const params=new URLSearchParams(location.search);
     user=await Conta.usuario();
     if(!user){mostrar('vLogin');return;}
-    $('acc').hidden=false;$('accEmail').textContent=user.email||'';
     await aceitarConvite(params);
     vinc=await Conta.vinculo(user);
     if(!vinc){mostrar('vSemCong');return;}
-    $('congNome').textContent=vinc.nome;
     // Volta para o módulo que pediu o login (ex.: /?voltar=/territorios).
     const voltar=params.get('voltar');
     const destino=Object.entries(Conta.MODULOS).find(([,m])=>m.caminho===voltar);
-    if(destino&&vinc.modulos.includes(destino[0])){location.replace(destino[1].caminho);return;}
-    renderModulos();
-    mostrar('vModulos');
-    if(vinc.role==='owner'){$('painelDono').hidden=false;renderMembros();}
+    if(destino&&Conta.podeVer(vinc,destino[0])){location.replace(destino[1].caminho);return;}
+    document.querySelectorAll('.nomeCong').forEach(e=>e.textContent=vinc.nome);
+    mostrar('vApp');
+    DesignaUI.montarConta($('dzConta'),user,{sair});
+    DesignaUI.aplicarTema();
+    irSecao();renderPainel();renderConfig();
   }catch(e){erro(e.message);}
 }
-iniciar();
+window.addEventListener('load',iniciar);
 </script>
 </body>
 </html>

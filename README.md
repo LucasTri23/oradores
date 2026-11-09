@@ -65,6 +65,6 @@ A atualização não escolhe nem exclui vínculos automaticamente. Uma conta nov
 
 ## Módulos e acessos
 
-Depois de atualizar, execute novamente todo o `supabase.sql`. Quem já estava na equipe continua só com **Oradores**; o proprietário acessa tudo. Na tela inicial, o proprietário marca para cada pessoa Oradores e/ou Territórios e pode criar convites já com os módulos escolhidos.
+Depois de atualizar, execute novamente todo o `supabase.sql`. Quem já estava na equipe continua só com **Oradores**; o proprietário acessa tudo. Em **Início → Configurações da congregação**, o proprietário escolhe para cada pessoa, em cada módulo, **Editar**, **Só ver** ou **Sem acesso**, e cria convites já com esses acessos. As imagens dos cartões de mapa ficam no Storage do Supabase (bucket `territorios`, criado pelo `supabase.sql`). O Designa pode ser instalado no celular (`manifest.webmanifest` + `sw.js`).
 
 Para trazer os dados da versão antiga de Territórios (Firebase), abra **Territórios → Config → Importar do Firebase antigo**, cole as credenciais antigas e clique em **Importar dados**. Faça isso uma vez só.

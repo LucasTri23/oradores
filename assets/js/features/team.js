@@ -1,7 +1,10 @@
 // Compartilhamento seguro de uma área de trabalho entre contas Google.
+var membroAtual=null;
 async function initializeWorkspace(){
-  const{data,error}=await supabase.from('workspace_members').select('workspace_id').eq('user_id',currentUser.id).maybeSingle();
+  // "*" traz também os módulos liberados (Oradores/Territórios) e o "só ver".
+  const{data,error}=await supabase.from('workspace_members').select('*').eq('user_id',currentUser.id).maybeSingle();
   if(error)throw new Error('Não foi possível consultar sua congregação. Tente novamente.');
+  membroAtual=data||null;
   activeWorkspaceId=data?.workspace_id||null;
   if(activeWorkspaceId){localStorage.setItem('oradores_workspace',activeWorkspaceId);return true;}
   localStorage.removeItem('oradores_workspace');

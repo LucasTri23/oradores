@@ -2,50 +2,56 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/assets/images/oradores-speaker-logo.png">
+<link rel="apple-touch-icon" href="/assets/images/oradores-speaker-logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <title>Territórios</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="/assets/shared/conta.js?v=20261109-1"></script>
-<script src="/territorios/bridge.js?v=20261109-1"></script>
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261109-2">
+<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+<script src="/assets/shared/conta.js?v=20261109-2"></script>
+<script src="/territorios/bridge.js?v=20261109-2"></script>
 <style>
 :root{
-  --bg:#0f0f13;
-  --surface:#16161d;
-  --surface2:#1e1e28;
-  --surface3:#252532;
-  --brd:#2a2a38;
-  --brd2:#363648;
-  --txt:#f0eff8;
-  --txt2:#9898b0;
-  --txt3:#5a5a70;
-  --accent:#7c6af7;
-  --accent2:#a594ff;
-  --accent-bg:rgba(124,106,247,.12);
-  --accent-brd:rgba(124,106,247,.3);
-  --red:#e05c6e;
-  --red-bg:rgba(224,92,110,.1);
-  --orange:#e8914a;
-  --orange-bg:rgba(232,145,74,.1);
-  --green:#4ecb8d;
-  --green-bg:rgba(78,203,141,.1);
-  --blue:#5ba8f5;
-  --blue-bg:rgba(91,168,245,.1);
+  /* Nomes antigos do app de Territórios, ligados às cores do Designa (designa.css). */
+  --surface:var(--surf);
+  --surface2:var(--surf2);
+  --surface3:var(--surf3);
+  --brd:var(--border);
+  --brd2:var(--border2);
+  --txt:var(--whi);
+  --txt2:var(--whi2);
+  --txt3:var(--whi3);
+  --accent:var(--pur);
+  --accent2:var(--pur3);
+  --accent-bg:var(--pur-dim);
+  --accent-brd:color-mix(in srgb,var(--pur) 30%,transparent);
+  --red-bg:color-mix(in srgb,var(--red) 10%,transparent);
+  --orange:var(--amber);
+  --orange-bg:color-mix(in srgb,var(--amber) 12%,transparent);
+  --green-bg:color-mix(in srgb,var(--green) 10%,transparent);
+  --blue-bg:color-mix(in srgb,var(--blue) 10%,transparent);
   --wap:#25D366;
-  --mono:'DM Mono',monospace;
-  --sans:'DM Sans',sans-serif;
-  --display:'Syne',sans-serif;
+  --mono:'Inter',sans-serif;
+  --sans:'Inter',sans-serif;
+  --display:'Space Grotesk',sans-serif;
   --r-sm:8px;
   --r-md:12px;
-  --r-lg:16px;
-  --r-xl:20px;
-  --shadow:0 4px 24px rgba(0,0,0,.4);
-  --shadow-sm:0 2px 12px rgba(0,0,0,.3);
+  --r-lg:14px;
+  --r-xl:16px;
+  --shadow:0 10px 30px rgba(15,23,42,.10);
+  --shadow-sm:0 2px 10px rgba(15,23,42,.08);
 }
+:root[data-theme="dark"]{--shadow:0 4px 24px rgba(0,0,0,.4);--shadow-sm:0 2px 12px rgba(0,0,0,.3)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
 body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh;line-height:1.5}
@@ -55,29 +61,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 ::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
 
 /* ── HEADER ── */
-.hdr{
-  background:var(--surface);
-  border-bottom:1px solid var(--brd);
-  padding:0 20px;
-  position:sticky;top:0;z-index:200;
-  display:flex;align-items:center;gap:14px;
-  height:56px;
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-}
-.hdr-logo{
-  display:flex;align-items:center;gap:10px;
-  font-family:var(--display);font-size:15px;font-weight:700;
-  letter-spacing:-.01em;color:var(--txt);flex:1;
-}
-.hdr-logo-icon{
-  width:30px;height:30px;border-radius:8px;
-  background:linear-gradient(135deg,var(--accent),#b794f4);
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;flex-shrink:0;
-}
-.hdr-logo-sub{font-family:var(--mono);font-size:9px;font-weight:400;color:var(--txt3);margin-top:1px;letter-spacing:.05em}
-.hdr-logo-wrap{display:flex;flex-direction:column}
 .sync-pill{
   display:flex;align-items:center;gap:5px;
   background:var(--surface2);border:1px solid var(--brd);
@@ -90,24 +73,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 .slbl{font-family:var(--mono);font-size:9px;color:var(--txt3);letter-spacing:.04em}
 
 /* ── NAV ── */
-.nav{
-  background:var(--surface);
-  border-bottom:1px solid var(--brd);
-  display:flex;overflow-x:auto;
-  scrollbar-width:none;gap:2px;padding:0 16px;
-}
-.nav::-webkit-scrollbar{display:none}
-.ntab{
-  font-family:var(--display);font-size:12px;font-weight:600;
-  padding:14px 16px;
-  border-bottom:2px solid transparent;
-  cursor:pointer;white-space:nowrap;
-  color:var(--txt3);
-  transition:all .2s;flex-shrink:0;
-  letter-spacing:.01em;
-}
-.ntab:hover{color:var(--txt2)}
-.ntab.active{color:var(--accent2);border-bottom-color:var(--accent)}
+
+/* ── SÓ VER ── */
+body.somente-leitura .ntab[data-tab="registrar"],
+body.somente-leitura .ntab[data-tab="importar"],
+body.somente-leitura .bacts,
+body.somente-leitura .btn-del,
+body.somente-leitura .card-upload-btn,
+body.somente-leitura .so-edicao{display:none!important}
+body.somente-leitura .tbody input,
+body.somente-leitura .tbody select{pointer-events:none;opacity:.85}
+.sync-pill{display:flex;align-items:center;gap:5px;background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:5px 10px}
+@media(max-width:600px){.sync-pill .slbl{display:none}.sync-pill{padding:6px}}
 
 /* ── MAIN ── */
 .main{max-width:860px;margin:0 auto;padding:24px 16px 96px}
@@ -217,7 +194,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 /* ── LAST CONCLUDED BADGE ── */
 .ult-concl{
   display:inline-flex;align-items:center;gap:6px;
-  background:var(--green-bg);border:1px solid rgba(78,203,141,.2);
+  background:var(--green-bg);border:1px solid color-mix(in srgb,var(--green) 20%,transparent);
   border-radius:var(--r-sm);padding:5px 10px;
   font-family:var(--mono);font-size:11px;color:var(--green);
   margin-bottom:12px;
@@ -265,7 +242,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 }
 .dtbl td{padding:5px 6px;border-bottom:1px solid var(--brd);vertical-align:middle}
 .dtbl tr:last-child td{border-bottom:none}
-.dtbl tr:hover td{background:rgba(255,255,255,.02)}
+.dtbl tr:hover td{background:color-mix(in srgb,var(--whi) 2%,transparent)}
 .inp{
   font-family:var(--sans);font-size:12px;height:30px;
   padding:0 8px;border:1px solid var(--brd);
@@ -296,8 +273,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 .btn-add:hover{border-color:var(--brd2);color:var(--txt);background:var(--surface3)}
 .btn-sv{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn-sv:hover{background:var(--accent2);border-color:var(--accent2)}
-.btn-cl{background:var(--green-bg);border-color:rgba(78,203,141,.3);color:var(--green)}
-.btn-cl:hover{background:rgba(78,203,141,.2)}
+.btn-cl{background:var(--green-bg);border-color:color-mix(in srgb,var(--green) 30%,transparent);color:var(--green)}
+.btn-cl:hover{background:color-mix(in srgb,var(--green) 20%,transparent)}
 
 /* ── PANEL REGISTRAR ── */
 .ah{
@@ -323,17 +300,17 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 .btn-ch{
   font-family:var(--mono);font-size:10px;font-weight:500;
   padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;
-  background:var(--green-bg);border:1px solid rgba(78,203,141,.3);
+  background:var(--green-bg);border:1px solid color-mix(in srgb,var(--green) 30%,transparent);
   color:var(--green);transition:all .18s;
 }
-.btn-ch:hover{background:rgba(78,203,141,.2)}
+.btn-ch:hover{background:color-mix(in srgb,var(--green) 20%,transparent)}
 .btn-cd{
   font-family:var(--mono);font-size:10px;font-weight:500;
   padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;
-  background:var(--blue-bg);border:1px solid rgba(91,168,245,.3);
+  background:var(--blue-bg);border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);
   color:var(--blue);transition:all .18s;
 }
-.btn-cd:hover{background:rgba(91,168,245,.2)}
+.btn-cd:hover{background:color-mix(in srgb,var(--blue) 20%,transparent)}
 
 /* ── FORM CARD ── */
 .fcard{
@@ -364,8 +341,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 .drop-title{font-family:var(--display);font-size:15px;font-weight:700;margin-bottom:4px;color:var(--txt)}
 .drop-sub{font-family:var(--mono);font-size:10px;color:var(--txt3)}
 .imp-status{font-family:var(--mono);font-size:11px;padding:9px 14px;border-radius:var(--r-sm);margin-top:10px}
-.imp-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(78,203,141,.2)}
-.imp-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,92,110,.2)}
+.imp-ok{background:var(--green-bg);color:var(--green);border:1px solid color-mix(in srgb,var(--green) 20%,transparent)}
+.imp-err{background:var(--red-bg);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 20%,transparent)}
 
 /* ── CARDS DROP ── */
 .cards-drop{
@@ -379,11 +356,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 .cards-progress{margin-top:12px;display:flex;flex-wrap:wrap;gap:5px}
 .card-item-preview{
   display:inline-flex;align-items:center;gap:5px;
-  background:var(--green-bg);border:1px solid rgba(78,203,141,.2);
+  background:var(--green-bg);border:1px solid color-mix(in srgb,var(--green) 20%,transparent);
   border-radius:5px;padding:3px 9px;
   font-family:var(--mono);font-size:10px;color:var(--green);
 }
-.card-item-err{background:var(--red-bg);border-color:rgba(224,92,110,.2);color:var(--red)}
+.card-item-err{background:var(--red-bg);border-color:color-mix(in srgb,var(--red) 20%,transparent);color:var(--red)}
 
 /* ── HISTORY ── */
 .hctrl{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
@@ -461,7 +438,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 }
 .s-card:hover{border-color:var(--brd2)}
 .s-rank{font-family:var(--mono);font-size:15px;font-weight:500;min-width:22px;text-align:center}
-.s-rank.gold{color:#f0c040}.s-rank.silver{color:#9098a8}.s-rank.bronze{color:#c47840}
+.s-rank.gold{color:#f0c040}.s-rank.silver{color:#9098a8}.s-rank.bronze{color:var(--amber)}
 .s-info{flex:1;min-width:0}
 .s-name{font-family:var(--display);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)}
 .s-sub{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:2px}
@@ -518,14 +495,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
   box-shadow:var(--shadow);
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.toast.err-t{background:var(--red-bg);border-color:rgba(224,92,110,.3);color:var(--red)}
+.toast.err-t{background:var(--red-bg);border-color:color-mix(in srgb,var(--red) 30%,transparent);color:var(--red)}
 
 /* ── MOBILE ── */
 @media(max-width:540px){
   .stats-row{grid-template-columns:repeat(2,1fr)}
   .fgrid{grid-template-columns:1fr}
   .dtbl th:nth-child(3),.dtbl td:nth-child(3){display:none}
-  .hdr-logo-sub{display:none}
 }
 
 /* ── DASHBOARD HEADER ── */
@@ -545,14 +521,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
   content:'';position:absolute;
   top:-80px;right:160px;
   width:260px;height:260px;border-radius:50%;
-  background:radial-gradient(circle,rgba(124,106,247,.13) 0%,transparent 65%);
+  background:radial-gradient(circle,color-mix(in srgb,var(--pur) 13%,transparent) 0%,transparent 65%);
   pointer-events:none;z-index:0;
 }
 .dash-header::after{
   content:'';position:absolute;
   bottom:-80px;left:20px;
   width:200px;height:200px;border-radius:50%;
-  background:radial-gradient(circle,rgba(91,168,245,.07) 0%,transparent 65%);
+  background:radial-gradient(circle,color-mix(in srgb,var(--blue) 7.000000000000001%,transparent) 0%,transparent 65%);
   pointer-events:none;z-index:0;
 }
 
@@ -577,7 +553,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 
 .dash-ring-row{display:flex;align-items:center;gap:18px;margin-bottom:18px}
 .dash-ring-wrap{flex-shrink:0}
-.dash-ring{width:80px;height:80px;filter:drop-shadow(0 0 12px rgba(124,106,247,.25))}
+.dash-ring{width:80px;height:80px;filter:drop-shadow(0 0 12px color-mix(in srgb,var(--pur) 25%,transparent))}
 .dash-ring-label{display:none}
 .dash-ring-info{}
 .dash-title{
@@ -605,11 +581,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
   display:flex;align-items:center;gap:5px;
 }
 .dash-pill::before{content:'';width:6px;height:6px;border-radius:50%}
-.pill-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,92,110,.2)}
+.pill-red{background:var(--red-bg);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 20%,transparent)}
 .pill-red::before{background:var(--red)}
-.pill-blue{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(91,168,245,.2)}
+.pill-blue{background:var(--blue-bg);color:var(--blue);border:1px solid color-mix(in srgb,var(--blue) 20%,transparent)}
 .pill-blue::before{background:var(--blue)}
-.pill-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(78,203,141,.2)}
+.pill-green{background:var(--green-bg);color:var(--green);border:1px solid color-mix(in srgb,var(--green) 20%,transparent)}
 .pill-green::before{background:var(--green)}
 .pill-muted{background:var(--surface2);color:var(--txt3);border:1px solid var(--brd)}
 .pill-muted::before{background:var(--txt3)}
@@ -751,11 +727,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 .contato-sel:focus{border-color:var(--accent)}
 .no-contatos-inline{
   font-family:var(--mono);font-size:10px;color:var(--orange);
-  background:var(--orange-bg);border:1px solid rgba(232,145,74,.2);
+  background:var(--orange-bg);border:1px solid color-mix(in srgb,var(--amber) 20%,transparent);
   border-radius:6px;padding:5px 10px;display:flex;align-items:center;gap:6px;
   cursor:pointer;white-space:nowrap;
 }
-.no-contatos-inline:hover{background:rgba(232,145,74,.15)}
+.no-contatos-inline:hover{background:color-mix(in srgb,var(--amber) 15%,transparent)}
 
 
 /* ── WAP INLINE NA DESIGNAÇÃO ── */
@@ -818,7 +794,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 }
 .msg-modal-hint{
   font-family:var(--mono);font-size:10px;color:var(--orange);
-  background:var(--orange-bg);border:1px solid rgba(232,145,74,.2);
+  background:var(--orange-bg);border:1px solid color-mix(in srgb,var(--amber) 20%,transparent);
   border-radius:var(--r-sm);padding:8px 12px;margin-bottom:14px;
   display:flex;align-items:flex-start;gap:6px;line-height:1.5;
 }
@@ -856,30 +832,32 @@ body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14p
 datalist{display:none}
 </style>
 </head>
-<body>
+<body class="dz-shell">
 
-<div class="hdr">
-  <div class="hdr-logo">
-    <div class="hdr-logo-icon">🗺️</div>
-    <div class="hdr-logo-wrap">
-      <span>Territórios</span>
-      <span class="hdr-logo-sub">S-13 · REGISTRO DE TERRITÓRIOS</span>
+<header class="dz-header">
+  <div class="dz-logo"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span>Territórios</span><small class="nomeCong"></small></div>
+  <div class="dz-page-title">Territórios <small class="nomeCong"></small></div>
+  <div class="dz-actions">
+    <div id="dzSwitch" hidden></div>
+    <div class="sync-pill" title="Situação da conexão">
+      <div class="sdot" id="sdot"></div>
+      <span class="slbl" id="slbl">offline</span>
     </div>
+    <button class="dz-icon-btn" data-dz-tema onclick="DesignaUI.alternarTema()"></button>
+    <div id="dzConta"></div>
   </div>
-  <a href="/" title="Início — escolher módulo" style="margin-left:auto;margin-right:8px;font-family:var(--mono);font-size:11px;color:var(--txt2);text-decoration:none;border:1px solid var(--border, rgba(255,255,255,.15));border-radius:20px;padding:5px 11px">⌂ Início</a>
-  <div class="sync-pill">
-    <div class="sdot" id="sdot"></div>
-    <span class="slbl" id="slbl">offline</span>
-  </div>
-</div>
+</header>
 
-<nav class="nav">
-  <div class="ntab active" onclick="switchTab('indicar')">Indicar</div>
-  <div class="ntab" onclick="switchTab('registrar')">Registrar</div>
-  <div class="ntab" onclick="switchTab('historico')">Histórico</div>
-  <div class="ntab" onclick="switchTab('stats')">Estatísticas</div>
-  <div class="ntab" onclick="switchTab('importar')">Importar</div>
-  <div class="ntab" onclick="switchTab('config')">Config</div>
+<nav class="dz-nav">
+  <a class="dz-brand" href="/"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span><span class="nomeApp">Designa</span><small class="nomeCong"></small></span></a>
+  <div class="dz-tab ntab active" data-tab="indicar" onclick="switchTab('indicar')"><i data-lucide="compass"></i><span>Indicar</span></div>
+  <div class="dz-tab ntab" data-tab="registrar" onclick="switchTab('registrar')"><i data-lucide="clipboard-pen-line"></i><span>Registrar</span></div>
+  <div class="dz-tab ntab" data-tab="historico" onclick="switchTab('historico')"><i data-lucide="history"></i><span>Histórico</span></div>
+  <div class="dz-tab ntab" data-tab="stats" onclick="switchTab('stats')"><i data-lucide="chart-column"></i><span>Estatísticas</span></div>
+  <div class="dz-tab ntab dz-only-desktop" data-tab="importar" onclick="switchTab('importar')"><i data-lucide="upload"></i><span>Importar</span></div>
+  <div class="dz-tab ntab" data-tab="config" onclick="switchTab('config')"><i data-lucide="settings"></i><span>Config</span></div>
+  <div class="dz-nav-sep">Designa</div>
+  <a class="dz-tab dz-only-desktop" href="/"><i data-lucide="layout-dashboard"></i><span>Início</span></a>
 </nav>
 
 <div class="main">
@@ -973,7 +951,7 @@ datalist{display:none}
     <div id="fbStatusBody">
       <p class="chint" style="margin-bottom:6px">Carregando…</p>
     </div>
-    <div class="crow" style="margin-top:10px"><label>Nome cong.</label><input class="inp" id="cfgCong" placeholder="Ex: Bom Jesus" style="max-width:280px;height:34px" oninput="congName=this.value;localStorage.setItem('tj_cong',this.value);renderAll()"></div>
+    <p class="chint" style="margin-top:10px">O nome da congregação e quem tem acesso ficam em <a href="/#configuracoes" style="color:var(--accent2)">Configurações da congregação</a>.</p>
   </div>
 
   <!-- IMPORTAR DO FIREBASE ANTIGO -->
@@ -1335,8 +1313,8 @@ function renderDashHeader(){
           <svg class="dash-ring" viewBox="0 0 80 80">
             <defs>
               <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#7c6af7"/>
-                <stop offset="100%" stop-color="#4ecb8d"/>
+                <stop offset="0%" stop-color="var(--pur)"/>
+                <stop offset="100%" stop-color="var(--green)"/>
               </linearGradient>
               <filter id="glow">
                 <feGaussianBlur stdDeviation="2" result="blur"/>
@@ -1349,9 +1327,9 @@ function renderDashHeader(){
               stroke-dasharray="${dash_.toFixed(1)} ${gap_.toFixed(1)}"
               transform="rotate(-90 40 40)"/>
             <text x="40" y="37" text-anchor="middle" fill="var(--txt)"
-              style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800">${pct}%</text>
+              style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:800">${pct}%</text>
             <text x="40" y="50" text-anchor="middle" fill="var(--txt3)"
-              style="font-family:'DM Mono',monospace;font-size:7px">cobertos</text>
+              style="font-family:'Inter',sans-serif;font-size:7px">cobertos</text>
           </svg>
         </div>
         <div class="dash-ring-info">
@@ -2517,7 +2495,7 @@ function preencherRenumSelect(){
 
 // ── TABS ──
 function switchTab(t){
-  document.querySelectorAll('.ntab').forEach((el,i)=>el.classList.toggle('active',['indicar','registrar','historico','stats','importar','config'][i]===t));
+  document.querySelectorAll('.ntab').forEach(el=>el.classList.toggle('active',el.dataset.tab===t));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
   activeTab=t;
@@ -2721,7 +2699,21 @@ function toast(m,err=false){
 }
 
 // ── INIT ──
+// Modo "só ver": esconde o que altera dados e avisa no topo.
+function aplicarSomenteLeitura(){
+  document.body.classList.add('somente-leitura');
+  ['registrar','importar','config'].forEach(t=>{ const el=document.querySelector('.ntab[data-tab="'+t+'"]'); if(el) el.hidden=true; });
+  const aviso=document.createElement('div');
+  aviso.className='dz-readonly';
+  aviso.innerHTML='<i data-lucide="eye"></i><span>Você tem acesso <strong>só para ver</strong> os territórios. Para editar, peça ao proprietário da congregação.</span>';
+  document.querySelector('.main').prepend(aviso);
+  DesignaUI.desenharIcones();
+}
+
 document.addEventListener('DOMContentLoaded', async function(){
+  document.querySelectorAll('.nomeApp').forEach(e=>e.textContent=APP_NOME);
+  DesignaUI.aplicarTema();
+  DesignaUI.registrarApp();
   renderAll();
   // Pré-preenche a importação com as credenciais antigas, se ainda estiverem salvas neste navegador.
   const cfgAntiga=JSON.parse(localStorage.getItem(KEY_CFG)||'null');
@@ -2742,8 +2734,16 @@ document.addEventListener('DOMContentLoaded', async function(){
     KEY_CARDS = 'tj_cards_v1_ws_'+ctx.vinculo.workspaceId;
     dados=[]; cards={};
     carregarTudo();
-    if(!congName) congName=ctx.vinculo.nome;
-    try{ const ci=document.getElementById('cfgCong'); if(ci) ci.value=congName||''; }catch(e){}
+    // O nome da congregação vem das configurações da congregação (um lugar só).
+    congName=ctx.vinculo.nome;
+    document.querySelectorAll('.nomeCong').forEach(e=>e.textContent=congName);
+    DesignaUI.montarSeletor(document.getElementById('dzSwitch'),ctx.vinculo,'territorios');
+    DesignaUI.montarConta(document.getElementById('dzConta'),ctx.user);
+    DesignaUI.aplicarTema();
+    if(!Conta.podeEditar(ctx.vinculo,'territorios')){
+      aplicarSomenteLeitura();
+      if(activeTab!=='indicar') switchTab('indicar');
+    }
     db=ctx.db;
     setSyncStatus('online');
     atualizarStatusCard();

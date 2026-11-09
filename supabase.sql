@@ -396,3 +396,108 @@
 
   revoke all on function public.list_workspace_members_modules(uuid),public.set_member_modules(uuid,uuid,text[]),public.create_workspace_invite_modules(uuid,text[]),public.accept_workspace_invite(uuid) from public,anon;
   grant execute on function public.list_workspace_members_modules(uuid),public.set_member_modules(uuid,uuid,text[]),public.create_workspace_invite_modules(uuid,text[]),public.accept_workspace_invite(uuid) to authenticated;
+
+
+  -- ACESSO "SÓ VER" E ARQUIVOS DE TERRITÓRIOS — seguro para executar novamente.
+  -- readonly = módulos que a pessoa pode apenas consultar (precisam estar também em modules).
+  alter table public.workspace_members add column if not exists readonly text[] not null default '{}'::text[];
+  alter table public.workspace_invites add column if not exists readonly text[] not null default '{}'::text[];
+
+  create or replace function public.can_write_module(target uuid,module_name text) returns boolean language sql security definer stable set search_path=public as $$
+    select exists(select 1 from public.workspace_members where workspace_id=target and user_id=auth.uid()
+      and (role='owner' or (module_name=any(modules) and not module_name=any(readonly))))
+  $$;
+  create or replace function public.can_write_collection(target uuid,coll text) returns boolean language sql security definer stable set search_path=public as $$
+    select public.can_write_module(target,case when coll like 'terr\_%' then 'territorios' else 'oradores' end)
+  $$;
+  revoke all on function public.can_write_module(uuid,text),public.can_write_collection(uuid,text) from public,anon;
+  grant execute on function public.can_write_module(uuid,text),public.can_write_collection(uuid,text) to authenticated;
+
+  do $$ declare pol record; begin for pol in select policyname from pg_policies where schemaname='public' and tablename='app_records' loop execute format('drop policy if exists %I on public.app_records',pol.policyname); end loop; end $$;
+  create policy "Equipe lê os dados" on public.app_records for select to authenticated using(public.can_access_collection(workspace_id,collection));
+  create policy "Equipe insere dados" on public.app_records for insert to authenticated with check(public.can_write_collection(workspace_id,collection) and owner_id=auth.uid());
+  create policy "Equipe atualiza dados" on public.app_records for update to authenticated using(public.can_write_collection(workspace_id,collection)) with check(public.can_write_collection(workspace_id,collection));
+  create policy "Equipe exclui dados" on public.app_records for delete to authenticated using(public.can_write_collection(workspace_id,collection));
+
+  -- A lixeira também respeita o "só ver".
+  create or replace function public.restore_app_record(trash_id bigint) returns boolean language plpgsql security definer set search_path=public as $$ declare item public.app_record_trash;begin
+    select * into item from public.app_record_trash where id=trash_id and recover_until>now() and public.can_write_collection(workspace_id,collection) for update;if item.id is null then return false;end if;
+    insert into public.app_records(id,workspace_id,owner_id,collection,data) values(item.record_id,item.workspace_id,auth.uid(),item.collection,item.data) on conflict(workspace_id,collection,id) do update set data=excluded.data;delete from public.app_record_trash where id=trash_id;return true;
+  end $$;
+
+  -- Quem só pode ver não muda o nome da congregação.
+  create or replace function public.set_workspace_display_name(target_workspace uuid,new_name text)
+  returns boolean language plpgsql security definer set search_path=public as $$
+  begin
+    if not (public.can_write_module(target_workspace,'oradores') or public.can_write_module(target_workspace,'territorios')) then raise exception 'Sem permissão para alterar esta congregação'; end if;
+    if length(trim(new_name))<2 then raise exception 'Informe o nome da congregação'; end if;
+    update public.workspaces set name=trim(new_name) where id=target_workspace;return found;
+  end $$;
+
+  create or replace function public.list_workspace_access(target_workspace uuid)
+  returns table(user_id uuid,email text,role text,modules text[],readonly text[]) language sql security definer stable set search_path=public,auth as $$
+    select m.user_id,u.email::text,m.role,
+      case when m.role='owner' then array['oradores','territorios'] else m.modules end,
+      case when m.role='owner' then '{}'::text[] else m.readonly end
+    from public.workspace_members m join auth.users u on u.id=m.user_id
+    where m.workspace_id=target_workspace and public.is_workspace_member(target_workspace) order by m.role desc,u.email
+  $$;
+
+  create or replace function public.set_member_access(target_workspace uuid,target_user uuid,new_modules text[],new_readonly text[]) returns boolean language plpgsql security definer set search_path=public as $$
+  declare mods text[]; ro text[]; begin
+    if not exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=auth.uid() and role='owner') then raise exception 'Apenas o proprietário pode alterar acessos'; end if;
+    if exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=target_user and role='owner') then raise exception 'O proprietário sempre tem acesso a tudo'; end if;
+    select coalesce(array_agg(distinct m),'{}') into mods from unnest(new_modules) m where m in ('oradores','territorios');
+    if cardinality(mods)=0 then raise exception 'Escolha pelo menos um módulo (ou remova o integrante)'; end if;
+    select coalesce(array_agg(distinct r),'{}') into ro from unnest(coalesce(new_readonly,'{}')) r where r=any(mods);
+    update public.workspace_members set modules=mods,readonly=ro where workspace_id=target_workspace and user_id=target_user;
+    return found;
+  end $$;
+
+  create or replace function public.create_workspace_invite_access(target_workspace uuid,invite_modules text[],invite_readonly text[]) returns uuid language plpgsql security definer set search_path=public as $$
+  declare invite_token uuid; mods text[]; ro text[]; begin
+    if not exists(select 1 from public.workspace_members where workspace_id=target_workspace and user_id=auth.uid() and role='owner') then raise exception 'Apenas o proprietário pode convidar pessoas'; end if;
+    select coalesce(array_agg(distinct m),'{}') into mods from unnest(invite_modules) m where m in ('oradores','territorios');
+    if cardinality(mods)=0 then raise exception 'Escolha pelo menos um módulo'; end if;
+    select coalesce(array_agg(distinct r),'{}') into ro from unnest(coalesce(invite_readonly,'{}')) r where r=any(mods);
+    delete from public.workspace_invites where expires_at<now() or (created_by=auth.uid() and accepted_at is not null);
+    insert into public.workspace_invites(workspace_id,created_by,modules,readonly) values(target_workspace,auth.uid(),mods,ro) returning token into invite_token; return invite_token;
+  end $$;
+
+  create or replace function public.accept_workspace_invite(invite_token uuid) returns uuid language plpgsql security definer set search_path=public as $$
+  declare wid uuid; mods text[]; ro text[]; begin
+    if auth.uid() is null then raise exception 'Entre com Google para aceitar'; end if;
+    perform 1 from auth.users where id=auth.uid() for update;
+    select workspace_id,modules,readonly into wid,mods,ro from public.workspace_invites where token=invite_token and expires_at>now() and accepted_at is null for update;
+    if wid is null then raise exception 'Convite inválido, expirado ou já utilizado'; end if;
+    if exists(select 1 from public.workspace_members where user_id=auth.uid() and workspace_id<>wid) then
+      raise exception 'Esta conta já está vinculada a outra congregação e não pode entrar em outro workspace.';
+    end if;
+    insert into public.workspace_members(workspace_id,user_id,role,modules,readonly) values(wid,auth.uid(),'editor',coalesce(mods,array['oradores']),coalesce(ro,'{}'))
+      on conflict(workspace_id,user_id) do update set
+        modules=(select array_agg(distinct m) from unnest(public.workspace_members.modules||excluded.modules) m),
+        -- Continua "só ver" apenas no que nenhum dos dois acessos libera para editar.
+        readonly=coalesce((select array_agg(distinct r) from unnest(public.workspace_members.readonly||excluded.readonly) r
+          where not (r=any(public.workspace_members.modules) and not r=any(public.workspace_members.readonly))
+            and not (r=any(excluded.modules) and not r=any(excluded.readonly))),'{}');
+    update public.workspace_invites set accepted_by=auth.uid(),accepted_at=now() where token=invite_token; return wid;
+  end $$;
+
+  revoke all on function public.list_workspace_access(uuid),public.set_member_access(uuid,uuid,text[],text[]),public.create_workspace_invite_access(uuid,text[],text[]),public.accept_workspace_invite(uuid),public.restore_app_record(bigint),public.set_workspace_display_name(uuid,text) from public,anon;
+  grant execute on function public.list_workspace_access(uuid),public.set_member_access(uuid,uuid,text[],text[]),public.create_workspace_invite_access(uuid,text[],text[]),public.accept_workspace_invite(uuid),public.restore_app_record(bigint),public.set_workspace_display_name(uuid,text) to authenticated;
+
+  -- Cartões de mapa ficam no Storage (pasta = id da congregação), não dentro do banco.
+  insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+    values('territorios','territorios',false,5242880,array['image/jpeg','image/png','image/webp'])
+    on conflict(id) do nothing;
+  create or replace function public.storage_workspace(object_name text) returns uuid language plpgsql immutable as $$
+  begin return split_part(object_name,'/',1)::uuid; exception when others then return null; end $$;
+  grant execute on function public.storage_workspace(text) to authenticated;
+  drop policy if exists "Territórios lê arquivos" on storage.objects;
+  drop policy if exists "Territórios envia arquivos" on storage.objects;
+  drop policy if exists "Territórios altera arquivos" on storage.objects;
+  drop policy if exists "Territórios exclui arquivos" on storage.objects;
+  create policy "Territórios lê arquivos" on storage.objects for select to authenticated using(bucket_id='territorios' and public.has_workspace_module(public.storage_workspace(name),'territorios'));
+  create policy "Territórios envia arquivos" on storage.objects for insert to authenticated with check(bucket_id='territorios' and public.can_write_module(public.storage_workspace(name),'territorios'));
+  create policy "Territórios altera arquivos" on storage.objects for update to authenticated using(bucket_id='territorios' and public.can_write_module(public.storage_workspace(name),'territorios')) with check(bucket_id='territorios' and public.can_write_module(public.storage_workspace(name),'territorios'));
+  create policy "Territórios exclui arquivos" on storage.objects for delete to authenticated using(bucket_id='territorios' and public.can_write_module(public.storage_workspace(name),'territorios'));

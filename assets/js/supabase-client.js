@@ -13,6 +13,12 @@ async function loadSupabase(config){
   const {createClient}=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
   supabase=createClient(config.url,config.key);
   const wrapDoc=row=>({id:row.id,data:()=>row.data,exists:true});
+  // Quem tem acesso "só ver" não grava nada (o banco também bloqueia).
+  const exigirEdicao=()=>{
+    if(!window.SOMENTE_LEITURA)return;
+    toast('Você tem acesso só para ver. Para editar, peça ao proprietário da congregação.',5000);
+    throw new Error('Acesso só para ver');
+  };
 
   FF={
     col:(_,name)=>name,
@@ -29,11 +35,13 @@ async function loadSupabase(config){
       return data?wrapDoc(data):{exists:false,data:()=>null};
     },
     add:async(collection,payload)=>{
+      exigirEdicao();
       const{data,error}=await supabase.from('app_records').insert({workspace_id:activeWorkspaceId,collection,data:payload}).select('id').single();
       if(error)throw error;
       return{id:data.id};
     },
     set:async(ref,payload)=>{
+      exigirEdicao();
       const{error}=await supabase.from('app_records').upsert(
         {id:ref.id,workspace_id:activeWorkspaceId,collection:ref.collection,data:payload,owner_id:currentUser.id},
         {onConflict:'workspace_id,collection,id'}
@@ -46,6 +54,7 @@ async function loadSupabase(config){
       await FF.set(ref,{...old.data(),...patch});
     },
     del:async ref=>{
+      exigirEdicao();
       const{error}=await supabase.from('app_records').delete().eq('workspace_id',activeWorkspaceId).eq('collection',ref.collection).eq('id',ref.id);
       if(error)throw error;
     }
@@ -55,6 +64,7 @@ async function loadSupabase(config){
 
 async function checkSetup(){
   renderHome();renderTemas();renderMensagens();updateThemeButton();
+  if(window.DesignaUI)DesignaUI.registrarApp();
   const config=await getPublicConfig();
   if(!config)return showSetupError('O acesso ainda não foi configurado. Configure SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY na Vercel.');
   try{
@@ -64,6 +74,7 @@ async function checkSetup(){
       currentUser=data.session.user;
       await checkTeamInvite();
       if(!(await initializeWorkspace()))return;
+      if(!aplicarAcessoDesigna())return;
       updateUserHeader();
       document.getElementById('setup').style.display='none';
       await loadAll();
@@ -72,6 +83,25 @@ async function checkSetup(){
       await checkSharedImport();
     }
   }catch(error){showSetupError(error.message);}
+}
+
+// Permissões do Designa: sem acesso ao Oradores volta para o início; "só ver" mostra aviso e bloqueia gravações.
+function aplicarAcessoDesigna(){
+  if(!window.Conta||!membroAtual)return true;
+  Conta.usarCliente(supabase);
+  const acesso=Conta.acessoDe(membroAtual);
+  const vinc={workspaceId:activeWorkspaceId,role:membroAtual.role,...acesso};
+  if(!Conta.podeVer(vinc,'oradores')){location.replace('/');return false;}
+  DesignaUI.montarSeletor(document.getElementById('dzSwitch'),vinc,'oradores');
+  window.SOMENTE_LEITURA=!Conta.podeEditar(vinc,'oradores');
+  if(window.SOMENTE_LEITURA){
+    document.body.classList.add('somente-leitura');
+    const aviso=document.createElement('div');aviso.className='dz-readonly';
+    aviso.innerHTML='<i data-lucide="eye"></i><span>Você tem acesso <strong>só para ver</strong> o Oradores. Para editar, peça ao proprietário da congregação.</span>';
+    document.querySelector('main')?.prepend(aviso);
+    if(window.lucide)lucide.createIcons();
+  }
+  return true;
 }
 
 function showSetupError(message){

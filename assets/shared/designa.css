@@ -1,0 +1,106 @@
+/* Padrão visual do Designa: mesmas cores e fontes do Oradores + estrutura comum (cabeçalho, menu, seletor de módulo). */
+:root{--bg:#f4f7fb;--surf:#ffffff;--surf2:#f1f5f9;--surf3:#e8eef7;--border:#dbe4f0;--border2:#c7d3e3;--pur:#2563eb;--pur2:#1d4ed8;--pur3:#1e40af;--pur-dim:rgba(37,99,235,.12);--pur-dim2:rgba(37,99,235,.05);--whi:#0f172a;--whi2:#334155;--whi3:#64748b;--red:#dc2626;--green:#16a34a;--blue:#2563eb;--amber:#d97706;--r:10px;--dz-shadow:0 18px 45px rgba(15,23,42,.12);color-scheme:light}
+:root[data-theme="dark"]{--bg:#08111f;--surf:#0f1b2d;--surf2:#17243a;--surf3:#1e2e48;--border:#263955;--border2:#385071;--pur:#3b82f6;--pur2:#60a5fa;--pur3:#93c5fd;--pur-dim:rgba(59,130,246,.16);--pur-dim2:rgba(59,130,246,.07);--whi:#f8fafc;--whi2:#cbd5e1;--whi3:#8294ad;--red:#ef4444;--green:#22c55e;--blue:#60a5fa;--amber:#f59e0b;--dz-shadow:0 18px 45px rgba(0,0,0,.45);color-scheme:dark}
+
+.dz-shell *,.dz-shell *::before,.dz-shell *::after{box-sizing:border-box}
+body.dz-shell{background:var(--bg);color:var(--whi);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;margin:0}
+.dz-shell [hidden]{display:none!important}
+
+/* Cabeçalho */
+.dz-header{border-bottom:1px solid var(--border);padding:0 18px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:100;gap:10px}
+.dz-logo{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--whi);letter-spacing:-.02em;display:flex;align-items:center;gap:8px;min-width:0}
+.dz-logo img{width:36px;height:36px;object-fit:contain;flex:0 0 auto;filter:drop-shadow(0 4px 8px rgba(37,99,235,.2))}
+.dz-logo span{color:var(--pur3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dz-logo small{font:500 10px Inter,sans-serif;color:var(--whi3);margin-left:4px}
+.dz-page-title{font:700 17px 'Space Grotesk',sans-serif;color:var(--whi);letter-spacing:-.02em;display:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dz-page-title small{font:500 11px Inter,sans-serif;color:var(--whi3);margin-left:6px}
+.dz-actions{display:flex;align-items:center;gap:8px;position:relative;margin-left:auto}
+.dz-icon-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;background:var(--surf);border:1px solid var(--border);border-radius:9px;color:var(--whi2);cursor:pointer;transition:.18s;padding:0;text-decoration:none}
+.dz-icon-btn:hover{color:var(--pur);border-color:var(--pur);background:var(--pur-dim)}
+.dz-icon-btn svg{width:17px;height:17px}
+
+/* Seletor de módulo (Oradores ⇄ Territórios) */
+.dz-switch{display:flex;align-items:center;gap:2px;padding:3px;background:var(--surf2);border:1px solid var(--border);border-radius:11px}
+.dz-switch a{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:8px;color:var(--whi3);text-decoration:none;font:600 12px Inter,sans-serif;white-space:nowrap;transition:.15s}
+.dz-switch a:hover{color:var(--whi)}
+.dz-switch a.on{background:var(--surf);color:var(--pur);box-shadow:0 1px 3px rgba(15,23,42,.12)}
+.dz-switch svg{width:15px;height:15px}
+
+/* Menu da conta */
+.dz-user{height:38px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surf);border-radius:20px;padding:3px 9px 3px 4px;color:var(--whi2);font:600 12px Inter,sans-serif;cursor:pointer}
+.dz-user img,.dz-user .dz-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:0 0 auto}
+.dz-user .dz-avatar{display:grid;place-items:center;background:var(--pur-dim);color:var(--pur);font-weight:700}
+.dz-user span{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dz-user svg{width:14px}
+.dz-popover{display:none;position:absolute;right:0;top:46px;width:230px;background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:8px;box-shadow:var(--dz-shadow);z-index:250}
+.dz-popover.open{display:block}
+.dz-popover>div{padding:8px 9px 11px;color:var(--whi3);font-size:11px;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--border);margin-bottom:5px}
+.dz-popover a,.dz-popover button{width:100%;display:flex;align-items:center;gap:9px;padding:9px;border:0;background:transparent;color:var(--whi2);border-radius:7px;cursor:pointer;font:500 12px Inter,sans-serif;text-align:left;text-decoration:none}
+.dz-popover a:hover,.dz-popover button:hover{background:var(--surf2);color:var(--pur)}
+.dz-popover svg{width:16px;height:16px}
+
+/* Menu de navegação: abas no topo; lateral no computador; barra inferior no celular */
+.dz-nav{display:flex;padding:0 18px;border-bottom:1px solid var(--border);overflow-x:auto;background:var(--surf);scrollbar-width:none}
+.dz-nav::-webkit-scrollbar{display:none}
+.dz-brand{display:none;font:700 18px 'Space Grotesk',sans-serif;color:var(--pur);padding:15px 10px 23px;align-items:center;gap:9px;text-decoration:none}
+.dz-brand img{width:46px;height:46px;object-fit:contain;flex:0 0 auto;filter:drop-shadow(0 5px 9px rgba(37,99,235,.22))}
+.dz-brand small{display:block;margin-top:2px;font:500 11px Inter,sans-serif;color:var(--whi3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
+.dz-tab{display:flex;align-items:center;gap:10px;padding:12px 13px;color:var(--whi3);cursor:pointer;white-space:nowrap;font:600 11px Inter,sans-serif;border-bottom:2px solid transparent;transition:.18s;letter-spacing:.04em;text-transform:uppercase;user-select:none;text-decoration:none;background:none;border-top:0;border-left:0;border-right:0}
+.dz-tab:hover{color:var(--whi2)}
+.dz-tab.active{color:var(--pur3);border-bottom-color:var(--pur)}
+.dz-tab svg{width:18px;height:18px;flex:0 0 auto}
+.dz-nav-sep{display:none}
+.dz-main{max-width:900px;margin:0 auto;padding:20px 18px}
+
+/* Componentes simples */
+.dz-card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px}
+.dz-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;font:600 12px Inter,sans-serif;background:transparent;color:var(--whi2);text-decoration:none;transition:.15s;white-space:nowrap}
+.dz-btn:hover{border-color:var(--pur);color:var(--pur3)}
+.dz-btn.pri{background:var(--pur);border-color:var(--pur);color:#fff}
+.dz-btn.pri:hover{background:var(--pur2);color:#fff}
+.dz-btn.danger{color:var(--red)}
+.dz-btn:disabled{opacity:.6;cursor:default}
+.dz-btn svg{width:15px;height:15px}
+.dz-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font:600 10px Inter,sans-serif;background:var(--pur-dim);color:var(--pur3)}
+.dz-readonly{display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:9px 12px;border-radius:10px;background:color-mix(in srgb,var(--amber) 12%,transparent);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent);color:var(--whi2);font-size:12px}
+.dz-readonly svg{width:16px;height:16px;color:var(--amber);flex:0 0 auto}
+.dz-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--whi);color:var(--bg);padding:10px 16px;border-radius:10px;font:500 13px Inter,sans-serif;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100% - 32px);text-align:center;z-index:900}
+.dz-toast.show{opacity:1}
+
+/* "Só ver" no Oradores: esconde botões que criam, salvam, importam ou excluem. */
+body.somente-leitura [onclick^="save"],body.somente-leitura [onclick^="openNovoAgend"],body.somente-leitura [onclick^="novo"],
+body.somente-leitura [onclick^="openImport"],body.somente-leitura [onclick^="startImport"],body.somente-leitura [onclick^="del"],
+body.somente-leitura [onclick^="excluir"],body.somente-leitura [onclick^="addMsg"],body.somente-leitura [onclick^="abrirNovaSug"],
+body.somente-leitura [onclick^="redefinir"],body.somente-leitura [onclick^="limpar"],body.somente-leitura [onclick^="buscarSentinelaJW"],
+body.somente-leitura [onclick^="compartilharOradores"],body.somente-leitura #createTeamInviteBtn{display:none!important}
+
+@media(min-width:900px){
+  body.dz-shell{padding-left:224px}
+  .dz-nav{position:fixed;left:0;top:0;bottom:0;width:224px;z-index:180;flex-direction:column;padding:0 12px 18px;border-right:1px solid var(--border);border-bottom:0;overflow-y:auto}
+  .dz-brand{display:flex}
+  .dz-tab{width:100%;padding:11px 12px;border:0;border-radius:8px;text-transform:none;letter-spacing:0;font-size:12px;margin-bottom:3px}
+  .dz-tab.active{border:0;background:var(--pur-dim);color:var(--pur)}
+  .dz-nav-sep{display:block;margin:12px 12px 8px;font:700 10px Inter,sans-serif;text-transform:uppercase;letter-spacing:.1em;color:var(--whi3)}
+  .dz-header{padding:0 28px;height:64px}
+  .dz-logo{display:none}
+  .dz-page-title{display:block}
+  .dz-main{max-width:1180px;padding:28px 30px 50px}
+}
+@media(max-width:899px){
+  body.dz-shell{padding-bottom:72px}
+  .dz-header{height:58px;padding:0 14px}
+  .dz-nav{position:fixed;left:0;right:0;bottom:0;z-index:190;height:66px;padding:5px 8px max(5px,env(safe-area-inset-bottom));border-top:1px solid var(--border);border-bottom:0;background:color-mix(in srgb,var(--surf) 96%,transparent)}
+  .dz-tab{min-width:62px;flex:1;flex-direction:column;justify-content:center;gap:3px;padding:5px 6px;border:0;border-radius:8px;font-size:9px;letter-spacing:0;text-transform:none}
+  .dz-tab svg{width:19px;height:19px}
+  .dz-tab.active{background:var(--pur-dim);border:0;color:var(--pur)}
+  .dz-tab.dz-only-desktop{display:none}
+  .dz-toast{bottom:84px}
+}
+@media(max-width:600px){
+  .dz-main{padding:18px 12px 24px}
+  .dz-user span,.dz-user>svg{display:none}
+  .dz-user{padding:3px;border:0}
+  .dz-switch a span{display:none}
+  .dz-switch a{padding:6px 9px}
+  .dz-logo small{display:none}
+}

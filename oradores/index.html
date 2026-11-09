@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Oradores</title>
 <link rel="icon" type="image/png" href="/assets/images/oradores-speaker-logo.png">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/assets/images/oradores-speaker-logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261109-2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/style.css?v=20261023-1">
@@ -190,13 +195,14 @@
 <header>
   <div class="logo"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span>Oradores <small id="headerCongName">— Minha Congregação</small></span></div>
   <div class="header-actions">
-    <a class="icon-btn" href="/" title="Início — escolher módulo"><i data-lucide="layout-grid"></i></a>
+    <div id="dzSwitch" hidden></div>
+    <a class="icon-btn" href="/" title="Início do Designa"><i data-lucide="layout-dashboard"></i></a>
     <button class="icon-btn" id="notificationsBtn" onclick="abrirCentralNotificacoes()" title="Notificações"><i data-lucide="bell"></i><span id="notificationsCount" class="notification-count" hidden>0</span></button>
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="moon"></i></button>
     <button class="icon-btn optional-action" onclick="openImportHistorico()" title="Importar histórico"><i data-lucide="folder-up"></i></button>
     <button class="icon-btn optional-action" onclick="openM('mExport')" title="Exportar Excel"><i data-lucide="download"></i></button>
     <button class="user-menu" onclick="toggleUserMenu()" aria-label="Menu da conta"><img id="userAvatar" alt=""><span id="userName">Conta</span><i data-lucide="chevron-down"></i></button>
-    <div class="account-popover" id="accountPopover"><div id="userEmail"></div><button onclick="irTab('config');toggleUserMenu(false)"><i data-lucide="settings"></i> Configurações</button><button onclick="location.href='/'"><i data-lucide="layout-grid"></i> Início</button><button onclick="logout()"><i data-lucide="log-out"></i> Sair</button></div>
+    <div class="account-popover" id="accountPopover"><div id="userEmail"></div><button onclick="irTab('config');toggleUserMenu(false)"><i data-lucide="settings"></i> Configurações</button><button onclick="location.href='/'"><i data-lucide="layout-dashboard"></i> Início</button><button onclick="location.href='/#configuracoes'"><i data-lucide="users"></i> Equipe e acessos</button><button onclick="logout()"><i data-lucide="log-out"></i> Sair</button></div>
   </div>
 </header>
 <nav>
@@ -357,10 +363,10 @@
   <div class="card"><div class="slabel">Lixeira</div><p class="settings-note">Itens excluídos podem ser recuperados durante 30 dias.</p><div id="trashList"></div><button class="btn bo bs" onclick="renderTrash()"><i data-lucide="refresh-cw"></i> Atualizar lixeira</button></div>
   <div class="card team-card">
     <div class="slabel">Equipe da congregação</div>
-    <h3>Compartilhar este sistema</h3>
-    <p>Crie um convite seguro para outra pessoa trabalhar na mesma programação e lista de oradores. O link dura 24 horas e só pode ser usado uma vez.</p>
+    <h3>Equipe e acessos</h3>
+    <p>Convites e o que cada pessoa pode fazer (Oradores, Territórios, editar ou só ver) ficam em <strong>Configurações da congregação</strong>, no Início do Designa.</p>
     <div id="teamStatus" class="team-status">Carregando equipe...</div>
-    <button class="btn bp" id="createTeamInviteBtn" hidden onclick="createTeamInvite()"><i data-lucide="user-plus"></i> Criar link de convite</button>
+    <a class="btn bp" id="createTeamInviteBtn" hidden href="/#configuracoes"><i data-lucide="users"></i> Gerenciar equipe e acessos</a>
     <div id="leaveTeamTransfer" class="field" hidden style="margin-top:16px"><label for="leaveTeamSuccessor">Para sair, transfira a propriedade para outro integrante</label><select id="leaveTeamSuccessor"></select></div>
     <button type="button" class="btn bo" id="leaveTeamBtn" hidden style="margin-top:12px;color:var(--red)" onclick="sairDaCongregacao()">Sair da congregação</button>
   </div>
@@ -379,7 +385,8 @@
   </div>
 </div>
 </main>
-<script src="/assets/js/supabase-client.js?v=20261023-2"></script>
+<script src="/assets/shared/conta.js?v=20261109-2"></script>
+<script src="/assets/js/supabase-client.js?v=20261109-1"></script>
 <script src="/assets/js/app.js?v=20260911-1"></script>
 <script src="/assets/js/features/home.js?v=20261106-2"></script>
 <script src="/assets/js/features/schedule.js?v=20261106-2"></script>
@@ -387,8 +394,8 @@
 <script src="/assets/js/features/insights.js?v=20260909-3"></script>
 <script src="/assets/js/features/transfer.js?v=20260911-1"></script>
 <script src="/assets/js/features/settings.js?v=20261109-1"></script>
-<script src="/assets/js/features/noticeboard.js?v=20261106-1"></script>
-<script src="/assets/js/features/team.js?v=20261023-2"></script>
+<script src="/assets/js/features/noticeboard.js?v=20261109-1"></script>
+<script src="/assets/js/features/team.js?v=20261109-1"></script>
 <script src="/assets/js/features/init.js?v=20260904-1"></script>
 </body>
 </html>
