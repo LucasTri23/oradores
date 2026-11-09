@@ -145,15 +145,18 @@ function compartilharSaidasDiscursante(id){
   window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank','noopener');
 }
 
+const MESES_AGENDA=['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+
 function mensagemAgendaMinha(hoje=isoLocal(new Date())){
   const agenda=discursantes.flatMap(d=>saidasFuturasDiscursante(d,hoje).map(saida=>({...saida,nome:d.nome||'Orador'})))
     .sort((a,b)=>a.data.localeCompare(b.data)||a.nome.localeCompare(b.nome,'pt-BR'));
   if(!agenda.length)return '';
   const linhas=['*Agenda de discursos — '+(cfg.cong||'Minha congregação')+'*'];
-  let ano='';
+  let ano='',mes='';
   agenda.forEach(saida=>{
-    if(ano!==saida.data.slice(0,4)){ano=saida.data.slice(0,4);linhas.push('', '*'+ano+'*');}
-    linhas.push(fD(saida.data)+' — '+saida.nome+' — '+(saida.destino||'Destino não informado'));
+    if(ano!==saida.data.slice(0,4)){ano=saida.data.slice(0,4);mes='';linhas.push('', '*'+ano+'*');}
+    if(mes!==saida.data.slice(5,7)){mes=saida.data.slice(5,7);linhas.push('', MESES_AGENDA[Number(mes)-1]);}
+    linhas.push(fD(saida.data)+' — *'+saida.nome+'* — '+(saida.destino||'Destino não informado'));
     if(saida.obs)linhas.push('Observações: '+saida.obs);
   });
   return linhas.join('\n');
