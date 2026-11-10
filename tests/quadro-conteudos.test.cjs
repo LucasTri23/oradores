@@ -21,7 +21,7 @@ function tela(conteudo,modelo,acessos={oradores:true,designacoes:true}){
     discursos:[],programa:base.programa,TL:{},cfg:{cong:'Central',dia:6},activeWorkspaceId:'workspace',
     completarDadosPrograma:r=>r,Regras:R,QuadroDados,PdfDesignacoes,
     supabase:{from:()=>({select:()=>({eq:()=>({eq:async(_,col)=>({data:(records[col]||[]).map((r,i)=>({id:r.id||String(i),data:r})),error:null})})})})}};
-  vm.createContext(c);vm.runInContext(fs.readFileSync('assets/js/features/noticeboard.js','utf8'),c);
+  vm.createContext(c);vm.runInContext(fs.readFileSync('quadro/quadros.js','utf8'),c);
   return c;
 }
 for(const conteudo of ['oradores','indicadores','completo'])for(const modelo of ['cartoes','word','ilustrado','editorial','compacto'])test(conteudo+' / '+modelo+' gera PDF com o conteúdo correto',async()=>{

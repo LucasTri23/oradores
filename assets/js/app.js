@@ -36,13 +36,12 @@ async function loadAll(){
 
 // NAV
 function irTab(p){
+  if(p==='quadro'){location.href='/quadro';return;}
   if(p==='config'&&!new URLSearchParams(location.search).has('configEmbed')){location.href='/#configuracoes';return;}
-  if(window.quadroAcesso?.oradores===false&&p!=='quadro'){location.href='/';return;}
-  if(location.pathname.startsWith('/quadro')&&p!=='quadro'){location.href='/oradores#'+p;return;}
   if(!document.getElementById('page-'+p))return;
   if(!new URLSearchParams(location.search).has('configEmbed')&&location.hash!=='#'+p)history.pushState({},'','#'+p);
-  if(window.vinculoQuadro)DesignaUI.montarSeletor(document.getElementById('dzSwitch'),window.vinculoQuadro,'oradores');
-  document.title=(p==='quadro'?'Quadro de anúncios':'Oradores')+' — '+cfg.cong;
+  if(window.vinculoDesigna)DesignaUI.montarSeletor(document.getElementById('dzSwitch'),window.vinculoDesigna,'oradores');
+  document.title='Oradores — '+cfg.cong;
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   const t=document.querySelector('[data-p="'+p+'"]');if(t)t.classList.add('active');
@@ -55,7 +54,6 @@ function irTab(p){
   if(p==='temas')renderTemas();
   if(p==='programa')renderPrograma();
   if(p==='config')renderTrash();
-  if(p==='quadro'&&typeof atualizarPreviaQuadro==='function')atualizarPreviaQuadro();
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>irTab(t.dataset.p)));
 window.addEventListener('popstate',()=>{const p=location.hash.slice(1)||'home';if(document.getElementById('page-'+p))irTab(p);});

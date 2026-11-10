@@ -23,7 +23,7 @@ test('cores ficam separadas por modelo e congregação; restaurar afeta apenas o
   const elements={},store=new Map();let modelo='cartoes';
   const el=id=>elements[id]??={value:'',addEventListener(){}};
   const c={document:{getElementById:el,querySelector:()=>({value:modelo})},PdfPaleta,Date,Map,isoLocal:()=> '2026-11-01',activeWorkspaceId:'A',localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},setTimeout:()=>0,clearTimeout(){}};
-  vm.createContext(c);vm.runInContext(fs.readFileSync('assets/js/features/noticeboard.js','utf8'),c);
+  vm.createContext(c);vm.runInContext(fs.readFileSync('quadro/quadros.js','utf8'),c);
   c.sincronizarCoresQuadro();el('quadroCor-principal').value='#ff0000';c.salvarCoresQuadro();assert.equal(c.coresQuadroAtuais().principal,'#ff0000');
   modelo='word';assert.equal(c.coresQuadroAtuais().principal,PdfPaleta.padroes.word.principal);c.sincronizarCoresQuadro();el('quadroCor-principal').value='#00ff00';c.salvarCoresQuadro();
   modelo='cartoes';assert.equal(c.coresQuadroAtuais().principal,'#ff0000');c.salvarCoresQuadro(true);assert.equal(c.coresQuadroAtuais().principal,PdfPaleta.padroes.cartoes.principal);

@@ -3,21 +3,20 @@ document.getElementById('quadroMes').value=isoLocal(new Date()).slice(0,7);
 const responsaveisQuadro=new Map();
 ['quadroMes','quadroQuantidade'].forEach(id=>document.getElementById(id).addEventListener('change',renderResponsaveisQuadro));
 
-// Presidente e leitor vindos do módulo Designações (data → {presidente, leitor}). Só carrega para quem tem acesso.
+// Presidente e leitor vindos das Designações, sem inicializar outro módulo.
 let responsaveisDesignacoes=null;
 async function carregarResponsaveisDesignacoes(){
-  if(responsaveisDesignacoes||typeof FF==='undefined'||!db)return;
+  if(responsaveisDesignacoes)return;
+  if(!window.quadroAcesso?.designacoes){responsaveisDesignacoes={};return;}
   try{
-    const[rs,ps,central]=await Promise.all([FF.gets(FF.col(db,'desig_reunioes')),FF.gets(FF.col(db,'desig_pessoas')),FF.gets(FF.col(db,'cong_pessoas')).catch(()=>({docs:[]}))]);
-    // Nomes da lista única da congregação (com os cadastros antigos das Designações como reserva).
-    const nomes=new Map(ps.docs.map(d=>[d.id,d.data().nome]).filter(([,n])=>n));
-    central.docs.forEach(d=>nomes.set(d.id,d.data().nome));
+    const dados=await carregarDadosIndicadores();
+    const nomes=new Map(dados.pessoas.map(p=>[p.id,p.nome]).filter(([,nome])=>nome));
     const mapa={};
-    rs.docs.forEach(d=>{const r=d.data();if(!r?.data||r.semReuniao)return;
+    dados.reunioes.forEach(r=>{if(!r?.data||r.semReuniao)return;
       const juntar=f=>(r.pessoas?.[f]||[]).map(id=>nomes.get(id)).filter(Boolean).join(', ');
       mapa[r.data]={presidente:juntar('presidente'),leitor:juntar('leitor')};});
     responsaveisDesignacoes=mapa;
-  }catch(error){responsaveisDesignacoes={};}
+  }catch(error){throw new Error('Não foi possível carregar presidente e leitor das Designações. Tente atualizar a prévia.');}
 }
 const responsavelQuadro=(data,chave)=>responsaveisQuadro.get(data)?.[chave]??responsaveisDesignacoes?.[data]?.[chave]??'';
 
@@ -25,7 +24,7 @@ function renderResponsaveisQuadro(){
   const painel=document.getElementById('quadroResponsaveis');
   painel.hidden=conteudoQuadroAtual()!=='oradores'||!document.getElementById('quadroIncluirResponsaveis').checked;
   painel.replaceChildren();if(painel.hidden)return;
-  if(!responsaveisDesignacoes&&typeof FF!=='undefined'&&db){carregarResponsaveisDesignacoes().then(renderResponsaveisQuadro);return;}
+  if(!responsaveisDesignacoes&&typeof window!=='undefined'&&window.quadroAcesso?.designacoes){painel.textContent='Carregando designações…';carregarResponsaveisDesignacoes().then(renderResponsaveisQuadro).catch(error=>{painel.textContent=error.message;});return;}
   try{
     const meses=dadosQuadroAnuncios(document.getElementById('quadroMes').value,Number(document.getElementById('quadroQuantidade').value));
     meses.forEach(m=>{
@@ -232,7 +231,7 @@ async function atualizarPreviaQuadro(){
 }
 
 const conteudoQuadroAtual=()=>document.getElementById('quadroConteudo')?.value||'oradores';
-function alterarConteudoQuadro(){
+function alterarConteudoQuadro(atualizar=true){
   const conteudo=conteudoQuadroAtual(),completo=conteudo==='completo';
   const check=document.getElementById('quadroIncluirResponsaveis');
   check.closest('label').hidden=conteudo!=='oradores';
@@ -241,7 +240,7 @@ function alterarConteudoQuadro(){
   if(completo)document.querySelector('input[name="quadroModelo"][value="word"]').checked=true;
   sincronizarCoresQuadro();
   document.getElementById('quadroConteudoHint').textContent=completo?'Reúne discursos, presidente/leitor, indicadores, microfones, áudio/vídeo e Zoom no modelo do Word.':conteudo==='indicadores'?'Usa as datas e os nomes cadastrados em Designações, incluindo meio e fim de semana.':'Usa a programação de discursos públicos.';
-  agendarPreviaQuadro();
+  if(atualizar)agendarPreviaQuadro();
 }
 
 async function carregarDadosIndicadores(){

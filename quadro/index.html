@@ -1,13 +1,33 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="refresh" content="0;url=/oradores#quadro">
-  <title>Quadro de anúncios · Designa</title>
-  <script>location.replace('/oradores#quadro');</script>
-</head>
-<body>
-  <p>Abrindo o quadro de anúncios… <a href="/oradores#quadro">Continuar</a></p>
-</body>
-</html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Quadro de anúncios · Designa</title>
+<meta name="theme-color" content="#2563eb"><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/assets/images/designa-icon-v1.png">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-5"><link rel="stylesheet" href="/quadro/style.css?v=20261110-5">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
+<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script></head><body class="dz-shell">
+<header class="dz-header"><div id="dzSwitch" hidden></div><div class="dz-actions"><button class="dz-icon-btn" data-dz-tema onclick="DesignaUI.alternarTema()" aria-label="Alternar tema"></button><div id="dzConta"></div></div></header>
+<nav class="dz-nav"><a class="dz-brand" href="/"><img src="/assets/images/designa-icon-v1.png" alt=""><span>Designa<small class="nomeCong"></small></span></a><a class="dz-tab" href="/"><i data-lucide="layout-dashboard"></i>Início</a><a class="dz-tab active" href="/quadro" aria-current="page"><i data-lucide="panels-top-left"></i>Quadro de anúncios</a><a class="dz-tab" href="/#configuracoes"><i data-lucide="settings"></i>Configurações</a></nav>
+<div id="quadroEstado" role="status"><p id="quadroErro">Carregando a programação…</p><button id="quadroTentar" class="btn" hidden onclick="iniciarQuadro()">Tentar novamente</button><a class="btn" href="/">Voltar ao Início</a></div>
+<main class="dz-main" id="quadroApp" hidden><div class="quadro-heading"><div><h1>Quadro de anúncios</h1><p class="nomeCong"></p><p>Prepare, confira e compartilhe as programações da congregação.</p></div><div><a id="quadroLinkOradores" class="btn" href="/oradores">Abrir Oradores</a> <a id="quadroLinkDesignacoes" class="btn" href="/designacoes">Abrir Designações</a></div></div><section id="page-quadro"><div class="quadro-workspace"><div>  <div class="card">
+    <div class="slabel">Quadro de anúncios</div>
+    <p class="settings-note">Escolha o conteúdo e o modelo. Confira o PDF antes de baixar ou compartilhar.</p>
+    <div class="field"><label for="quadroConteudo">Conteúdo do quadro</label><select id="quadroConteudo" onchange="alterarConteudoQuadro()"><option value="oradores">Oradores</option><option value="indicadores">Indicadores e designações</option><option value="completo">Programação completa</option></select><small id="quadroConteudoHint" role="status"></small></div>
+    <div class="g2">
+      <div class="field"><label for="quadroMes">Mês inicial</label><input type="month" id="quadroMes" required></div>
+      <div class="field"><label for="quadroQuantidade">Período</label><select id="quadroQuantidade"><option value="1">1 mês</option><option value="2">2 meses</option><option value="3" selected>3 meses</option></select></div>
+    </div>
+    <label class="config-toggle"><input type="checkbox" id="quadroIncluirResponsaveis" onchange="renderResponsaveisQuadro()"><span><strong>Colocar presidente e leitor?</strong><small>Os nomes vêm das Designações (quando já designados) e podem ser ajustados aqui. Eles aparecerão abaixo do discurso no PDF.</small></span></label>
+    <div id="quadroResponsaveis" hidden></div><fieldset class="quadro-modelos"><legend>Modelo do PDF</legend><label><input type="radio" name="quadroModelo" value="cartoes" checked> Cartões <small>Cartões por data; designações em colunas como no anexo.</small></label><label><input type="radio" name="quadroModelo" value="editorial"> Editorial <small>Tipografia ampla e detalhes em azul.</small></label><label><input type="radio" name="quadroModelo" value="compacto"> Compacto <small>Tabela limpa, ideal para imprimir.</small></label><label><input type="radio" name="quadroModelo" value="word"> Tabelas do Word <small>Seções organizadas como no documento enviado.</small></label><label><input type="radio" name="quadroModelo" value="ilustrado"> Ilustrado <small>Folhas e formas vetoriais, sem logotipo.</small></label></fieldset>
+    <details class="quadro-cores"><summary>Cores deste modelo</summary><p class="settings-note">As cores ficam salvas neste navegador, separadas por modelo e congregação. O texto dos cabeçalhos se ajusta ao contraste.</p><div class="g2">
+      <div class="field"><label for="quadroCor-principal">Principal / cabeçalho</label><input type="color" id="quadroCor-principal" value="#193e49" oninput="salvarCoresQuadro()"></div>
+      <div class="field"><label for="quadroCor-destaque">Destaques</label><input type="color" id="quadroCor-destaque" value="#16818a" oninput="salvarCoresQuadro()"></div>
+      <div class="field"><label for="quadroCor-apoio">Cor de apoio</label><input type="color" id="quadroCor-apoio" value="#9fd3d0" oninput="salvarCoresQuadro()"></div>
+      <div class="field"><label for="quadroCor-fundo">Fundo dos cartões / linhas</label><input type="color" id="quadroCor-fundo" value="#f0f6f6" oninput="salvarCoresQuadro()"></div>
+      <div class="field"><label for="quadroCor-texto">Texto</label><input type="color" id="quadroCor-texto" value="#193e49" oninput="salvarCoresQuadro()"></div>
+    </div><button type="button" class="btn bo bs" onclick="salvarCoresQuadro(true)">Restaurar cores deste modelo</button></details>
+    <button type="button" class="btn bp" id="quadroBaixar" onclick="baixarQuadroAnuncios()"><i data-lucide="file-down"></i> Baixar PDF</button>
+    <button type="button" class="btn bo" id="quadroEnviar" onclick="baixarQuadroAnuncios(true)"><i data-lucide="share-2"></i> Enviar pelo WhatsApp</button>
+  </div>
+</div><section class="card quadro-preview"><div class="panel-head"><strong>Prévia do PDF</strong><button class="btn bo bs" onclick="atualizarPreviaQuadro()">Atualizar prévia</button></div><p id="quadroPreviewStatus" role="status">Escolha um modelo para conferir o PDF.</p><iframe id="quadroPreview" title="Prévia do quadro de anúncios" hidden></iframe><a id="quadroPreviewLink" hidden target="_blank" rel="noopener">Abrir prévia em outra aba</a></section></div></section></main>
+<script src="/assets/shared/conta.js?v=20261110-5"></script><script src="/assets/js/data.js?v=20260902-1"></script><script src="/designacoes/regras.js?v=20261110-3"></script><script src="/assets/shared/pdf-paleta.js?v=20261110-4"></script><script src="/designacoes/pdf.js?v=20261110-4"></script><script src="/assets/shared/quadro-dados.js?v=20261110-3"></script><script src="/quadro/fonte.js?v=20261110-5"></script><script src="/quadro/app.js?v=20261110-5"></script><script src="/quadro/quadros.js?v=20261110-5"></script>
+</body></html>

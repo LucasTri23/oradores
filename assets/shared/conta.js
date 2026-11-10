@@ -4,7 +4,7 @@ window.APP_NOME='Designa';
 
 window.Conta=(function(){
   const MODULOS={
-    oradores:{nome:'Oradores',caminho:'/oradores',icone:'mic',descricao:'Programação de discursos, oradores, histórico e quadro de anúncios.'},
+    oradores:{nome:'Oradores',caminho:'/oradores',icone:'mic',descricao:'Programação de discursos, cadastro de oradores e histórico.'},
     territorios:{nome:'Territórios',caminho:'/territorios',icone:'map',descricao:'Registro de territórios, cartões de mapa, dirigentes e campanhas.'},
     designacoes:{nome:'Designações',caminho:'/designacoes',icone:'clipboard-list',descricao:'Presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões.'}
   };

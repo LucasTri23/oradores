@@ -28,7 +28,6 @@ body.dz-shell{background:var(--bg);color:var(--whi);font-family:'Inter',sans-ser
 .dz-unified>.dz-switch{margin-right:auto;flex:0 1 auto;min-width:0;max-width:calc(100% - 160px)}
 .dz-unified>.dz-actions,.dz-unified>.header-actions{margin-left:auto;flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end}
 .dz-unified>.dz-logo,.dz-unified>.logo,.dz-unified>.dz-page-title{display:none!important}
-.quadro-somente-designacoes nav .tab:not([data-p="quadro"]):not([data-p="config"]),.quadro-somente-designacoes .optional-action{display:none!important}
 .quadro-modelos label:has(input:disabled){opacity:.5;cursor:default}
 @media(max-width:700px){.dz-unified{gap:6px}.dz-unified>.dz-switch{max-width:calc(100% - 104px)}.dz-unified .dz-switch a{padding:8px}.dz-unified .dz-switch a span{display:inline}}
 .dz-switch svg{width:15px;height:15px}

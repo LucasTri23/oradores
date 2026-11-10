@@ -4,11 +4,12 @@
 
 Antes de publicar esta atualização, execute `migrations/20261109-workspace-modules.sql` no SQL Editor do Supabase (ou o `supabase.sql` completo atualizado). No próximo acesso do proprietário, inclusive por um link direto de módulo, ele escolhe os módulos usados pela congregação. A escolha aparece uma vez e pode ser alterada em **Início → Configurações → Módulos da congregação**. Integrantes não recebem essa pergunta. Módulos desativados preservam seus dados e permissões, mas ficam indisponíveis; a escolha é aplicada também nas políticas de leitura e gravação do banco.
 
-Sistema da congregação com três módulos, preparado para Supabase e Vercel:
+Sistema da congregação com módulos integrados, preparado para Supabase e Vercel:
 
 - **Oradores** (`/oradores`): programação e histórico de discursos.
 - **Territórios** (`/territorios`): registro de territórios, cartões de mapa, dirigentes e campanhas.
 - **Designações** (`/designacoes`): presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões do meio de semana e do fim de semana, com avisos de conflito, tempo sem fazer cada função, sugestão automática e PDF do quadro de anúncios.
+- **Quadro de anúncios** (`/quadro`): página independente para preparar, conferir e compartilhar os PDFs de Oradores, Designações e programação completa. Usa os acessos existentes às fontes de dados.
 
 A tela inicial (`/`) faz o login com Google e mostra os módulos liberados para a conta. O proprietário da congregação escolhe, na própria tela inicial, quem pode editar Oradores, Territórios ou os dois. O nome do sistema fica em `assets/shared/conta.js` (`APP_NOME`).
 
@@ -20,6 +21,7 @@ oradores/index.html           Estrutura das telas do Oradores
 territorios/index.html        App de Territórios
 territorios/bridge.js         Liga o app de Territórios ao Supabase (coleções terr_*)
 designacoes/                  Módulo Designações (regras.js, app.js, pdf.js; coleções desig_*)
+quadro/                       Página própria, inicialização, leitura de dados e modelos do quadro
 assets/shared/conta.js        Login, congregação e módulos compartilhados
 assets/css/style.css          Tema, componentes e responsividade
 assets/js/app.js              Estado, navegação e utilitários
@@ -89,5 +91,5 @@ Para trazer os dados da versão antiga de Territórios (Firebase), abra **Territ
 - Modelos: Cartões, Editorial, Compacto, Tabelas do Word e Ilustrado (com folhas vetoriais, sem logotipo). Os cartões de designações seguem o modelo de escala horizontal, com funções em colunas e paginação para funções extras e nomes longos. A programação completa usa as tabelas do Word, reunindo discursos, presidência/leitor, indicadores, microfones, áudio/vídeo e Zoom, conforme as funções configuradas. O modelo ilustrado está disponível para Oradores e Indicadores.
 - **Cores deste modelo** permite escolher principal, destaques, apoio, fundo e texto, com atualização da prévia. As preferências são locais ao navegador, separadas por congregação e modelo, e podem ser restauradas individualmente. O texto sobre fundos de cabeçalho se ajusta automaticamente para manter contraste.
 - Presidente e leitor continuam vindo das Designações quando disponíveis, com ajustes manuais no quadro. A opção de baixar ou compartilhar usa o modelo selecionado.
-- A rota `/quadro` tem uma página estática que abre `/oradores#quadro`, sem depender de rewrite da Vercel. Não é necessário executar SQL para esta atualização.
+- A rota `/quadro` tem página, estilos e inicialização próprios. Não abre o Oradores por trás. O endereço antigo `/oradores#quadro` encaminha para `/quadro`. Não é necessário executar SQL para esta atualização.
 - A barra superior mantém a troca de módulos à esquerda e as ações da conta à direita em todos os módulos e no Início.
