@@ -336,7 +336,7 @@ function renderCalendar(byDate){
     if(semDiscurso){status.innerHTML='<i class="status-dot"></i><span>Sem discurso</span>';status.querySelector('i').style.background=corEspecial(registro.semDiscursoCor||'#f59e0b');}
     else if(pendente)status.innerHTML='<i class="status-dot pending"></i><span>Falta: '+faltas.join(', ')+'</span>';
     else status.innerHTML='<i class="status-dot ready"></i><span>Completo</span>';
-    row.appendChild(date);row.appendChild(info);row.appendChild(topic);row.appendChild(status);row.appendChild(actions);const detalhes=document.createElement('details');detalhes.className='agenda-mobile-details';const resumo=document.createElement('summary');resumo.textContent='Detalhes e a??es';detalhes.appendChild(resumo);const copia=info.querySelector('.agenda-meta')?.cloneNode(true);if(copia)detalhes.appendChild(copia);detalhes.append(topic.cloneNode(true));[...actions.children].forEach(b=>{const c=b.cloneNode(true);c.onclick=b.onclick;detalhes.appendChild(c);});detalhes.onclick=e=>e.stopPropagation();row.appendChild(detalhes);grid.appendChild(row);
+    row.appendChild(date);row.appendChild(info);row.appendChild(topic);row.appendChild(status);row.appendChild(actions);grid.appendChild(row);
   });
 }
 function renderSentinelaChip(){
