@@ -161,7 +161,7 @@ async function saveOrador(){
   const data={nome:document.getElementById('oNome').value.trim(),cong:document.getElementById('oCong').value.trim(),tel:document.getElementById('oTel').value.trim(),ultimoDiscurso:document.getElementById('oUlt').value,obs:document.getElementById('oObs').value.trim(),nota:notaAtual,minhaCongregacao:document.getElementById('oMinhaCong').checked};
   if(!data.nome)return toast('Informe o nome!');
   if(id)await FF.upd(FF.doc(db,'oradores',id),data);else await FF.add(FF.col(db,'oradores'),data);
-  closeM('mOrador');await loadOradores();toast('✓ Salvo!');
+  closeM('mOrador');await loadOradores();toast('✓ Salvo!');return true;
 }
 async function delOrador(id){if(!(await confirmarModal('Excluir orador','O cadastro irá para a lixeira e poderá ser recuperado por 30 dias.','Excluir',true)))return;await FF.del(FF.doc(db,'oradores',id));await loadOradores();toast('Movido para a lixeira.');}
 document.querySelectorAll('#starsEl .star').forEach(s=>{s.addEventListener('click',()=>{notaAtual=+s.dataset.v;rStars(notaAtual);});s.addEventListener('mouseover',()=>rStars(+s.dataset.v));s.addEventListener('mouseout',()=>rStars(notaAtual));});

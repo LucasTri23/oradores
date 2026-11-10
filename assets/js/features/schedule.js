@@ -339,7 +339,7 @@ async function saveAgend(){
       renderOradores();
     }
   }
-  closeM('mAgend');renderHome();toast('✓ Salvo!');
+  closeM('mAgend');renderHome();toast('✓ Salvo!');return true;
 }
 async function delAgendAtual(){
   const id=document.getElementById('agId').value,data=document.getElementById('agData').value;

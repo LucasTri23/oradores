@@ -69,7 +69,7 @@ const reuniaoSalva=data=>reunioes.find(r=>r.data===data);
 // ── Navegação ──
 function irAba(){
   const aba=['#pessoas','#config','#historico'].includes(location.hash)?location.hash.slice(1):'programacao';
-  if(aba==='config'&&!new URLSearchParams(location.search).has('configEmbed')){location.href='/#configuracoes';return;}
+  if(aba==='config'){location.href='/#configuracoes';return;}
   document.querySelectorAll('.secao').forEach(s=>s.hidden=s.id!=='sec-'+aba);
   document.querySelectorAll('[data-aba]').forEach(a=>a.classList.toggle('active',a.dataset.aba===aba));
   if(aba==='programacao')renderProgramacao();
@@ -98,11 +98,11 @@ function renderProgramacao(){
   const lista=reunioesDoMesAtual();
   const qtd=R.quantidades(cfg),hoje=hojeISO();
   lista.forEach(r=>{
-    const card=document.createElement(pode?'button':'div');
+    const card=document.createElement('article');
     card.className='reuniao'+(r.data<hoje?' passada':'')+(pode?'':' leitura');
-    if(pode){card.type='button';card.onclick=()=>abrirReuniao(r.data);}
+
     const dt=new Date(r.data+'T12:00:00');
-    const topo=document.createElement('div');topo.className='reuniao-topo';
+    const topo=document.createElement(pode?'button':'div');topo.className='reuniao-topo';if(pode){topo.type='button';topo.setAttribute('aria-label','Editar reuni?o de '+r.data);topo.onclick=()=>abrirReuniao(r.data);}
     topo.innerHTML='<div class="dia"><b></b><small></small></div><div class="tx"><strong></strong><span></span></div><span class="tipo"></span>';
     topo.querySelector('.dia b').textContent=r.data.slice(8,10);
     topo.querySelector('.dia small').textContent=MESES_CURTOS[dt.getMonth()];
@@ -116,7 +116,7 @@ function renderProgramacao(){
       const s=document.createElement('div');s.className='sem-reuniao';s.textContent=r.motivo||'Não haverá reunião nesta data.';card.appendChild(s);
     }else R.FUNCOES_POR_TIPO[r.tipo].forEach(f=>{
       const vagas=qtd[r.tipo][f];if(!vagas)return;
-      const linha=document.createElement('div');linha.className='funcao-linha';
+      const linha=document.createElement('div');linha.className='funcao-linha'+(card.querySelectorAll('.funcao-linha').length>=2?' funcao-secundaria':'');
       const lbl=document.createElement('span');lbl.innerHTML=icone(R.FUNCOES[f].icone);lbl.appendChild(document.createTextNode(R.FUNCOES[f].curto||R.FUNCOES[f].nome));
       const nomes=document.createElement('div');nomes.className='nomes';
       const ids=(r.pessoas?.[f]||[]);
@@ -133,6 +133,7 @@ function renderProgramacao(){
       }
       linha.append(lbl,nomes);card.appendChild(linha);
     });
+    if(card.querySelectorAll('.funcao-linha').length>2){const b=document.createElement('button');b.type='button';b.className='mobile-funcoes dz-btn';b.textContent='Ver todas as fun??es';b.setAttribute('aria-expanded','false');b.onclick=()=>{const aberto=card.classList.toggle('expandida');b.setAttribute('aria-expanded',String(aberto));b.textContent=aberto?'Recolher fun??es':'Ver todas as fun??es';};card.appendChild(b);}
     div.appendChild(card);
   });
   if(!lista.length&&cfg.diaMeio!=null)div.innerHTML='<div class="vazio" style="grid-column:1/-1">Nenhuma reunião neste mês.</div>';
@@ -214,7 +215,7 @@ async function salvarReuniao(){
     reunioes=[...reunioes.filter(r=>r.data!==edicao.data),{...dados,id:edicao.data}];
     const copiouZoom=dados.semReuniao?false:await copiarZoomParaSemana(dados);
     fecharJanela('janReuniao');renderProgramacao();
-    toast(copiouZoom?'✓ Reunião salva. O Zoom da outra reunião da semana também foi atualizado.':'✓ Reunião salva.',copiouZoom?5000:3500);
+    toast(copiouZoom?'✓ Reunião salva. O Zoom da outra reunião da semana também foi atualizado.':'✓ Reunião salva.',copiouZoom?5000:3500);return true;
   }catch(e){if(e.message!=='Somente leitura')toast('Não foi possível salvar: '+e.message,6000);}
   finally{b.disabled=false;}
 }
@@ -387,7 +388,7 @@ async function salvarPessoa(){
     await Congregacao.salvar(sb,vinc.workspaceId,user.id,'cong_pessoas',id,cadastro);
     await salvar('desig_pessoas',id,{funcoes});
     pessoas=[...pessoas.filter(p=>p.id!==id),{...cadastro,funcoes,id}].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-    fecharJanela('janPessoa');renderPessoas();toast('✓ Salvo.');
+    fecharJanela('janPessoa');renderPessoas();toast('✓ Salvo.');return true;
   }catch(e){if(e.message!=='Somente leitura')toast('Não foi possível salvar: '+e.message,6000);}
 }
 // ── Configurações ──

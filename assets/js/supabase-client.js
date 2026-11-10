@@ -84,9 +84,9 @@ async function checkSetup(){
     updateUserHeader();
     await loadAll();
     if(location.hash&&document.getElementById('page-'+location.hash.slice(1)))irTab(location.hash.slice(1));
-    if(new URLSearchParams(location.search).has('configEmbed'))irTab('config');
+    if(new URLSearchParams(location.search).has('ferramentas'))irTab('config');
     document.getElementById('setup').style.display='none';
-    if(!new URLSearchParams(location.search).has('configEmbed'))perguntarDiaReuniao2027();
+    if(!new URLSearchParams(location.search).has('ferramentas'))perguntarDiaReuniao2027();
     await renderTeamPanel();
     await checkSharedImport();
   }catch(error){mostrarTelaLogin(true);showSetupError(error.message);}

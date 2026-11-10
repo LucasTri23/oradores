@@ -10,3 +10,5 @@
 #quadroEstado{max-width:500px;margin:12vh auto;padding:24px;line-height:1.6}#quadroResponsaveis h3{font-size:14px;text-transform:capitalize}#quadroResponsaveis legend{font-size:12px;padding:0 5px}
 :focus-visible{outline:3px solid var(--pur);outline-offset:3px}
 @media(max-width:1100px){.quadro-workspace{grid-template-columns:1fr}.quadro-preview{position:static}}@media(max-width:500px){.g2{grid-template-columns:1fr;gap:0}.quadro-preview iframe{height:65vh}}
+
+.quadro-etapa h2{font-size:18px;margin:0 0 20px}.etapas-acoes{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--border);margin-top:24px;padding-top:16px}.etapas-acoes button{min-height:44px}.quadro-etapa>button{margin:8px 8px 0 0}.quadro-etapa .g2{margin-bottom:16px}

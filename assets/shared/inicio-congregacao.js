@@ -65,7 +65,7 @@ async function salvarPessoaCong(){
   try{
     await C.salvar(await sbCong(),vinc.workspaceId,user.id,'cong_pessoas',id,dados);
     pessoasCong=[...pessoasCong.filter(p=>p.id!==id),{...dados,id}].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-    $('janPessoaC').hidden=true;renderPessoasCong();toast('✓ Salvo.');
+    $('janPessoaC').hidden=true;renderPessoasCong();toast('✓ Salvo.');return true;
   }catch(e){toast('Não foi possível salvar: '+e.message,6000);}
 }
 async function excluirPessoaCong(){
@@ -201,7 +201,7 @@ async function salvarEvento(){
     await C.salvar(await sbCong(),vinc.workspaceId,user.id,'cong_eventos',id,novo);
     eventosCong=null;$('janEvento').hidden=true;await renderEventos();
     const n1=r.plano.programaSalvar.length+r.plano.programaApagar.length,n2=r.plano.reunioesSalvar.length;
-    toast('✓ Evento salvo.'+(n1?' Oradores: '+n1+' data(s) atualizada(s).':'')+(n2?' Designações: '+n2+' reunião(ões) atualizada(s).':'')+(r.avisos.length?' Atenção: '+r.avisos.join('; ')+'.':''),7000);
+    toast('✓ Evento salvo.'+(n1?' Oradores: '+n1+' data(s) atualizada(s).':'')+(n2?' Designações: '+n2+' reunião(ões) atualizada(s).':'')+(r.avisos.length?' Atenção: '+r.avisos.join('; ')+'.':''),7000);return true;
   }catch(e){toast('Não foi possível salvar: '+e.message,6000);}
   finally{b.disabled=false;}
 }

@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-5">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-7">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
@@ -135,11 +135,6 @@ body.sem-cong .so-cong{display:none!important}
   <nav class="dz-nav">
     <a class="dz-brand" href="/"><img src="/assets/images/designa-icon-v1.png" alt=""><span><span class="nomeApp">Designa</span><small class="nomeCong"></small></span></a>
     <a class="dz-tab active" data-sec="painel" href="#painel"><i data-lucide="layout-dashboard"></i><span>Início</span></a>
-    <div class="dz-nav-sep">Módulos</div>
-    <a class="dz-tab" id="navOradores" href="/oradores"><i data-lucide="mic"></i><span>Oradores</span></a>
-    <a class="dz-tab" id="navTerritorios" href="/territorios"><i data-lucide="map"></i><span>Territórios</span></a>
-    <a class="dz-tab" id="navDesignacoes" href="/designacoes"><i data-lucide="clipboard-list"></i><span>Designações</span></a>
-    <a class="dz-tab" id="navQuadro" href="/quadro"><i data-lucide="panels-top-left"></i><span>Quadro de anúncios</span></a>
     <div class="dz-nav-sep">Congregação</div>
     <a class="dz-tab" data-sec="pessoas" href="#pessoas"><i data-lucide="users"></i><span>Pessoas</span></a>
     <a class="dz-tab" data-sec="eventos" href="#eventos"><i data-lucide="calendar-range"></i><span>Eventos</span></a>
@@ -200,13 +195,13 @@ body.sem-cong .so-cong{display:none!important}
     <section class="secao" id="sec-configuracoes" hidden>
       <div class="hello"><h1>Configurações</h1><p>Congregação, equipe e preferências dos módulos em um só lugar.</p></div>
       <div id="configModulos"></div>
-      <div class="cfg">
-        <div class="dz-card">
+      <div class="cfg" id="configLegacyCards" hidden>
+        <div class="dz-card" id="configNomeCard">
           <h2>Nome da congregação</h2>
           <p class="hint">Aparece no Oradores, nos Territórios e para outras congregações que recebem oradores de vocês.</p>
-          <div class="campo"><input id="cfgNome" maxlength="80" placeholder="Ex.: Central - Pedro Leopoldo"><button class="dz-btn pri" id="cfgNomeBtn" onclick="salvarNome()">Salvar</button></div>
+          <div class="campo"><label class="sr-only" for="cfgNome">Nome da congrega??o</label><input id="cfgNome" maxlength="80" placeholder="Ex.: Central - Pedro Leopoldo"><button class="dz-btn pri" id="cfgNomeBtn" onclick="salvarNome()">Salvar</button></div>
         </div>
-        <div class="dz-card">
+        <div class="dz-card" id="configAcessoCard">
           <h2>Seu acesso</h2>
           <p class="hint" id="meuAcesso"></p>
         </div>
@@ -226,7 +221,7 @@ body.sem-cong .so-cong{display:none!important}
           </div>
           <p class="hint" style="margin:10px 0 0">O link vale por 24 horas e pode ser usado uma vez.</p>
         </div>
-        <div class="dz-card">
+        <div class="dz-card" id="configInstalarCard">
           <h2>Instalar no celular</h2>
           <p class="hint" style="margin:0">No Android (Chrome): menu ⋮ → <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>. No iPhone (Safari): botão Compartilhar → <strong>Adicionar à Tela de Início</strong>. O Designa abre em tela cheia, como um aplicativo.</p>
         </div>
@@ -285,11 +280,12 @@ body.sem-cong .so-cong{display:none!important}
   </div>
 </div>
 
-<script src="/assets/js/data.js?v=20260902-1"></script>
-<script src="/assets/shared/conta.js?v=20261110-5"></script>
-<script src="/designacoes/regras.js?v=20261110-1"></script>
-<script src="/assets/shared/congregacao.js?v=20261110-2"></script>
-<script src="/assets/shared/inicio-congregacao.js?v=20261110-2"></script>
+<script src="/assets/js/data.js?v=20261110-7"></script>
+<script src="/assets/shared/conta.js?v=20261110-7"></script>
+<script src="/designacoes/regras.js?v=20261110-7"></script>
+<script src="/assets/shared/congregacao.js?v=20261110-7"></script>
+<script src="/assets/shared/form-ux.js?v=20261110-7"></script><script src="/assets/shared/config-store.js?v=20261110-7"></script><script src="/assets/shared/config-central.js?v=20261110-7"></script>
+<script src="/assets/shared/inicio-congregacao.js?v=20261110-7"></script>
 <script>
 const $=id=>document.getElementById(id);
 const toast=(m,ms)=>DesignaUI.toast(m,ms);
@@ -439,9 +435,6 @@ function renderPainel(){
   $('resumoAcesso').textContent='Congregação '+vinc.nome+'.';
   const semAcesso=Object.entries(Conta.MODULOS).filter(([k])=>vinc.modulosAtivos.includes(k)&&!Conta.podeVer(vinc,k));
   if(semAcesso.length){$('cardSemAcesso').hidden=false;$('listaSemAcesso').textContent=semAcesso.map(([,m])=>m.nome).join(' e ')+': sem acesso. Peça ao proprietário da congregação.';}
-  $('navOradores').hidden=!Conta.podeVer(vinc,'oradores');
-  $('navTerritorios').hidden=!Conta.podeVer(vinc,'territorios');
-  $('navDesignacoes').hidden=!Conta.podeVer(vinc,'designacoes');
   if(Conta.podeVer(vinc,'designacoes'))painelDesignacoes();
   if(Conta.podeVer(vinc,'oradores'))painelOradores();
   if(Conta.podeVer(vinc,'territorios'))painelTerritorios();
@@ -455,18 +448,7 @@ function descreverAcesso(v){
   return Object.entries(Conta.MODULOS).map(([k,m])=>m.nome+': '+(!v.modulosAtivos.includes(k)?'Desativado na congregação':NIVEL_TXT[nivel(v.modulos,v.somenteLeitura,k)])).join(' · ')+'.';
 }
 function renderConfigModulos(){
-  $('navQuadro').hidden=!(Conta.podeVer(vinc,'oradores')||Conta.podeVer(vinc,'designacoes'));
-  const destino=$('configModulos');destino.replaceChildren();
-  Object.entries(Conta.MODULOS).filter(([key])=>Conta.podeEditar(vinc,key)).forEach(([key,mod])=>{
-    const details=document.createElement('details');details.className='dz-card config-modulo';
-    const summary=document.createElement('summary');summary.textContent='Preferências de '+mod.nome;
-    const hint=document.createElement('p');hint.className='hint';hint.textContent='Dias, opções e preferências deste módulo. As alterações usam as mesmas permissões da congregação.';
-    details.append(summary,hint);
-    details.addEventListener('toggle',()=>{
-      if(!details.open||details.querySelector('iframe'))return;
-      const frame=document.createElement('iframe');frame.title='Configurações de '+mod.nome;frame.src=mod.caminho+'?configEmbed=1#config';frame.className='config-frame';details.appendChild(frame);
-    });destino.appendChild(details);
-  });
+  ConfigCentral.montar({container:$('configModulos'),vinc,user});
 }
 function renderConfig(){
   renderConfigModulos();
@@ -477,31 +459,20 @@ function renderConfig(){
   if(vinc.role==='owner'){$('painelDono').hidden=false;$('modulosAtivosResumo').textContent='Ativos: '+vinc.modulosAtivos.map(m=>Conta.MODULOS[m].nome).join(', ');renderMembros();}
 }
 
-window.addEventListener('message',e=>{
-  if(e.origin!==location.origin||e.data?.tipo!=='designa-config-altura'||!Number.isFinite(e.data.altura))return;
-  document.querySelectorAll('.config-frame').forEach(frame=>{if(frame.contentWindow===e.source)frame.style.height=Math.max(320,Math.min(12000,e.data.altura))+'px';});
-});
-
 async function alterarModulosCongregacao(){
   try{if(await Conta.escolherModulos(vinc))location.reload();}catch(e){toast(e.message);}
 }
 
 async function salvarNome(){
-  const nome=$('cfgNome').value.trim();if(nome.length<2)return toast('Informe o nome da congregação.');
-  const b=$('cfgNomeBtn');b.disabled=true;
-  try{
-    const sb=await Conta.supabase();
-    const{error}=await sb.rpc('set_workspace_display_name',{target_workspace:vinc.workspaceId,new_name:nome});
-    if(error)throw error;
-    // Mantém o nome usado dentro do Oradores igual.
-    if(Conta.podeEditar(vinc,'oradores')){
-      const{data:cfgRow}=await sb.from('app_records').select('data').eq('workspace_id',vinc.workspaceId).eq('collection','config').eq('id','app').maybeSingle();
-      if(cfgRow)await sb.from('app_records').upsert({id:'app',workspace_id:vinc.workspaceId,collection:'config',data:{...cfgRow.data,cong:nome},owner_id:user.id},{onConflict:'workspace_id,collection,id'});
-    }
+  const b=$('cfgNomeBtn'),form=$('configNomeCard'),status=$('cfgNomeStatus');
+  return FormUX.executar(form,b,status,async()=>{
+    const nome=$('cfgNome').value.trim();if(nome.length<2)throw new Error('Informe o nome da congregação.');
+    const sb=await Conta.supabase();const{error}=await sb.rpc('set_workspace_display_name',{target_workspace:vinc.workspaceId,new_name:nome});
+    if(error)throw new Error('O nome não foi salvo. Verifique a conexão e sua permissão.');
     vinc.nome=nome;document.querySelectorAll('.nomeCong').forEach(e=>e.textContent=nome);
-    toast('✓ Nome atualizado.');
-  }catch(e){toast('Não foi possível salvar: '+e.message,6000);}
-  finally{b.disabled=false;}
+    if(Conta.podeEditar(vinc,'oradores'))await ConfigStore.criar(sb,vinc,user,Conta).salvar('config','app',{cong:nome});
+    toast('✓ Nome atualizado.');return true;
+  });
 }
 
 function seletorNivel(valor,aoMudar){
@@ -535,14 +506,13 @@ async function renderMembros(){
 }
 
 async function salvarAcesso(m,selects,alterado){
-  const mods=Object.keys(selects).filter(k=>selects[k].value);
-  const ro=Object.keys(selects).filter(k=>selects[k].value==='ver');
-  if(!mods.length){alterado.value=alterado.dataset.anterior;return toast('A pessoa precisa ter acesso a pelo menos um módulo. Para tirar todo o acesso, use Remover.',6000);}
-  const sb=await Conta.supabase();
-  const{error}=await sb.rpc('set_member_access',{target_workspace:vinc.workspaceId,target_user:m.user_id,new_modules:mods,new_readonly:ro});
-  if(error){alterado.value=alterado.dataset.anterior;return toast('Erro ao salvar: '+error.message,6000);}
-  alterado.dataset.anterior=alterado.value;
-  toast('✓ Acesso atualizado.');
+  const mods=Object.keys(selects).filter(k=>selects[k].value),ro=Object.keys(selects).filter(k=>selects[k].value==='ver');
+  const row=alterado.closest('.membro');let status=row.querySelector('.save-status');if(!status){status=document.createElement('p');status.className='save-status';status.setAttribute('role','status');row.appendChild(status);}
+  if(!mods.length){alterado.value=alterado.dataset.anterior;status.textContent='Mantenha pelo menos um m?dulo ou use Remover.';status.dataset.estado='erro';return;}
+  Object.values(selects).forEach(s=>s.disabled=true);status.textContent='Salvando?';status.dataset.estado='salvando';
+  try{const sb=await Conta.supabase();const{error}=await sb.rpc('set_member_access',{target_workspace:vinc.workspaceId,target_user:m.user_id,new_modules:mods,new_readonly:ro});if(error)throw error;alterado.dataset.anterior=alterado.value;status.textContent='Acesso atualizado.';status.dataset.estado='salvo';}
+  catch(error){alterado.value=alterado.dataset.anterior;status.textContent='O acesso n?o foi salvo. Verifique a conex?o e tente novamente.';status.dataset.estado='erro';}
+  finally{Object.values(selects).forEach(s=>s.disabled=false);}
 }
 
 async function removerMembro(userId,email){

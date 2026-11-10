@@ -425,7 +425,7 @@ async function saveDiscursante(){
     const ref=await FF.add(FF.col(db,'discursantes'),data);
     discursantes.push({id:ref.id,...data});
   }
-  closeM('mDiscursante');renderMinha();toast('✓ Salvo!');
+  closeM('mDiscursante');renderMinha();toast('✓ Salvo!');return true;
 }
 
 async function delDiscursante(id){

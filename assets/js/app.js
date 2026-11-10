@@ -37,9 +37,9 @@ async function loadAll(){
 // NAV
 function irTab(p){
   if(p==='quadro'){location.href='/quadro';return;}
-  if(p==='config'&&!new URLSearchParams(location.search).has('configEmbed')){location.href='/#configuracoes';return;}
+  if(p==='config'&&!new URLSearchParams(location.search).has('ferramentas')){location.href='/#configuracoes';return;}
   if(!document.getElementById('page-'+p))return;
-  if(!new URLSearchParams(location.search).has('configEmbed')&&location.hash!=='#'+p)history.pushState({},'','#'+p);
+  if(!new URLSearchParams(location.search).has('ferramentas')&&location.hash!=='#'+p)history.pushState({},'','#'+p);
   if(window.vinculoDesigna)DesignaUI.montarSeletor(document.getElementById('dzSwitch'),window.vinculoDesigna,'oradores');
   document.title='Oradores — '+cfg.cong;
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
