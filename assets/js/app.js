@@ -36,6 +36,10 @@ async function loadAll(){
 
 // NAV
 function irTab(p){
+  if(p==='config'&&!new URLSearchParams(location.search).has('configEmbed')){location.href='/#configuracoes';return;}
+  if(location.pathname.startsWith('/quadro')&&p!=='quadro'){location.href='/oradores#'+p;return;}
+  if(!document.getElementById('page-'+p))return;
+  if(!new URLSearchParams(location.search).has('configEmbed')&&location.hash!=='#'+p)history.pushState({},'','#'+p);
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   const t=document.querySelector('[data-p="'+p+'"]');if(t)t.classList.add('active');
@@ -48,8 +52,11 @@ function irTab(p){
   if(p==='temas')renderTemas();
   if(p==='programa')renderPrograma();
   if(p==='config')renderTrash();
+  if(p==='quadro'&&typeof atualizarPreviaQuadro==='function')atualizarPreviaQuadro();
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>irTab(t.dataset.p)));
+window.addEventListener('popstate',()=>{const p=location.hash.slice(1)||'home';if(document.getElementById('page-'+p))irTab(p);});
+document.querySelectorAll('.tab').forEach(t=>{t.tabIndex=0;t.setAttribute('role','button');t.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();irTab(t.dataset.p);}});});
 
 // UTILS
 function fD(iso){if(!iso)return'—';const[y,m,d]=iso.slice(0,10).split('-');return d+'/'+m+'/'+y;}

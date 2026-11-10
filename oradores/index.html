@@ -9,10 +9,10 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/assets/images/designa-icon-v1.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-1">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/style.css?v=20261023-1">
+<link rel="stylesheet" href="/assets/css/style.css?v=20261110-2">
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <script>document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';</script>
 </head>
@@ -216,7 +216,7 @@
   <div class="tab" data-p="sugestoes"><i data-lucide="lightbulb"></i><span>Sugestões</span></div>
   <div class="tab" data-p="minha"><i data-lucide="send"></i><span>Minha Cong.</span></div>
   <div class="tab" data-p="analytics"><i data-lucide="chart-no-axes-column"></i><span>Análise</span></div>
-  <div class="tab" data-p="config"><i data-lucide="settings"></i><span>Config</span></div>
+  <div class="tab" data-p="quadro"><i data-lucide="panels-top-left"></i><span>Quadro de anúncios</span></div><div class="tab" data-p="config"><i data-lucide="settings"></i><span>Configurações</span></div>
 </nav>
 <main>
 <div class="page active" id="page-home">
@@ -309,6 +309,19 @@
     <div id="rankCongs"></div>
   </div>
 </div>
+<div class="page" id="page-quadro"><div class="panel-head"><div><div class="panel-title">Quadro de anúncios</div><p class="settings-note">Prepare, confira e compartilhe a programação da congregação.</p></div><a class="btn bo" href="/oradores">Ver programação</a></div><div class="quadro-workspace"><div>  <div class="card">
+    <div class="slabel">Quadro de anúncios</div>
+    <p class="settings-note">Baixe a programação de oradores em PDF, com o nome da congregação e os discursos de 1 a 3 meses consecutivos.</p>
+    <div class="g2">
+      <div class="field"><label for="quadroMes">Mês inicial</label><input type="month" id="quadroMes" required></div>
+      <div class="field"><label for="quadroQuantidade">Período</label><select id="quadroQuantidade"><option value="1">1 mês</option><option value="2">2 meses</option><option value="3" selected>3 meses</option></select></div>
+    </div>
+    <label class="config-toggle"><input type="checkbox" id="quadroIncluirResponsaveis" onchange="renderResponsaveisQuadro()"><span><strong>Colocar presidente e leitor?</strong><small>Os nomes vêm das Designações (quando já designados) e podem ser ajustados aqui. Eles aparecerão abaixo do discurso no PDF.</small></span></label>
+    <div id="quadroResponsaveis" hidden></div><fieldset class="quadro-modelos"><legend>Modelo do PDF</legend><label><input type="radio" name="quadroModelo" value="cartoes" checked> Cartões <small>O modelo atual, com destaque por data.</small></label><label><input type="radio" name="quadroModelo" value="editorial"> Editorial <small>Tipografia ampla e detalhes em azul.</small></label><label><input type="radio" name="quadroModelo" value="compacto"> Compacto <small>Tabela limpa, ideal para imprimir.</small></label></fieldset>
+    <button type="button" class="btn bp" id="quadroBaixar" onclick="baixarQuadroAnuncios()"><i data-lucide="file-down"></i> Baixar PDF</button>
+    <button type="button" class="btn bo" id="quadroEnviar" onclick="baixarQuadroAnuncios(true)"><i data-lucide="share-2"></i> Enviar pelo WhatsApp</button>
+  </div>
+</div><section class="card quadro-preview"><div class="panel-head"><strong>Prévia do PDF</strong><button class="btn bo bs" onclick="atualizarPreviaQuadro()">Atualizar prévia</button></div><p id="quadroPreviewStatus" role="status">Escolha um modelo para conferir o PDF.</p><iframe id="quadroPreview" title="Prévia do quadro de anúncios" hidden></iframe><a id="quadroPreviewLink" hidden target="_blank" rel="noopener">Abrir prévia em outra aba</a></section></div></div>
 <div class="page" id="page-config">
   <div class="panel-title">Configurações</div>
   <div class="card">
@@ -324,18 +337,6 @@
       <div class="field"><label>Dia dos discursos (padrão / 2026)</label><select id="cfgDia"><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
       <div class="field"><label>Dia dos discursos em 2027</label><select id="cfgDia2027"><option value="">Responder depois</option><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
     </div>
-  </div>
-  <div class="card">
-    <div class="slabel">Quadro de anúncios</div>
-    <p class="settings-note">Baixe a programação de oradores em PDF, com o nome da congregação e os discursos de 1 a 3 meses consecutivos.</p>
-    <div class="g2">
-      <div class="field"><label for="quadroMes">Mês inicial</label><input type="month" id="quadroMes" required></div>
-      <div class="field"><label for="quadroQuantidade">Período</label><select id="quadroQuantidade"><option value="1">1 mês</option><option value="2">2 meses</option><option value="3" selected>3 meses</option></select></div>
-    </div>
-    <label class="config-toggle"><input type="checkbox" id="quadroIncluirResponsaveis" onchange="renderResponsaveisQuadro()"><span><strong>Colocar presidente e leitor?</strong><small>Os nomes vêm das Designações (quando já designados) e podem ser ajustados aqui. Eles aparecerão abaixo do discurso no PDF.</small></span></label>
-    <div id="quadroResponsaveis" hidden></div>
-    <button type="button" class="btn bp" id="quadroBaixar" onclick="baixarQuadroAnuncios()"><i data-lucide="file-down"></i> Baixar PDF</button>
-    <button type="button" class="btn bo" id="quadroEnviar" onclick="baixarQuadroAnuncios(true)"><i data-lucide="share-2"></i> Enviar pelo WhatsApp</button>
   </div>
   <details class="card settings-details" id="sentinelaConfig">
     <summary><span><i data-lucide="library"></i><strong>Correção manual da Sentinela</strong></span><small>Use somente se a busca automática falhar</small><i data-lucide="chevron-down" class="details-chevron"></i></summary>
@@ -388,17 +389,18 @@
   </div>
 </div>
 </main>
-<script src="/assets/shared/conta.js?v=20261110-1"></script>
-<script src="/assets/js/supabase-client.js?v=20261110-1"></script>
-<script src="/assets/js/app.js?v=20260911-1"></script>
+<script src="/assets/shared/conta.js?v=20261110-2"></script>
+<script src="/assets/js/supabase-client.js?v=20261110-2"></script>
+<script src="/assets/js/app.js?v=20261110-2"></script>
 <script src="/assets/js/features/home.js?v=20261110-1"></script>
 <script src="/assets/js/features/schedule.js?v=20261106-2"></script>
 <script src="/assets/js/features/directory.js?v=20261106-1"></script>
 <script src="/assets/js/features/insights.js?v=20260909-3"></script>
 <script src="/assets/js/features/transfer.js?v=20260911-1"></script>
 <script src="/assets/js/features/settings.js?v=20261109-1"></script>
-<script src="/assets/js/features/noticeboard.js?v=20261110-1"></script>
+<script src="/assets/js/features/noticeboard.js?v=20261110-2"></script>
 <script src="/assets/js/features/team.js?v=20261109-1"></script>
 <script src="/assets/js/features/init.js?v=20260904-1"></script>
+<script src="/assets/shared/module-flow.js?v=20261110-2"></script>
 </body>
 </html>

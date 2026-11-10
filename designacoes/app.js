@@ -69,6 +69,7 @@ const reuniaoSalva=data=>reunioes.find(r=>r.data===data);
 // ── Navegação ──
 function irAba(){
   const aba=['#pessoas','#config','#historico'].includes(location.hash)?location.hash.slice(1):'programacao';
+  if(aba==='config'&&!new URLSearchParams(location.search).has('configEmbed')){location.href='/#configuracoes';return;}
   document.querySelectorAll('.secao').forEach(s=>s.hidden=s.id!=='sec-'+aba);
   document.querySelectorAll('[data-aba]').forEach(a=>a.classList.toggle('active',a.dataset.aba===aba));
   if(aba==='programacao')renderProgramacao();

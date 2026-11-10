@@ -80,3 +80,11 @@ Para trazer os dados da versão antiga de Territórios (Firebase), abra **Territ
 - **Pessoas** (Início → Pessoas, coleção `cong_pessoas`): lista única com nome, grupo, telefone e situação. As Designações usam esta lista (as funções de cada pessoa ficam em `desig_pessoas`) e os Territórios permitem escolher dirigentes dela. O botão "Juntar cadastros existentes" traz quem já estava nos módulos.
 - **Eventos** (Início → Eventos, coleção `cong_eventos`): assembleia, congresso, visita do superintendente, Celebração. A pessoa escolhe se ocupa só os dias do evento ou a semana toda, se terá designações e se fica sem discurso público. Ao salvar, o Oradores e as Designações são atualizados; ao apagar ou mudar, o que existia antes volta.
 - Qualquer integrante vê esses dados; quem pode editar algum módulo pode alterá-los.
+
+## Navegação, configurações e quadro de anúncios
+
+- O seletor compartilhado oferece Início, módulos permitidos, Quadro de anúncios e Configurações.
+- **Início → Configurações** reúne congregação, equipe e preferências de cada módulo. Os formulários dos módulos são carregados sob demanda na central e mantêm suas permissões e gravações existentes.
+- **Quadro de anúncios** (`/quadro`) usa o acesso ao Oradores e permite escolher Cartões, Editorial ou Compacto. A prévia é o PDF real, atualizado ao mudar período, modelo ou responsáveis; também pode ser aberta em outra aba.
+- Presidente e leitor continuam vindo das Designações quando disponíveis, com ajustes manuais no quadro. A opção de baixar ou compartilhar usa o modelo selecionado.
+- A rota `/quadro` usa o shell do Oradores através de um rewrite da Vercel. Não é necessário executar SQL para esta atualização.

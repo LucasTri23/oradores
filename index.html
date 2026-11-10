@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-1">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-2">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
@@ -138,6 +138,7 @@ body.sem-cong .so-cong{display:none!important}
     <a class="dz-tab" id="navOradores" href="/oradores"><i data-lucide="mic"></i><span>Oradores</span></a>
     <a class="dz-tab" id="navTerritorios" href="/territorios"><i data-lucide="map"></i><span>Territórios</span></a>
     <a class="dz-tab" id="navDesignacoes" href="/designacoes"><i data-lucide="clipboard-list"></i><span>Designações</span></a>
+    <a class="dz-tab" id="navQuadro" href="/quadro"><i data-lucide="panels-top-left"></i><span>Quadro de anúncios</span></a>
     <div class="dz-nav-sep">Congregação</div>
     <a class="dz-tab" data-sec="pessoas" href="#pessoas"><i data-lucide="users"></i><span>Pessoas</span></a>
     <a class="dz-tab" data-sec="eventos" href="#eventos"><i data-lucide="calendar-range"></i><span>Eventos</span></a>
@@ -196,6 +197,8 @@ body.sem-cong .so-cong{display:none!important}
 
     <!-- CONFIGURAÇÕES DA CONGREGAÇÃO -->
     <section class="secao" id="sec-configuracoes" hidden>
+      <div class="hello"><h1>Configurações</h1><p>Congregação, equipe e preferências dos módulos em um só lugar.</p></div>
+      <div id="configModulos"></div>
       <div class="cfg">
         <div class="dz-card">
           <h2>Nome da congregação</h2>
@@ -282,7 +285,7 @@ body.sem-cong .so-cong{display:none!important}
 </div>
 
 <script src="/assets/js/data.js?v=20260902-1"></script>
-<script src="/assets/shared/conta.js?v=20261110-1"></script>
+<script src="/assets/shared/conta.js?v=20261110-2"></script>
 <script src="/designacoes/regras.js?v=20261110-1"></script>
 <script src="/assets/shared/congregacao.js?v=20261110-2"></script>
 <script src="/assets/shared/inicio-congregacao.js?v=20261110-2"></script>
@@ -449,13 +452,33 @@ function descreverAcesso(v){
   if(v.role==='owner')return 'Você é o proprietário: pode editar os módulos ativos, escolher os módulos da congregação e gerenciar a equipe.';
   return Object.entries(Conta.MODULOS).map(([k,m])=>m.nome+': '+(!v.modulosAtivos.includes(k)?'Desativado na congregação':NIVEL_TXT[nivel(v.modulos,v.somenteLeitura,k)])).join(' · ')+'.';
 }
+function renderConfigModulos(){
+  $('navQuadro').hidden=!Conta.podeVer(vinc,'oradores');
+  const destino=$('configModulos');destino.replaceChildren();
+  Object.entries(Conta.MODULOS).filter(([key])=>Conta.podeEditar(vinc,key)).forEach(([key,mod])=>{
+    const details=document.createElement('details');details.className='dz-card config-modulo';
+    const summary=document.createElement('summary');summary.textContent='Preferências de '+mod.nome;
+    const hint=document.createElement('p');hint.className='hint';hint.textContent='Dias, opções e preferências deste módulo. As alterações usam as mesmas permissões da congregação.';
+    details.append(summary,hint);
+    details.addEventListener('toggle',()=>{
+      if(!details.open||details.querySelector('iframe'))return;
+      const frame=document.createElement('iframe');frame.title='Configurações de '+mod.nome;frame.src=mod.caminho+'?configEmbed=1#config';frame.className='config-frame';details.appendChild(frame);
+    });destino.appendChild(details);
+  });
+}
 function renderConfig(){
+  renderConfigModulos();
   $('cfgNome').value=vinc.nome;
   const pode=Object.keys(Conta.MODULOS).some(m=>Conta.podeEditar(vinc,m));
   $('cfgNome').disabled=!pode;$('cfgNomeBtn').hidden=!pode;
   $('meuAcesso').textContent=descreverAcesso(vinc);
   if(vinc.role==='owner'){$('painelDono').hidden=false;$('modulosAtivosResumo').textContent='Ativos: '+vinc.modulosAtivos.map(m=>Conta.MODULOS[m].nome).join(', ');renderMembros();}
 }
+
+window.addEventListener('message',e=>{
+  if(e.origin!==location.origin||e.data?.tipo!=='designa-config-altura'||!Number.isFinite(e.data.altura))return;
+  document.querySelectorAll('.config-frame').forEach(frame=>{if(frame.contentWindow===e.source)frame.style.height=Math.max(320,Math.min(12000,e.data.altura))+'px';});
+});
 
 async function alterarModulosCongregacao(){
   try{if(await Conta.escolherModulos(vinc))location.reload();}catch(e){toast(e.message);}

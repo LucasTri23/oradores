@@ -16,9 +16,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-1">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-2">
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
-<script src="/assets/shared/conta.js?v=20261110-1"></script>
+<script src="/assets/shared/conta.js?v=20261110-2"></script>
 <script src="/territorios/bridge.js?v=20261109-2"></script>
 <style>
 :root{
@@ -862,7 +862,7 @@ datalist{display:none}
   <div class="dz-tab ntab" data-tab="historico" onclick="switchTab('historico')"><i data-lucide="history"></i><span>Histórico</span></div>
   <div class="dz-tab ntab" data-tab="stats" onclick="switchTab('stats')"><i data-lucide="chart-column"></i><span>Estatísticas</span></div>
   <div class="dz-tab ntab dz-only-desktop" data-tab="importar" onclick="switchTab('importar')"><i data-lucide="upload"></i><span>Importar</span></div>
-  <div class="dz-tab ntab" data-tab="config" onclick="switchTab('config')"><i data-lucide="settings"></i><span>Config</span></div>
+  <div class="dz-tab ntab" data-tab="config" onclick="switchTab('config')"><i data-lucide="settings"></i><span>Configurações</span></div>
   <div class="dz-nav-sep">Designa</div>
   <a class="dz-tab dz-only-desktop" href="/"><i data-lucide="layout-dashboard"></i><span>Início</span></a>
 </nav>
@@ -2802,5 +2802,6 @@ function falhaCarregamento(msg){
 
 </script>
 
+<script src="/assets/shared/module-flow.js?v=20261110-2"></script>
 </body>
 </html>

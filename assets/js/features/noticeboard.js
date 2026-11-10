@@ -79,7 +79,8 @@ function carregarBibliotecaQuadro(){
   return bibliotecaQuadroPromise;
 }
 
-function criarPdfQuadro(JsPDF,meses,congregacao,incluirResponsaveis=false){
+function criarPdfQuadro(JsPDF,meses,congregacao,incluirResponsaveis=false,modelo='cartoes'){
+  if(modelo!=='cartoes')return criarPdfQuadroAlternativo(JsPDF,meses,congregacao,incluirResponsaveis,modelo);
   const pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const tinta='#193e49',verde='#2a6770',borda='#d4e5e7',suave='#eef4f4';
   const nomeMes=d=>d.toLocaleDateString('pt-BR',{month:'long'});
@@ -161,11 +162,74 @@ async function baixarQuadroAnuncios(enviar=false){
       meses.forEach(m=>m.linhas.forEach(r=>{r.presidente=responsavelQuadro(r.data,'presidente');r.leitor=responsavelQuadro(r.data,'leitor');}));
     }
     const JsPDF=await carregarBibliotecaQuadro();
-    const pdf=criarPdfQuadro(JsPDF,meses,congregacao,incluir),nomeArq='quadro-de-anuncios-'+inicio+'-'+quantidade+'-meses.pdf';
+    const pdf=criarPdfQuadro(JsPDF,meses,congregacao,incluir,modeloQuadroAtual()),nomeArq='quadro-de-anuncios-'+inicio+'-'+quantidade+'-meses.pdf';
     // Enviar: abre o compartilhamento do celular (WhatsApp…); no computador, baixa o arquivo.
     if(enviar&&window.DesignaUI){await DesignaUI.compartilharArquivo(pdf.output('blob'),nomeArq,'Programação de oradores — '+congregacao);return;}
     pdf.save(nomeArq);
     toast('PDF do quadro de anúncios gerado!');
   }catch(error){toast(error.message||'Não foi possível gerar o PDF.',6000);}
   finally{botao.disabled=false;botao.innerHTML=textoBotao;if(window.lucide)lucide.createIcons();}
+}
+
+function modeloQuadroAtual(){return document.querySelector('input[name="quadroModelo"]:checked')?.value||'cartoes';}
+
+function criarPdfQuadroAlternativo(JsPDF,meses,congregacao,incluir,modelo){
+  const pdf=new JsPDF({unit:'mm',format:'a4'}),compacto=modelo==='compacto';
+  const azul='#23486b',cinza='#536273',borda='#dce3ea';let pagina=0,y=0;
+  const texto=(t,x,top,size=10,bold=false,cor='#172b3e')=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);pdf.setTextColor(cor);pdf.text(t,x,top);};
+  const quebra=(t,w,size=10,bold=false)=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);return pdf.splitTextToSize(String(t||'A definir'),w);};
+  meses.forEach(m=>{
+    const periodo=m.data.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    function abrir(continuacao=false){
+      if(pagina++)pdf.addPage();
+      texto(congregacao,16,20,11,true,azul);
+      texto('Programação de oradores',16,33,compacto?20:23,true);
+      texto(periodo+(continuacao?' · continuação':''),16,43,11,false,cinza);
+      pdf.setDrawColor(azul);pdf.setLineWidth(compacto?.4:1.3);pdf.line(16,49,194,49);
+      texto('Quadro de anúncios · '+pagina,16,287,8,false,cinza);
+      y=compacto?64:57;
+      if(compacto){pdf.setFillColor('#edf2f7');pdf.rect(16,53,178,9,'F');texto('DATA',19,59,8,true);texto('ORADOR / CONGREGAÇÃO',40,59,8,true);texto('TEMA',111,59,8,true);}
+    }
+    abrir();
+    m.linhas.forEach(r=>{
+      const nome=quebra(r.nome,compacto?65:144,compacto?10:14,true),origem=quebra(r.congregacao,compacto?65:144,9),tema=quebra(r.tema,compacto?80:144,10);
+      const presidente=quebra('Presidente: '+(r.presidente||'A definir'),84,9),leitor=quebra('Leitor: '+(r.leitor||'A definir'),84,9);
+      const principal=compacto?Math.max(nome.length*4.4+origem.length*4+4,tema.length*4.4+4):nome.length*5.7+origem.length*4+tema.length*4.4+12;
+      const extra=incluir?Math.max(presidente.length,leitor.length)*4+7:0;
+      const altura=Math.max(compacto?23:36,principal+extra+6);
+      if(y+altura>278)abrir(true);
+      texto(r.data.slice(8,10),compacto?19:17,y+(compacto?7:10),compacto?13:25,true,azul);
+      if(compacto){
+        texto(nome,40,y+6,10,true);texto(origem,40,y+8+nome.length*4.4,9,false,cinza);texto(tema,111,y+6,10);
+      }else{
+        let ty=y+7;texto(nome,50,ty,14,true);ty+=nome.length*5.7+1;texto(origem,50,ty,9,false,cinza);ty+=origem.length*4+4;texto(tema,50,ty,10);
+      }
+      if(incluir){const ty=y+principal+5;texto(presidente,18,ty,9);texto(leitor,108,ty,9);}
+      pdf.setDrawColor(borda);pdf.setLineWidth(.25);pdf.line(16,y+altura,194,y+altura);y+=altura+(compacto?0:5);
+    });
+  });return pdf;
+}
+
+let previaQuadroUrl=null,previaQuadroVersao=0,previaQuadroTimer;
+function agendarPreviaQuadro(){clearTimeout(previaQuadroTimer);previaQuadroTimer=setTimeout(atualizarPreviaQuadro,450);}
+async function atualizarPreviaQuadro(){
+  const frame=document.getElementById('quadroPreview');if(!frame)return;
+  const status=document.getElementById('quadroPreviewStatus'),link=document.getElementById('quadroPreviewLink'),versao=++previaQuadroVersao;
+  status.textContent='Gerando prévia…';frame.hidden=true;link.hidden=true;
+  try{
+    const meses=dadosQuadroAnuncios(document.getElementById('quadroMes').value,Number(document.getElementById('quadroQuantidade').value));
+    const incluir=document.getElementById('quadroIncluirResponsaveis').checked;
+    if(incluir){await carregarResponsaveisDesignacoes();meses.forEach(m=>m.linhas.forEach(r=>{r.presidente=responsavelQuadro(r.data,'presidente');r.leitor=responsavelQuadro(r.data,'leitor');}));}
+    const JsPDF=await carregarBibliotecaQuadro();
+    if(versao!==previaQuadroVersao)return;
+    const pdf=criarPdfQuadro(JsPDF,meses,String(cfg.cong||'Congregação'),incluir,modeloQuadroAtual());
+    if(previaQuadroUrl)URL.revokeObjectURL(previaQuadroUrl);
+    previaQuadroUrl=URL.createObjectURL(pdf.output('blob'));frame.src=previaQuadroUrl;link.href=previaQuadroUrl;
+    frame.hidden=false;link.hidden=false;status.textContent=pdf.getNumberOfPages()+' página(s). Prévia com os mesmos dados e modelo do download.';
+  }catch(error){if(versao===previaQuadroVersao)status.textContent=error.message||'Não foi possível gerar a prévia. Tente novamente.';}
+}
+if(typeof window!=='undefined'){
+  document.getElementById('page-quadro')?.addEventListener('input',agendarPreviaQuadro);
+  document.getElementById('page-quadro')?.addEventListener('change',agendarPreviaQuadro);
+  window.addEventListener('beforeunload',()=>{if(previaQuadroUrl)URL.revokeObjectURL(previaQuadroUrl);});
 }

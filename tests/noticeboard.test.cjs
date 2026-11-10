@@ -32,3 +32,13 @@ test('nomes manuais ficam associados à data ao alternar a opção',()=>{
   el('quadroIncluirResponsaveis').checked=true;c.renderResponsaveisQuadro();
   assert.equal(el('quadroResponsaveis').children[1].children[1].children[0].children[1].value,'Presidente manual');
 });
+
+for(const modelo of ['editorial','compacto'])test('PDF '+modelo+' preserva os discursos e os responsáveis',()=>{
+  const {c}=setup();const meses=c.dadosQuadroAnuncios('2026-11',1);
+  meses[0].linhas[0].nome='Orador de teste';meses[0].linhas[0].tema='Tema de teste';
+  meses[0].linhas[0].presidente='Presidente de teste';meses[0].linhas[0].leitor='Leitor de teste';
+  const com=c.criarPdfQuadro(jsPDF,meses,'Congregação Central',true,modelo),raw=com.output();
+  assert.equal(com.getNumberOfPages(),1);assert(raw.includes('Orador de teste'));assert(raw.includes('Tema de teste'));assert(raw.includes('Presidente de teste'));assert(raw.includes('Leitor de teste'));
+  const sem=c.criarPdfQuadro(jsPDF,meses,'Congregação Central',false,modelo).output();assert(!sem.includes('Presidente de teste'));
+  assert.equal(c.criarPdfQuadro(jsPDF,[...meses,...meses,...meses],'Congregação Central',true,modelo).getNumberOfPages(),3);
+});
