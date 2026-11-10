@@ -1,7 +1,7 @@
 {
   "name": "Designa",
   "short_name": "Designa",
-  "description": "Oradores e territórios da congregação em um só lugar.",
+  "description": "Oradores, territórios e designações da congregação em um só lugar.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,6 +10,11 @@
   "theme_color": "#2563eb",
   "lang": "pt-BR",
   "icons": [
-    { "src": "/assets/images/oradores-speaker-logo.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }
+    {
+      "src": "/assets/images/designa-icon-v1.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }

@@ -79,7 +79,7 @@ async function checkSetup(){
     currentUser=data.session.user;
     await checkTeamInvite();
     if(!(await initializeWorkspace())){mostrarTelaLogin(false);return;}
-    if(!aplicarAcessoDesigna())return;
+    if(!(await aplicarAcessoDesigna()))return;
     updateUserHeader();
     await loadAll();
     document.getElementById('setup').style.display='none';
@@ -97,11 +97,10 @@ function mostrarTelaLogin(comBotao){
 }
 
 // Permissões do Designa: sem acesso ao Oradores volta para o início; "só ver" mostra aviso e bloqueia gravações.
-function aplicarAcessoDesigna(){
+async function aplicarAcessoDesigna(){
   if(!window.Conta||!membroAtual)return true;
   Conta.usarCliente(supabase);
-  const acesso=Conta.acessoDe(membroAtual);
-  const vinc={workspaceId:activeWorkspaceId,role:membroAtual.role,...acesso};
+  const vinc=await Conta.vinculo(currentUser);
   if(!Conta.podeVer(vinc,'oradores')){location.replace('/');return false;}
   DesignaUI.montarSeletor(document.getElementById('dzSwitch'),vinc,'oradores');
   window.SOMENTE_LEITURA=!Conta.podeEditar(vinc,'oradores');

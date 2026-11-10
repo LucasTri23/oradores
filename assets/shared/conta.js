@@ -61,15 +61,55 @@ window.Conta=(function(){
     const {data,error}=await sb.from('workspace_members').select('*').eq('user_id',user.id).maybeSingle();
     if(error)throw new Error('Não foi possível consultar sua congregação. Tente novamente.');
     if(!data)return null;
-    const {data:ws}=await sb.from('workspaces').select('name').eq('id',data.workspace_id).maybeSingle();
+    const {data:ws,error:wsError}=await sb.from('workspaces').select('name,enabled_modules,modules_configured_at').eq('id',data.workspace_id).maybeSingle();
+    if(wsError||!ws)throw new Error('Não foi possível carregar os módulos da congregação. Confira se o supabase.sql atualizado foi aplicado e tente novamente.');
     try{localStorage.setItem('oradores_workspace',data.workspace_id);}catch(e){}
-    return {workspaceId:data.workspace_id,role:data.role,...acessoDe(data),nome:ws?.name||'Minha Congregação'};
+    const v={workspaceId:data.workspace_id,role:data.role,...acessoDe(data),nome:ws.name||'Minha Congregação',modulosAtivos:ws.enabled_modules,modulosConfigurados:!!ws.modules_configured_at};
+    if(v.role==='owner'&&!v.modulosConfigurados)await escolherModulos(v);
+    return v;
   }
 
-  function podeVer(v,modulo){return !!v&&v.modulos.includes(modulo);}
+  async function salvarModulos(v,modulos){
+    if(v.role!=='owner')throw new Error('Somente o proprietário pode escolher os módulos.');
+    if(!modulos.length||modulos.some(m=>!MODULOS[m]))throw new Error('Escolha pelo menos um módulo válido.');
+    const sb=await supabase();
+    const {error}=await sb.rpc('set_workspace_modules',{target_workspace:v.workspaceId,new_modules:modulos});
+    if(error)throw error;
+    v.modulosAtivos=[...modulos];v.modulosConfigurados=true;
+  }
+
+  function escolherModulos(v){
+    if(v.role!=='owner')return Promise.reject(new Error('Somente o proprietário pode escolher os módulos.'));
+    return new Promise(resolve=>{
+      const dialog=document.createElement('dialog');dialog.className='dz-module-dialog';
+      dialog.setAttribute('aria-labelledby','dzModuleTitle');
+      const title=document.createElement('h2');title.id='dzModuleTitle';title.textContent='Quais módulos sua congregação vai usar?';
+      const hint=document.createElement('p');hint.textContent='Esta escolha vale para toda a congregação. As permissões individuais continuam valendo. Desativar um módulo preserva os dados; você pode reativá-lo em Configurações.';
+      dialog.append(title,hint);
+      const inputs=[];
+      Object.entries(MODULOS).forEach(([key,mod])=>{
+        const label=document.createElement('label'),input=document.createElement('input'),text=document.createElement('span'),strong=document.createElement('strong'),desc=document.createElement('small');
+        input.type='checkbox';input.value=key;input.checked=(v.modulosAtivos||Object.keys(MODULOS)).includes(key);inputs.push(input);
+        strong.textContent=mod.nome;desc.textContent=mod.descricao;text.append(strong,desc);label.append(input,text);dialog.appendChild(label);
+      });
+      const status=document.createElement('p');status.setAttribute('role','alert');
+      const save=document.createElement('button');save.type='button';save.textContent='Salvar módulos da congregação';
+      save.onclick=async()=>{
+        save.disabled=true;inputs.forEach(i=>i.disabled=true);status.textContent='';
+        try{await salvarModulos(v,inputs.filter(i=>i.checked).map(i=>i.value));dialog.close();dialog.remove();resolve(true);}
+        catch(e){status.textContent=e.message;save.disabled=false;inputs.forEach(i=>i.disabled=false);}
+      };
+      dialog.append(status,save);
+      dialog.addEventListener('cancel',e=>{if(!v.modulosConfigurados||save.disabled)e.preventDefault();else{dialog.remove();resolve(false);}});
+      if(v.modulosConfigurados){const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cancelar';cancel.onclick=()=>{if(save.disabled)return;dialog.close();dialog.remove();resolve(false);};dialog.appendChild(cancel);}
+      document.body.appendChild(dialog);dialog.showModal();inputs[0].focus();
+    });
+  }
+
+  function podeVer(v,modulo){return !!v&&v.modulos.includes(modulo)&&(!v.modulosAtivos||v.modulosAtivos.includes(modulo));}
   function podeEditar(v,modulo){return podeVer(v,modulo)&&!v.somenteLeitura.includes(modulo);}
 
-  return {MODULOS,supabase,usarCliente,usuario,entrar,sair,vinculo,acessoDe,podeVer,podeEditar};
+  return {MODULOS,supabase,usarCliente,usuario,entrar,sair,vinculo,acessoDe,podeVer,podeEditar,salvarModulos,escolherModulos};
 })();
 
 window.DesignaUI=(function(){

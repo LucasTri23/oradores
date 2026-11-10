@@ -6,8 +6,8 @@
 <title>Designa</title>
 <meta name="theme-color" content="#2563eb">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" type="image/png" href="/assets/images/oradores-speaker-logo.png">
-<link rel="apple-touch-icon" href="/assets/images/oradores-speaker-logo.png">
+<link rel="icon" type="image/png" href="/assets/images/designa-icon-v1.png">
+<link rel="apple-touch-icon" href="/assets/images/designa-icon-v1.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -103,7 +103,7 @@ body.sem-cong .so-cong{display:none!important}
 <!-- Login / sem congregação (sem menu) -->
 <div id="vLogin" class="center" hidden>
   <div class="dz-card">
-    <img src="/assets/images/oradores-speaker-logo.png" alt="">
+    <img src="/assets/images/designa-mascote-v1.png" alt="">
     <h1 class="nomeApp">Designa</h1>
     <p>Oradores e territórios da congregação em um só lugar. Entre com sua conta Google.</p>
     <button class="dz-btn pri" onclick="entrar()">Entrar com Google</button>
@@ -112,7 +112,7 @@ body.sem-cong .so-cong{display:none!important}
 </div>
 <div id="vSemCong" class="center" hidden>
   <div class="dz-card">
-    <img src="/assets/images/oradores-speaker-logo.png" alt="">
+    <img src="/assets/images/designa-mascote-v1.png" alt="">
     <h1>Bem-vindo</h1>
     <p>Você ainda não faz parte de uma congregação. Abra o convite enviado pelo responsável da sua congregação, ou crie a sua.</p>
     <button class="dz-btn pri" id="criarBtn" onclick="criarCongregacao()">Criar minha congregação</button>
@@ -124,7 +124,7 @@ body.sem-cong .so-cong{display:none!important}
 <!-- App -->
 <div id="vApp" hidden>
   <header class="dz-header">
-    <div class="dz-logo"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span class="nomeApp">Designa</span><small class="nomeCong"></small></div>
+    <div class="dz-logo"><img src="/assets/images/designa-icon-v1.png" alt=""><span class="nomeApp">Designa</span><small class="nomeCong"></small></div>
     <div class="dz-page-title" id="tituloPagina">Início</div>
     <div class="dz-actions">
       <button class="dz-icon-btn" data-dz-tema onclick="DesignaUI.alternarTema()"></button>
@@ -132,7 +132,7 @@ body.sem-cong .so-cong{display:none!important}
     </div>
   </header>
   <nav class="dz-nav">
-    <a class="dz-brand" href="/"><img src="/assets/images/oradores-speaker-logo.png" alt=""><span><span class="nomeApp">Designa</span><small class="nomeCong"></small></span></a>
+    <a class="dz-brand" href="/"><img src="/assets/images/designa-icon-v1.png" alt=""><span><span class="nomeApp">Designa</span><small class="nomeCong"></small></span></a>
     <a class="dz-tab active" data-sec="painel" href="#painel"><i data-lucide="layout-dashboard"></i><span>Início</span></a>
     <div class="dz-nav-sep">Módulos</div>
     <a class="dz-tab" id="navOradores" href="/oradores"><i data-lucide="mic"></i><span>Oradores</span></a>
@@ -207,8 +207,11 @@ body.sem-cong .so-cong{display:none!important}
           <p class="hint" id="meuAcesso"></p>
         </div>
         <div class="dz-card" id="painelDono" hidden>
+          <h2>Módulos da congregação</h2>
+          <p class="hint" id="modulosAtivosResumo"></p>
+          <button class="dz-btn pri" onclick="alterarModulosCongregacao()">Escolher módulos</button>
           <h2>Equipe e acessos</h2>
-          <p class="hint">Escolha o que cada pessoa pode fazer em cada módulo: <strong>Editar</strong>, <strong>Só ver</strong> ou <strong>Sem acesso</strong>. Você, como proprietário, sempre pode tudo.</p>
+          <p class="hint">Escolha o que cada pessoa pode fazer: <strong>Editar</strong>, <strong>Só ver</strong> ou <strong>Sem acesso</strong>. As permissões só valem nos módulos ativos da congregação; nos desativados ficam guardadas para uma reativação.</p>
           <div id="listaMembros"></div>
           <div class="convite">
             <strong style="font-size:13px;flex-basis:100%">Convidar alguém</strong>
@@ -429,7 +432,7 @@ function renderPainel(){
   const nome=(user.user_metadata?.full_name||user.user_metadata?.name||'').split(' ')[0];
   $('saudacao').textContent=(h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+(nome?', '+nome:'');
   $('resumoAcesso').textContent='Congregação '+vinc.nome+'.';
-  const semAcesso=Object.entries(Conta.MODULOS).filter(([k])=>!Conta.podeVer(vinc,k));
+  const semAcesso=Object.entries(Conta.MODULOS).filter(([k])=>vinc.modulosAtivos.includes(k)&&!Conta.podeVer(vinc,k));
   if(semAcesso.length){$('cardSemAcesso').hidden=false;$('listaSemAcesso').textContent=semAcesso.map(([,m])=>m.nome).join(' e ')+': sem acesso. Peça ao proprietário da congregação.';}
   $('navOradores').hidden=!Conta.podeVer(vinc,'oradores');
   $('navTerritorios').hidden=!Conta.podeVer(vinc,'territorios');
@@ -443,15 +446,19 @@ function renderPainel(){
 const NIVEL_TXT={editar:'Editar',ver:'Só ver','':'Sem acesso'};
 function nivel(mods,ro,m){return !mods.includes(m)?'':ro.includes(m)?'ver':'editar';}
 function descreverAcesso(v){
-  if(v.role==='owner')return 'Você é o proprietário: pode editar tudo e gerenciar a equipe.';
-  return Object.entries(Conta.MODULOS).map(([k,m])=>m.nome+': '+NIVEL_TXT[nivel(v.modulos,v.somenteLeitura,k)]).join(' · ')+'.';
+  if(v.role==='owner')return 'Você é o proprietário: pode editar os módulos ativos, escolher os módulos da congregação e gerenciar a equipe.';
+  return Object.entries(Conta.MODULOS).map(([k,m])=>m.nome+': '+(!v.modulosAtivos.includes(k)?'Desativado na congregação':NIVEL_TXT[nivel(v.modulos,v.somenteLeitura,k)])).join(' · ')+'.';
 }
 function renderConfig(){
   $('cfgNome').value=vinc.nome;
-  const pode=Conta.podeEditar(vinc,'oradores')||Conta.podeEditar(vinc,'territorios');
+  const pode=Object.keys(Conta.MODULOS).some(m=>Conta.podeEditar(vinc,m));
   $('cfgNome').disabled=!pode;$('cfgNomeBtn').hidden=!pode;
   $('meuAcesso').textContent=descreverAcesso(vinc);
-  if(vinc.role==='owner'){$('painelDono').hidden=false;renderMembros();}
+  if(vinc.role==='owner'){$('painelDono').hidden=false;$('modulosAtivosResumo').textContent='Ativos: '+vinc.modulosAtivos.map(m=>Conta.MODULOS[m].nome).join(', ');renderMembros();}
+}
+
+async function alterarModulosCongregacao(){
+  try{if(await Conta.escolherModulos(vinc))location.reload();}catch(e){toast(e.message);}
 }
 
 async function salvarNome(){
@@ -491,7 +498,7 @@ async function renderMembros(){
     if(m.role!=='owner'){
       const selects={};
       Object.entries(Conta.MODULOS).forEach(([k,mod])=>{
-        const lbl=document.createElement('label');lbl.className='acesso';lbl.textContent=mod.nome;
+        const lbl=document.createElement('label');lbl.className='acesso';lbl.textContent=mod.nome+(vinc.modulosAtivos.includes(k)?'':' (desativado)');
         const s=seletorNivel(nivel(m.modules||[],m.readonly||[],k),()=>salvarAcesso(m,selects,s));
         s.dataset.anterior=s.value;selects[k]=s;lbl.appendChild(s);row.appendChild(lbl);
       });

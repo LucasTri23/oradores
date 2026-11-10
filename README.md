@@ -1,5 +1,9 @@
 # Designa
 
+## Escolha de módulos da congregação
+
+Antes de publicar esta atualização, execute `migrations/20261109-workspace-modules.sql` no SQL Editor do Supabase (ou o `supabase.sql` completo atualizado). No próximo acesso do proprietário, inclusive por um link direto de módulo, ele escolhe os módulos usados pela congregação. A escolha aparece uma vez e pode ser alterada em **Início → Configurações → Módulos da congregação**. Integrantes não recebem essa pergunta. Módulos desativados preservam seus dados e permissões, mas ficam indisponíveis; a escolha é aplicada também nas políticas de leitura e gravação do banco.
+
 Sistema da congregação com três módulos, preparado para Supabase e Vercel:
 
 - **Oradores** (`/oradores`): programação e histórico de discursos.

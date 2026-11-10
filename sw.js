@@ -1,6 +1,6 @@
 // Service worker do Designa: permite instalar no celular.
 // Sempre tenta a internet primeiro (dados e telas atualizados); a cópia salva só é usada sem conexão.
-const CACHE='designa-v1';
+const CACHE='designa-v3';
 
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',e=>{
