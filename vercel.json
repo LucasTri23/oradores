@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "rewrites": [{"source":"/quadro","destination":"/oradores/index.html"}],
   "headers": [
     {
       "source": "/(.*)",

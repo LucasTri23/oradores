@@ -87,4 +87,4 @@ Para trazer os dados da versão antiga de Territórios (Firebase), abra **Territ
 - **Início → Configurações** reúne congregação, equipe e preferências de cada módulo. Os formulários dos módulos são carregados sob demanda na central e mantêm suas permissões e gravações existentes.
 - **Quadro de anúncios** (`/quadro`) usa o acesso ao Oradores e permite escolher Cartões, Editorial ou Compacto. A prévia é o PDF real, atualizado ao mudar período, modelo ou responsáveis; também pode ser aberta em outra aba.
 - Presidente e leitor continuam vindo das Designações quando disponíveis, com ajustes manuais no quadro. A opção de baixar ou compartilhar usa o modelo selecionado.
-- A rota `/quadro` usa o shell do Oradores através de um rewrite da Vercel. Não é necessário executar SQL para esta atualização.
+- A rota `/quadro` tem uma página estática que abre `/oradores#quadro`, sem depender de rewrite da Vercel. Não é necessário executar SQL para esta atualização.

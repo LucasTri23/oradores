@@ -137,11 +137,11 @@ window.DesignaUI=(function(){
     el.hidden=false;el.classList.add('dz-switch');
     const inicio=document.createElement('a');inicio.href='/';inicio.textContent='Início';el.appendChild(inicio);
     meus.forEach(([k,m])=>{
-      const a=document.createElement('a');a.href=m.caminho;a.className=k===atual&&!location.pathname.startsWith('/quadro')?'on':'';a.title=m.nome;
+      const a=document.createElement('a');a.href=m.caminho;a.className=k===atual&&!location.pathname.startsWith('/quadro')&&location.hash!=='#quadro'?'on':'';a.title=m.nome;
       a.innerHTML=icone(m.icone)+'<span></span>';a.querySelector('span').textContent=m.nome;
       el.appendChild(a);
     });
-    if(Conta.podeVer(vinc,'oradores')){const quadro=document.createElement('a');quadro.href='/quadro';quadro.textContent='Quadro de anúncios';quadro.className=location.pathname.startsWith('/quadro')?'on':'';el.appendChild(quadro);}
+    if(Conta.podeVer(vinc,'oradores')){const quadro=document.createElement('a');quadro.href='/quadro';quadro.textContent='Quadro de anúncios';quadro.className=location.pathname.startsWith('/quadro')||location.hash==='#quadro'?'on':'';el.appendChild(quadro);}
     const config=document.createElement('a');config.href='/#configuracoes';config.textContent='Configurações';el.appendChild(config);
     desenharIcones();
   }
