@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-2">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-3">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
@@ -124,6 +124,7 @@ body.sem-cong .so-cong{display:none!important}
 <!-- App -->
 <div id="vApp" hidden>
   <header class="dz-header">
+    <div id="dzSwitch" hidden></div>
     <div class="dz-logo"><img src="/assets/images/designa-icon-v1.png" alt=""><span class="nomeApp">Designa</span><small class="nomeCong"></small></div>
     <div class="dz-page-title" id="tituloPagina">Início</div>
     <div class="dz-actions">
@@ -285,7 +286,7 @@ body.sem-cong .so-cong{display:none!important}
 </div>
 
 <script src="/assets/js/data.js?v=20260902-1"></script>
-<script src="/assets/shared/conta.js?v=20261110-2"></script>
+<script src="/assets/shared/conta.js?v=20261110-3"></script>
 <script src="/designacoes/regras.js?v=20261110-1"></script>
 <script src="/assets/shared/congregacao.js?v=20261110-2"></script>
 <script src="/assets/shared/inicio-congregacao.js?v=20261110-2"></script>
@@ -331,6 +332,7 @@ function irSecao(){
   document.querySelectorAll('.secao').forEach(s=>s.hidden=s.id!=='sec-'+sec);
   document.querySelectorAll('[data-sec]').forEach(a=>a.classList.toggle('active',a.dataset.sec===sec));
   $('tituloPagina').textContent=titulos[sec];
+  if(vinc)DesignaUI.montarSeletor($('dzSwitch'),vinc,'inicio');
   if(vinc&&sec==='pessoas')renderPessoasCong();
   if(vinc&&sec==='eventos')renderEventos();
   window.scrollTo(0,0);
@@ -453,7 +455,7 @@ function descreverAcesso(v){
   return Object.entries(Conta.MODULOS).map(([k,m])=>m.nome+': '+(!v.modulosAtivos.includes(k)?'Desativado na congregação':NIVEL_TXT[nivel(v.modulos,v.somenteLeitura,k)])).join(' · ')+'.';
 }
 function renderConfigModulos(){
-  $('navQuadro').hidden=!Conta.podeVer(vinc,'oradores');
+  $('navQuadro').hidden=!(Conta.podeVer(vinc,'oradores')||Conta.podeVer(vinc,'designacoes'));
   const destino=$('configModulos');destino.replaceChildren();
   Object.entries(Conta.MODULOS).filter(([key])=>Conta.podeEditar(vinc,key)).forEach(([key,mod])=>{
     const details=document.createElement('details');details.className='dz-card config-modulo';
@@ -582,11 +584,13 @@ async function iniciar(){
     if(!vinc){mostrar('vSemCong');return;}
     // Volta para o módulo que pediu o login (ex.: /?voltar=/territorios).
     const voltar=params.get('voltar');
+    if(voltar==='/quadro'&&(Conta.podeVer(vinc,'oradores')||Conta.podeVer(vinc,'designacoes'))){location.replace('/quadro');return;}
     const destino=Object.entries(Conta.MODULOS).find(([,m])=>m.caminho===voltar);
     if(destino&&Conta.podeVer(vinc,destino[0])){location.replace(destino[1].caminho);return;}
     document.querySelectorAll('.nomeCong').forEach(e=>e.textContent=vinc.nome);
     mostrar('vApp');
     DesignaUI.montarConta($('dzConta'),user,{sair});
+    DesignaUI.montarSeletor($('dzSwitch'),vinc,'inicio');
     DesignaUI.aplicarTema();
     // Quem só pode ver todos os módulos não altera pessoas nem eventos.
     if(!Object.keys(Conta.MODULOS).some(m=>Conta.podeEditar(vinc,m)))document.body.classList.add('sem-cong');

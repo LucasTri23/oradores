@@ -9,7 +9,7 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/assets/images/designa-icon-v1.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-2">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/style.css?v=20261110-2">
@@ -311,13 +311,14 @@
 </div>
 <div class="page" id="page-quadro"><div class="panel-head"><div><div class="panel-title">Quadro de anúncios</div><p class="settings-note">Prepare, confira e compartilhe a programação da congregação.</p></div><a class="btn bo" href="/oradores">Ver programação</a></div><div class="quadro-workspace"><div>  <div class="card">
     <div class="slabel">Quadro de anúncios</div>
-    <p class="settings-note">Baixe a programação de oradores em PDF, com o nome da congregação e os discursos de 1 a 3 meses consecutivos.</p>
+    <p class="settings-note">Escolha o conteúdo e o modelo. Confira o PDF antes de baixar ou compartilhar.</p>
+    <div class="field"><label for="quadroConteudo">Conteúdo do quadro</label><select id="quadroConteudo" onchange="alterarConteudoQuadro()"><option value="oradores">Oradores</option><option value="indicadores">Indicadores e designações</option><option value="completo">Programação completa</option></select><small id="quadroConteudoHint" role="status"></small></div>
     <div class="g2">
       <div class="field"><label for="quadroMes">Mês inicial</label><input type="month" id="quadroMes" required></div>
       <div class="field"><label for="quadroQuantidade">Período</label><select id="quadroQuantidade"><option value="1">1 mês</option><option value="2">2 meses</option><option value="3" selected>3 meses</option></select></div>
     </div>
     <label class="config-toggle"><input type="checkbox" id="quadroIncluirResponsaveis" onchange="renderResponsaveisQuadro()"><span><strong>Colocar presidente e leitor?</strong><small>Os nomes vêm das Designações (quando já designados) e podem ser ajustados aqui. Eles aparecerão abaixo do discurso no PDF.</small></span></label>
-    <div id="quadroResponsaveis" hidden></div><fieldset class="quadro-modelos"><legend>Modelo do PDF</legend><label><input type="radio" name="quadroModelo" value="cartoes" checked> Cartões <small>O modelo atual, com destaque por data.</small></label><label><input type="radio" name="quadroModelo" value="editorial"> Editorial <small>Tipografia ampla e detalhes em azul.</small></label><label><input type="radio" name="quadroModelo" value="compacto"> Compacto <small>Tabela limpa, ideal para imprimir.</small></label></fieldset>
+    <div id="quadroResponsaveis" hidden></div><fieldset class="quadro-modelos"><legend>Modelo do PDF</legend><label><input type="radio" name="quadroModelo" value="cartoes" checked> Cartões <small>O modelo atual, com destaque por data.</small></label><label><input type="radio" name="quadroModelo" value="editorial"> Editorial <small>Tipografia ampla e detalhes em azul.</small></label><label><input type="radio" name="quadroModelo" value="compacto"> Compacto <small>Tabela limpa, ideal para imprimir.</small></label><label><input type="radio" name="quadroModelo" value="word"> Tabelas do Word <small>Seções organizadas como no documento enviado.</small></label><label><input type="radio" name="quadroModelo" value="ilustrado"> Ilustrado <small>Layout editorial com o mascote do Designa.</small></label></fieldset>
     <button type="button" class="btn bp" id="quadroBaixar" onclick="baixarQuadroAnuncios()"><i data-lucide="file-down"></i> Baixar PDF</button>
     <button type="button" class="btn bo" id="quadroEnviar" onclick="baixarQuadroAnuncios(true)"><i data-lucide="share-2"></i> Enviar pelo WhatsApp</button>
   </div>
@@ -389,16 +390,19 @@
   </div>
 </div>
 </main>
-<script src="/assets/shared/conta.js?v=20261110-2"></script>
-<script src="/assets/js/supabase-client.js?v=20261110-2"></script>
-<script src="/assets/js/app.js?v=20261110-2"></script>
+<script src="/assets/shared/conta.js?v=20261110-3"></script>
+<script src="/assets/js/supabase-client.js?v=20261110-3"></script>
+<script src="/assets/js/app.js?v=20261110-3"></script>
 <script src="/assets/js/features/home.js?v=20261110-1"></script>
 <script src="/assets/js/features/schedule.js?v=20261106-2"></script>
 <script src="/assets/js/features/directory.js?v=20261106-1"></script>
 <script src="/assets/js/features/insights.js?v=20260909-3"></script>
 <script src="/assets/js/features/transfer.js?v=20260911-1"></script>
 <script src="/assets/js/features/settings.js?v=20261109-1"></script>
-<script src="/assets/js/features/noticeboard.js?v=20261110-2"></script>
+<script src="/designacoes/regras.js?v=20261110-3"></script>
+<script src="/designacoes/pdf.js?v=20261110-3"></script>
+<script src="/assets/shared/quadro-dados.js?v=20261110-3"></script>
+<script src="/assets/js/features/noticeboard.js?v=20261110-3"></script>
 <script src="/assets/js/features/team.js?v=20261109-1"></script>
 <script src="/assets/js/features/init.js?v=20260904-1"></script>
 <script src="/assets/shared/module-flow.js?v=20261110-2"></script>

@@ -135,14 +135,15 @@ window.DesignaUI=(function(){
     el.innerHTML='';
     const meus=Object.entries(Conta.MODULOS).filter(([k])=>Conta.podeVer(vinc,k));
     el.hidden=false;el.classList.add('dz-switch');
-    const inicio=document.createElement('a');inicio.href='/';inicio.textContent='Início';el.appendChild(inicio);
+    const header=el.closest('header');if(header){header.classList.add('dz-unified');header.prepend(el);}
+    const inicio=document.createElement('a');inicio.href='/';inicio.textContent='Início';inicio.className=location.pathname==='/'&&location.hash!=='#configuracoes'?'on':'';el.appendChild(inicio);
     meus.forEach(([k,m])=>{
       const a=document.createElement('a');a.href=m.caminho;a.className=k===atual&&!location.pathname.startsWith('/quadro')&&location.hash!=='#quadro'?'on':'';a.title=m.nome;
       a.innerHTML=icone(m.icone)+'<span></span>';a.querySelector('span').textContent=m.nome;
       el.appendChild(a);
     });
-    if(Conta.podeVer(vinc,'oradores')){const quadro=document.createElement('a');quadro.href='/quadro';quadro.textContent='Quadro de anúncios';quadro.className=location.pathname.startsWith('/quadro')||location.hash==='#quadro'?'on':'';el.appendChild(quadro);}
-    const config=document.createElement('a');config.href='/#configuracoes';config.textContent='Configurações';el.appendChild(config);
+    if(Conta.podeVer(vinc,'oradores')||Conta.podeVer(vinc,'designacoes')){const quadro=document.createElement('a');quadro.href='/quadro';quadro.textContent='Quadro de anúncios';quadro.className=location.pathname.startsWith('/quadro')||location.hash==='#quadro'?'on':'';el.appendChild(quadro);}
+    const config=document.createElement('a');config.href='/#configuracoes';config.textContent='Configurações';config.className=location.pathname==='/'&&location.hash==='#configuracoes'?'on':'';el.appendChild(config);
     desenharIcones();
   }
 

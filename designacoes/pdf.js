@@ -69,7 +69,7 @@
   //       presidencia:[{data,presidente,leitor}|{data,mesclado}]|null,
   //       fim:{grupos:[{titulo,vagas:[rotulo]}],linhas:[{data,valores:[]}|{data,mesclado}]}|null, meio:(igual)|null,
   //       zoom:[{rotulo,nomes}]|null}
-  function criarPdfTabelas(JsPDF,meses,{congregacao,endereco=''}){
+  function criarPdfTabelas(JsPDF,meses,{congregacao,endereco='',titulo='Programação de indicadores'}){
     const pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     const COR={titulo:'#595959',azul:'#4f81bd',vermelho:'#943634',dourado:'#c99700',zebra:'#d9d9d9',borda:'#8c8c8c',texto:'#1a1a1a'};
     const X=16,L=178,UP=s=>String(s??'').toLocaleUpperCase('pt-BR');
@@ -79,7 +79,7 @@
     function cabecalhoPagina(m){
       txt(UP('Congregação '+congregacao),105,18,15,'normal',COR.azul,{align:'center'});
       pdf.setDrawColor(COR.azul);pdf.setLineWidth(.5);pdf.line(30,20.5,180,20.5);
-      txt(UP('Programação de indicadores - '+m.data.toLocaleDateString('pt-BR',{month:'long'})+'/'+m.data.getFullYear()),105,32,15,'bold','#000000',{align:'center'});
+      txt(UP(titulo+' - '+m.data.toLocaleDateString('pt-BR',{month:'long'})+'/'+m.data.getFullYear()),105,32,15,'bold','#000000',{align:'center'});
       if(endereco){pdf.setDrawColor(COR.azul);pdf.setLineWidth(.2);pdf.line(30,284,180,284);txt(endereco,105,289,8,'normal',COR.azul,{align:'center'});}
       y=40;
     }

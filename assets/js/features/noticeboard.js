@@ -23,7 +23,7 @@ const responsavelQuadro=(data,chave)=>responsaveisQuadro.get(data)?.[chave]??res
 
 function renderResponsaveisQuadro(){
   const painel=document.getElementById('quadroResponsaveis');
-  painel.hidden=!document.getElementById('quadroIncluirResponsaveis').checked;
+  painel.hidden=conteudoQuadroAtual()!=='oradores'||!document.getElementById('quadroIncluirResponsaveis').checked;
   painel.replaceChildren();if(painel.hidden)return;
   if(!responsaveisDesignacoes&&typeof FF!=='undefined'&&db){carregarResponsaveisDesignacoes().then(renderResponsaveisQuadro);return;}
   try{
@@ -156,15 +156,15 @@ async function baixarQuadroAnuncios(enviar=false){
     const meses=dadosQuadroAnuncios(inicio,quantidade),congregacao=String(cfg.cong||'').trim();
     if(!congregacao||congregacao==='Minha Congregação')throw new Error('Cadastre e salve o nome da congregação antes de baixar o PDF.');
     botao.disabled=true;botao.textContent='Gerando PDF…';
-    const incluir=document.getElementById('quadroIncluirResponsaveis').checked;
+    const incluir=conteudoQuadroAtual()==='oradores'&&document.getElementById('quadroIncluirResponsaveis').checked;
     if(incluir){
       await carregarResponsaveisDesignacoes();
       meses.forEach(m=>m.linhas.forEach(r=>{r.presidente=responsavelQuadro(r.data,'presidente');r.leitor=responsavelQuadro(r.data,'leitor');}));
     }
     const JsPDF=await carregarBibliotecaQuadro();
-    const pdf=criarPdfQuadro(JsPDF,meses,congregacao,incluir,modeloQuadroAtual()),nomeArq='quadro-de-anuncios-'+inicio+'-'+quantidade+'-meses.pdf';
+    const pdf=await gerarPdfQuadroTela(JsPDF,meses,congregacao,incluir),nomeArq='quadro-'+conteudoQuadroAtual()+'-'+inicio+'-'+quantidade+'-meses.pdf';
     // Enviar: abre o compartilhamento do celular (WhatsApp…); no computador, baixa o arquivo.
-    if(enviar&&window.DesignaUI){await DesignaUI.compartilharArquivo(pdf.output('blob'),nomeArq,'Programação de oradores — '+congregacao);return;}
+    if(enviar&&window.DesignaUI){await DesignaUI.compartilharArquivo(pdf.output('blob'),nomeArq,'Quadro de anúncios — '+congregacao);return;}
     pdf.save(nomeArq);
     toast('PDF do quadro de anúncios gerado!');
   }catch(error){toast(error.message||'Não foi possível gerar o PDF.',6000);}
@@ -173,7 +173,7 @@ async function baixarQuadroAnuncios(enviar=false){
 
 function modeloQuadroAtual(){return document.querySelector('input[name="quadroModelo"]:checked')?.value||'cartoes';}
 
-function criarPdfQuadroAlternativo(JsPDF,meses,congregacao,incluir,modelo){
+function criarPdfQuadroAlternativo(JsPDF,meses,congregacao,incluir,modelo,opcoes={}){
   const pdf=new JsPDF({unit:'mm',format:'a4'}),compacto=modelo==='compacto';
   const azul='#23486b',cinza='#536273',borda='#dce3ea';let pagina=0,y=0;
   const texto=(t,x,top,size=10,bold=false,cor='#172b3e')=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);pdf.setTextColor(cor);pdf.text(t,x,top);};
@@ -183,12 +183,13 @@ function criarPdfQuadroAlternativo(JsPDF,meses,congregacao,incluir,modelo){
     function abrir(continuacao=false){
       if(pagina++)pdf.addPage();
       texto(congregacao,16,20,11,true,azul);
-      texto('Programação de oradores',16,33,compacto?20:23,true);
+      texto(opcoes.titulo||'Programação de oradores',16,33,opcoes.imagem?18:compacto?20:23,true);
+      if(opcoes.imagem)pdf.addImage(opcoes.imagem,'PNG',170,8,24,24);
       texto(periodo+(continuacao?' · continuação':''),16,43,11,false,cinza);
       pdf.setDrawColor(azul);pdf.setLineWidth(compacto?.4:1.3);pdf.line(16,49,194,49);
       texto('Quadro de anúncios · '+pagina,16,287,8,false,cinza);
       y=compacto?64:57;
-      if(compacto){pdf.setFillColor('#edf2f7');pdf.rect(16,53,178,9,'F');texto('DATA',19,59,8,true);texto('ORADOR / CONGREGAÇÃO',40,59,8,true);texto('TEMA',111,59,8,true);}
+      if(compacto){pdf.setFillColor('#edf2f7');pdf.rect(16,53,178,9,'F');texto('DATA',19,59,8,true);texto(opcoes.indicadores?'REUNIÃO':'ORADOR / CONGREGAÇÃO',40,59,8,true);texto(opcoes.indicadores?'FUNÇÕES E RESPONSÁVEIS':'TEMA',111,59,8,true);}
     }
     abrir();
     m.linhas.forEach(r=>{
@@ -218,15 +219,62 @@ async function atualizarPreviaQuadro(){
   status.textContent='Gerando prévia…';frame.hidden=true;link.hidden=true;
   try{
     const meses=dadosQuadroAnuncios(document.getElementById('quadroMes').value,Number(document.getElementById('quadroQuantidade').value));
-    const incluir=document.getElementById('quadroIncluirResponsaveis').checked;
+    const incluir=conteudoQuadroAtual()==='oradores'&&document.getElementById('quadroIncluirResponsaveis').checked;
     if(incluir){await carregarResponsaveisDesignacoes();meses.forEach(m=>m.linhas.forEach(r=>{r.presidente=responsavelQuadro(r.data,'presidente');r.leitor=responsavelQuadro(r.data,'leitor');}));}
     const JsPDF=await carregarBibliotecaQuadro();
     if(versao!==previaQuadroVersao)return;
-    const pdf=criarPdfQuadro(JsPDF,meses,String(cfg.cong||'Congregação'),incluir,modeloQuadroAtual());
+    const pdf=await gerarPdfQuadroTela(JsPDF,meses,String(cfg.cong||'Congregação'),incluir);
+    if(versao!==previaQuadroVersao)return;
     if(previaQuadroUrl)URL.revokeObjectURL(previaQuadroUrl);
     previaQuadroUrl=URL.createObjectURL(pdf.output('blob'));frame.src=previaQuadroUrl;link.href=previaQuadroUrl;
     frame.hidden=false;link.hidden=false;status.textContent=pdf.getNumberOfPages()+' página(s). Prévia com os mesmos dados e modelo do download.';
   }catch(error){if(versao===previaQuadroVersao)status.textContent=error.message||'Não foi possível gerar a prévia. Tente novamente.';}
+}
+
+const conteudoQuadroAtual=()=>document.getElementById('quadroConteudo')?.value||'oradores';
+function alterarConteudoQuadro(){
+  const conteudo=conteudoQuadroAtual(),completo=conteudo==='completo';
+  const check=document.getElementById('quadroIncluirResponsaveis');
+  check.closest('label').hidden=conteudo!=='oradores';
+  document.getElementById('quadroResponsaveis').hidden=conteudo!=='oradores'||!check.checked;
+  document.querySelectorAll('input[name="quadroModelo"]').forEach(input=>{input.disabled=completo&&input.value!=='word';});
+  if(completo)document.querySelector('input[name="quadroModelo"][value="word"]').checked=true;
+  document.getElementById('quadroConteudoHint').textContent=completo?'Reúne discursos, presidente/leitor, indicadores, microfones, áudio/vídeo e Zoom no modelo do Word.':conteudo==='indicadores'?'Usa as datas e os nomes cadastrados em Designações, incluindo meio e fim de semana.':'Usa a programação de discursos públicos.';
+  agendarPreviaQuadro();
+}
+
+async function carregarDadosIndicadores(){
+  if(!window.quadroAcesso?.designacoes)throw new Error('Sua conta não tem acesso às Designações.');
+  const ler=async collection=>{
+    const{data,error}=await supabase.from('app_records').select('id,data').eq('workspace_id',activeWorkspaceId).eq('collection',collection);
+    if(error)throw new Error('Não foi possível carregar as designações. Tente novamente.');
+    return (data||[]).map(r=>({...r.data,id:r.id}));
+  };
+  const[reunioes,pessoas,central,config]=await Promise.all([ler('desig_reunioes'),ler('desig_pessoas'),ler('cong_pessoas'),ler('desig_config')]);
+  if(config.find(c=>c.id==='app')?.diaMeio==null){const hint=document.getElementById('quadroConteudoHint');if(hint)hint.textContent='O dia da reunião do meio de semana ainda não foi configurado. Defina-o em Configurações → Designações para incluir essas datas.';}
+  const nomes=new Map(pessoas.map(p=>[p.id,p]));central.forEach(p=>nomes.set(p.id,{...nomes.get(p.id),...p}));
+  return {reunioes,pessoas:[...nomes.values()],cfg:config.find(c=>c.id==='app')||{}};
+}
+let imagemQuadroPromise;
+function carregarImagemQuadro(){
+  if(!imagemQuadroPromise)imagemQuadroPromise=fetch('/assets/images/designa-mascote-v1.png').then(r=>{if(!r.ok)throw new Error('Não foi possível carregar a ilustração. Tente novamente ou escolha outro modelo.');return r.blob();}).then(blob=>new Promise((ok,erro)=>{const reader=new FileReader();reader.onload=()=>ok(reader.result);reader.onerror=()=>erro(new Error('Não foi possível abrir a ilustração.'));reader.readAsDataURL(blob);})).catch(error=>{imagemQuadroPromise=null;throw error;});
+  return imagemQuadroPromise;
+}
+async function gerarPdfQuadroTela(JsPDF,meses,congregacao,incluir){
+  const conteudo=conteudoQuadroAtual(),modelo=modeloQuadroAtual(),designacoes=conteudo!=='oradores';
+  if(!designacoes&&window.quadroAcesso?.oradores===false)throw new Error('Sua conta não tem acesso aos Oradores.');
+  if(!designacoes&&!['word','ilustrado'].includes(modelo))return criarPdfQuadro(JsPDF,meses,congregacao,incluir,modelo);
+  if(designacoes&&(!window.quadroAcesso?.designacoes||conteudo==='completo'&&!window.quadroAcesso?.oradores))throw new Error('Sua conta não tem acesso aos módulos deste quadro.');
+  const dados=designacoes?await carregarDadosIndicadores():{cfg:{},reunioes:[],pessoas:[]};
+  const porData=new Map([...discursos,...programa].map(r=>[r.data,r]));
+  const tabelas=meses.map(m=>QuadroDados.montarMes({data:m.data,regras:Regras,...dados,cfgOradores:window.quadroAcesso?.oradores===false?null:cfg,programa:[...porData.values()],temas:TL,incluirDiscursos:conteudo!=='indicadores',incluirDesignacoes:designacoes}));
+  if(!designacoes)tabelas.forEach((m,i)=>{m.discursos=meses[i].linhas.map(r=>({data:r.data.slice(8,10)+'/'+r.data.slice(5,7),nome:r.nome,cong:r.congregacao,tema:r.tema}));});
+  if(!designacoes&&incluir)tabelas.forEach((m,i)=>{m.presidencia=meses[i].linhas.map(r=>({data:r.data.slice(8,10)+'/'+r.data.slice(5,7),presidente:r.presidente,leitor:r.leitor}));});
+  if(modelo==='word'||conteudo==='completo')return PdfDesignacoes.criarPdfTabelas(JsPDF,tabelas,{congregacao,endereco:cfg.end||'',titulo:conteudo==='oradores'?'Programação de oradores':conteudo==='completo'?'Programação da congregação':'Programação de indicadores'});
+  if(designacoes&&modelo==='cartoes')return PdfDesignacoes.criarPdfDesignacoes(JsPDF,tabelas,congregacao);
+  const imagem=modelo==='ilustrado'?await carregarImagemQuadro():null;
+  const linhas=designacoes?tabelas.map(m=>({data:m.data,linhas:m.reunioes.map(r=>({data:r.data,nome:r.tipo==='fim'?'Fim de semana':'Meio de semana',congregacao:r.semReuniao?'Evento da congregação':'Designações da reunião',tema:r.semReuniao?(r.motivo||'Não haverá reunião'):r.linhas.map(l=>l.funcao+': '+l.nomes.join(' / ')).join('\n')}))})):meses;
+  return criarPdfQuadroAlternativo(JsPDF,linhas,congregacao,designacoes?false:incluir,modelo==='ilustrado'?'editorial':modelo,{imagem,indicadores:designacoes,titulo:designacoes?'Programação de indicadores':'Programação de oradores'});
 }
 if(typeof window!=='undefined'){
   document.getElementById('page-quadro')?.addEventListener('input',agendarPreviaQuadro);

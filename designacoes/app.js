@@ -281,44 +281,7 @@ function abrirPdf(){$('pdfMes').value=mes.getFullYear()+'-'+String(mes.getMonth(
 
 // Dados de um mês no formato do modelo "Tabelas" (igual ao Word).
 function dadosTabelas(ano,m){
-  const lista=R.reunioesDoMes(ano,m,cfgRegras(),reunioes);
-  const q=R.quantidades(cfg),ddmm=d=>d.slice(8,10)+'/'+d.slice(5,7);
-  const fim=lista.filter(r=>r.tipo==='fim'),meio=lista.filter(r=>r.tipo==='meio');
-  const nomes=(r,f)=>R.pessoasDe(r,f).map(nomePessoa);
-  const vagas=(r,f,i)=>(r.pessoas?.[f]||[])[i];
-  // Discursos públicos (vêm do Oradores, quando a pessoa tem acesso).
-  let discursos=null;
-  if(Conta.podeVer(vinc,'oradores')&&fim.length){
-    discursos=fim.map(r=>{
-      const p=oradores.programa.find(x=>x.data===r.data);
-      if(r.semReuniao)return{data:ddmm(r.data),mesclado:r.motivo||'Não haverá reunião'};
-      if(p?.semDiscurso)return{data:ddmm(r.data),mesclado:p.motivo||'Sem discurso'};
-      if(!p||!p.nome)return{data:ddmm(r.data),nome:'A definir',cong:'',tema:''};
-      const tema=p.especial?(p.tema||p.especialTitulo||'Discurso especial'):((typeof TEMAS!=='undefined'&&TEMAS[p.temaNum])||p.tema||'');
-      return{data:ddmm(r.data),nome:p.nome,cong:p.congregacao||'',tema};
-    });
-  }
-  const presidencia=(q.fim.presidente||q.fim.leitor)&&fim.length?fim.map(r=>r.semReuniao?{data:ddmm(r.data),mesclado:r.motivo||'Não haverá reunião'}:{data:ddmm(r.data),presidente:nomes(r,'presidente').join(' / '),leitor:nomes(r,'leitor').join(' / ')}):null;
-  const grade=(tipo,rs)=>{
-    const funcs=['indicadores','microfones','audio_video'].filter(f=>q[tipo][f]>0);
-    if(!funcs.length||!rs.length)return null;
-    const grupos=funcs.map(f=>({titulo:R.FUNCOES[f].nome,vagas:Array.from({length:q[tipo][f]},(_,i)=>R.rotuloVaga(f,i,q[tipo][f]))}));
-    const linhas=rs.map(r=>r.semReuniao?{data:ddmm(r.data),mesclado:r.motivo||'Não haverá reunião'}:{data:ddmm(r.data),valores:funcs.flatMap(f=>Array.from({length:q[tipo][f]},(_,i)=>{const id=vagas(r,f,i);return id?nomePessoa(id):'';}))});
-    return{grupos,linhas};
-  };
-  // Zoom agrupado por semana: "04 E 07/11".
-  let zoom=null;
-  if(q.meio.zoom>0||q.fim.zoom>0){
-    const semanas=new Map();
-    lista.filter(r=>q[r.tipo].zoom>0).forEach(r=>{const k=R.segundaDaSemana(r.data);if(!semanas.has(k))semanas.set(k,[]);semanas.get(k).push(r);});
-    zoom=[...semanas.values()].map(rs=>{
-      const dias=rs.map(r=>r.data.slice(8,10));
-      const rotulo=dias.length>1?dias.slice(0,-1).join(', ')+' e '+ddmm(rs[rs.length-1].data):ddmm(rs[0].data);
-      const ns=[...new Set(rs.filter(r=>!r.semReuniao).flatMap(r=>nomes(r,'zoom')))];
-      return{rotulo,nomes:ns.join(' / ')};
-    });
-  }
-  return{data:new Date(ano,m-1,1),discursos,presidencia,fim:grade('fim',fim),meio:grade('meio',meio),zoom};
+  return QuadroDados.montarMes({data:new Date(ano,m-1,1),regras:R,cfg,cfgOradores,reunioes,pessoas,programa:oradores.programa,temas:typeof TEMAS==='undefined'?{}:TEMAS,incluirDiscursos:Conta.podeVer(vinc,'oradores')});
 }
 
 async function baixarPdf(enviar=false){

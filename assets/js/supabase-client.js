@@ -73,7 +73,7 @@ async function checkSetup(){
     if(!data.session){
       // O login fica num lugar só: a tela inicial do Designa, que depois volta para cá.
       const convite=new URLSearchParams(location.search).get('equipe');
-      location.replace('/?voltar=/oradores'+(convite?'&equipe='+encodeURIComponent(convite):''));
+      location.replace('/?voltar='+(location.hash==='#quadro'||location.pathname.startsWith('/quadro')?'/quadro':'/oradores')+(convite?'&equipe='+encodeURIComponent(convite):''));
       return;
     }
     currentUser=data.session.user;
@@ -81,14 +81,14 @@ async function checkSetup(){
     if(!(await initializeWorkspace())){mostrarTelaLogin(false);return;}
     if(!(await aplicarAcessoDesigna()))return;
     updateUserHeader();
-    await loadAll();
+    if(window.quadroAcesso?.oradores!==false)await loadAll();else updateBranding();
     if(location.pathname.startsWith('/quadro')||location.hash==='#quadro')irTab('quadro');
     else if(location.hash&&document.getElementById('page-'+location.hash.slice(1)))irTab(location.hash.slice(1));
     if(new URLSearchParams(location.search).has('configEmbed'))irTab('config');
     document.getElementById('setup').style.display='none';
-    if(!new URLSearchParams(location.search).has('configEmbed'))perguntarDiaReuniao2027();
+    if(window.quadroAcesso?.oradores!==false&&!new URLSearchParams(location.search).has('configEmbed'))perguntarDiaReuniao2027();
     await renderTeamPanel();
-    await checkSharedImport();
+    if(window.quadroAcesso?.oradores!==false)await checkSharedImport();
   }catch(error){mostrarTelaLogin(true);showSetupError(error.message);}
 }
 
@@ -104,13 +104,22 @@ async function aplicarAcessoDesigna(){
   if(!window.Conta||!membroAtual)return true;
   Conta.usarCliente(supabase);
   const vinc=await Conta.vinculo(currentUser);
-  if(!Conta.podeVer(vinc,'oradores')){location.replace('/');return false;}
+  const oradores=Conta.podeVer(vinc,'oradores'),designacoes=Conta.podeVer(vinc,'designacoes');
+  const quadro=location.pathname.startsWith('/quadro')||location.hash==='#quadro';
+  if(!oradores&&!(quadro&&designacoes)){location.replace('/');return false;}
+  window.quadroAcesso={oradores,designacoes};
+  window.vinculoQuadro=vinc;
+  cfg.cong=vinc.nome||cfg.cong;
+  const conteudo=document.getElementById('quadroConteudo');
+  [...conteudo.options].forEach(option=>option.disabled=option.value==='oradores'?!oradores:option.value==='indicadores'?!designacoes:!oradores||!designacoes);
+  if(!oradores){conteudo.value='indicadores';document.body.classList.add('quadro-somente-designacoes');}
+  alterarConteudoQuadro();
   DesignaUI.montarSeletor(document.getElementById('dzSwitch'),vinc,'oradores');
   window.SOMENTE_LEITURA=!Conta.podeEditar(vinc,'oradores');
   if(window.SOMENTE_LEITURA){
     document.body.classList.add('somente-leitura');
     const aviso=document.createElement('div');aviso.className='dz-readonly';
-    aviso.innerHTML='<i data-lucide="eye"></i><span>Você tem acesso <strong>só para ver</strong> o Oradores. Para editar, peça ao proprietário da congregação.</span>';
+    aviso.innerHTML=oradores?'<i data-lucide="eye"></i><span>Você tem acesso <strong>só para ver</strong> o Oradores. Para editar, peça ao proprietário da congregação.</span>':'<i data-lucide="clipboard-list"></i><span>Quadro das Designações. Para alterar os nomes e as funções, abra o módulo Designações.</span>';
     document.querySelector('main')?.prepend(aviso);
     if(window.lucide)lucide.createIcons();
   }

@@ -85,6 +85,8 @@ Para trazer os dados da versão antiga de Territórios (Firebase), abra **Territ
 
 - O seletor compartilhado oferece Início, módulos permitidos, Quadro de anúncios e Configurações.
 - **Início → Configurações** reúne congregação, equipe e preferências de cada módulo. Os formulários dos módulos são carregados sob demanda na central e mantêm suas permissões e gravações existentes.
-- **Quadro de anúncios** (`/quadro`) usa o acesso ao Oradores e permite escolher Cartões, Editorial ou Compacto. A prévia é o PDF real, atualizado ao mudar período, modelo ou responsáveis; também pode ser aberta em outra aba.
+- **Quadro de anúncios** (`/quadro`) está disponível para quem acessa Oradores ou Designações. O seletor de conteúdo oferece Oradores, Indicadores e designações ou Programação completa, conforme as permissões. A prévia é o PDF real, atualizado ao mudar período, modelo ou responsáveis; também pode ser aberta em outra aba.
+- Modelos: Cartões, Editorial, Compacto, Tabelas do Word e Ilustrado (com o mascote do Designa). A programação completa usa as tabelas do Word, reunindo discursos, presidência/leitor, indicadores, microfones, áudio/vídeo e Zoom, conforme as funções configuradas. O modelo ilustrado está disponível para Oradores e Indicadores.
 - Presidente e leitor continuam vindo das Designações quando disponíveis, com ajustes manuais no quadro. A opção de baixar ou compartilhar usa o modelo selecionado.
 - A rota `/quadro` tem uma página estática que abre `/oradores#quadro`, sem depender de rewrite da Vercel. Não é necessário executar SQL para esta atualização.
+- A barra superior mantém a troca de módulos à esquerda e as ações da conta à direita em todos os módulos e no Início.
