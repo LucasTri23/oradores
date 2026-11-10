@@ -210,7 +210,7 @@ input,select,textarea{font-family:Inter,sans-serif}
         <label class="check" style="margin-top:4px"><input type="checkbox" id="cfgZoomSemanal"> Semanal: a mesma pessoa cuida do Zoom no meio e no fim de semana</label>
         <p class="hint" style="margin:8px 0 0">Ao designar uma reunião, a outra reunião da mesma semana recebe a mesma pessoa no Zoom. No quadro de anúncios aparece por semana (ex.: 04 e 07/11).</p>
       </div>
-      <div><button class="dz-btn pri so-edicao" onclick="salvarConfig()"><i data-lucide="save"></i> Salvar configurações</button></div>
+      <div><button id="salvarConfigBtn" class="dz-btn pri so-edicao" onclick="salvarConfig()"><i data-lucide="save"></i> Salvar configurações</button><p id="salvarConfigStatus" class="hint" role="status" aria-live="polite"></p></div>
     </div>
   </section>
 </main>
@@ -300,7 +300,7 @@ input,select,textarea{font-family:Inter,sans-serif}
 <script src="/assets/shared/pdf-paleta.js?v=20261110-4"></script>
 <script src="/designacoes/pdf.js?v=20261110-4"></script>
 <script src="/assets/shared/quadro-dados.js?v=20261110-3"></script>
-<script src="/designacoes/app.js?v=20261110-3"></script>
+<script src="/designacoes/app.js?v=20261110-6"></script>
 <script src="/assets/shared/module-flow.js?v=20261110-2"></script>
 </body>
 </html>

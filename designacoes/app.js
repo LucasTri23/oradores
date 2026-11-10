@@ -423,13 +423,28 @@ function renderConfig(){
   sel.disabled=!pode;$('cfgDiaFim').disabled=!pode;
   $('cfgZoomSemanal').checked=R.zoomSemanal(cfg);$('cfgZoomSemanal').disabled=!pode;
 }
+let salvandoConfig=false;
 async function salvarConfig(){
-  const quantidades={meio:{},fim:{}};
-  $('tabelaQtd').querySelectorAll('input').forEach(i=>{quantidades[i.dataset.t][i.dataset.f]=Math.max(0,Math.min(6,parseInt(i.value)||0));});
-  const diaMeio=$('cfgDiaMeio').value===''?null:Number($('cfgDiaMeio').value);
-  const novo={...cfg,diaMeio,diaFim:Number($('cfgDiaFim').value),quantidades,zoomSemanal:$('cfgZoomSemanal').checked};delete novo.id;
-  try{await salvar('desig_config','app',novo);cfg=novo;toast('✓ Configurações salvas.');}
-  catch(e){if(e.message!=='Somente leitura')toast('Não foi possível salvar: '+e.message,6000);}
+  if(salvandoConfig)return;
+  const botao=$('salvarConfigBtn'),status=$('salvarConfigStatus'),rotulo=botao.innerHTML;
+  salvandoConfig=true;botao.disabled=true;botao.textContent='Salvando…';status.textContent='Salvando configurações…';
+  try{
+    const quantidades={meio:{},fim:{}};
+    // Os checkboxes "Usar" não têm data-t/data-f: somente os números são persistidos.
+    $('tabelaQtd').querySelectorAll('input[type="number"][data-t][data-f]').forEach(i=>{
+      const valor=i.value===''?0:Number(i.value);
+      if(!Number.isInteger(valor)||valor<0||valor>6)throw new Error('Informe quantidades inteiras entre 0 e 6.');
+      quantidades[i.dataset.t][i.dataset.f]=valor;
+    });
+    const diaMeio=$('cfgDiaMeio').value===''?null:Number($('cfgDiaMeio').value);
+    const novo={...cfg,diaMeio,diaFim:Number($('cfgDiaFim').value),quantidades,zoomSemanal:$('cfgZoomSemanal').checked};delete novo.id;
+    await salvar('desig_config','app',novo);cfg=novo;renderConfig();
+    status.textContent='Configurações salvas. As quantidades serão usadas na programação e nos PDFs.';
+    toast('✓ Configurações salvas.');
+  }catch(e){
+    status.textContent=e.message==='Somente leitura'?'Você não tem permissão para alterar as configurações.':'Não foi possível salvar. '+e.message;
+    toast(status.textContent,6000);
+  }finally{salvandoConfig=false;botao.disabled=!pode;botao.innerHTML=rotulo;}
 }
 async function escolherDiaMeio(dia){
   try{const novo={...cfg,diaMeio:dia};delete novo.id;await salvar('desig_config','app',novo);cfg=novo;fecharJanela('janDia');renderProgramacao();toast('✓ Reunião do meio de semana: '+R.DIAS[dia]+'.');}
