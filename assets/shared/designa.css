@@ -114,8 +114,13 @@ body.somente-leitura [onclick^="compartilharOradores"],body.somente-leitura #cre
   .dz-main{padding:18px 12px 24px}
   .dz-user span,.dz-user>svg{display:none}
   .dz-user{padding:3px;border:0}
-  .dz-switch a span{display:none}
-  .dz-switch a{padding:6px 9px}
+  html,body{overflow-x:clip}
+  .dz-switch,.dz-unified>.dz-switch{max-width:none;flex:0 1 auto;overflow-x:auto;scrollbar-width:none}
+  .dz-switch::-webkit-scrollbar{display:none}
+  .dz-switch a,.dz-unified .dz-switch a{padding:7px;flex:0 0 auto}
+  .dz-switch a span,.dz-unified .dz-switch a span{display:none}
+  .dz-switch svg{width:17px;height:17px}
+  .dz-unified .header-actions>a.icon-btn[href="/"]{display:none}
   .dz-logo small{display:none}
 }
 .dz-module-dialog{width:min(520px,calc(100vw - 32px));box-sizing:border-box;max-height:90vh;overflow:auto;border:1px solid var(--border);border-radius:18px;padding:24px;background:var(--surf);color:var(--whi);font:14px Inter,sans-serif}

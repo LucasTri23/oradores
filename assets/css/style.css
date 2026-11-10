@@ -197,11 +197,11 @@ input,select,textarea{padding:11px 12px;border-radius:9px;background:var(--bg)}
 }
 
 @media(max-width:899px){
-  body{padding-bottom:72px}
+  body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
   header{height:58px;padding:0 14px}
-  nav{position:fixed;left:0;right:0;bottom:0;z-index:190;height:66px;padding:5px 8px max(5px,env(safe-area-inset-bottom));border-top:1px solid var(--border);border-bottom:0;background:color-mix(in srgb,var(--surf) 96%,transparent);display:flex;overflow-x:auto}
-  .tab{min-width:66px;flex:1;flex-direction:column;justify-content:center;gap:3px;padding:5px 7px;border:0;border-radius:8px;font-size:8px;letter-spacing:0;text-transform:none}
-  .tab svg{width:19px;height:19px}.tab.active{background:var(--pur-dim);border:0;color:var(--pur)}
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:190;height:calc(66px + env(safe-area-inset-bottom));padding:5px 8px max(5px,env(safe-area-inset-bottom));border-top:1px solid var(--border);border-bottom:0;background:color-mix(in srgb,var(--surf) 96%,transparent);display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;overflow:hidden}
+  .tab{min-width:0;flex-direction:column;justify-content:center;gap:3px;padding:5px 2px;border:0;border-radius:8px;font-size:8px;letter-spacing:0;text-transform:none}
+  .tab svg{width:19px;height:19px;flex:0 0 auto}.tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tab.active{background:var(--pur-dim);border:0;color:var(--pur)}
   #toast{bottom:82px}
   .dashboard-grid{grid-template-columns:1fr}.dashboard-side{display:grid;grid-template-columns:1fr 1fr}.dashboard-side #homeSentinela{grid-column:1/-1}
   .agenda-row{grid-template-columns:52px minmax(150px,1fr) minmax(190px,1fr) auto}.agenda-state{display:none}.agenda-action span{display:none}
