@@ -16,13 +16,12 @@ function tela(conteudo,modelo,acessos={oradores:true,designacoes:true}){
   const elements={},el=id=>elements[id]??={value:'',addEventListener(){}};
   el('quadroConteudo').value=conteudo;
   const records={desig_reunioes:base.reunioes,desig_pessoas:base.pessoas,cong_pessoas:[],desig_config:[{id:'app',diaMeio:3}]};
-  const c={document:{getElementById:el,querySelector:()=>({value:modelo})},window:{quadroAcesso:acessos,addEventListener(){}},Date,Map,
+  const c={PdfPaleta:require('../assets/shared/pdf-paleta.js'),document:{getElementById:el,querySelector:()=>({value:modelo})},window:{quadroAcesso:acessos,addEventListener(){}},Date,Map,
     isoLocal:R.iso,allMeetingDays:y=>R.reunioesDoMes(y,11,{diaFim:6}).map(r=>r.data),
     discursos:[],programa:base.programa,TL:{},cfg:{cong:'Central',dia:6},activeWorkspaceId:'workspace',
     completarDadosPrograma:r=>r,Regras:R,QuadroDados,PdfDesignacoes,
     supabase:{from:()=>({select:()=>({eq:()=>({eq:async(_,col)=>({data:(records[col]||[]).map((r,i)=>({id:r.id||String(i),data:r})),error:null})})})})}};
   vm.createContext(c);vm.runInContext(fs.readFileSync('assets/js/features/noticeboard.js','utf8'),c);
-  c.carregarImagemQuadro=async()=> 'data:image/png;base64,'+fs.readFileSync('assets/images/designa-mascote-v1.png').toString('base64');
   return c;
 }
 for(const conteudo of ['oradores','indicadores','completo'])for(const modelo of ['cartoes','word','ilustrado','editorial','compacto'])test(conteudo+' / '+modelo+' gera PDF com o conteúdo correto',async()=>{
@@ -31,7 +30,7 @@ for(const conteudo of ['oradores','indicadores','completo'])for(const modelo of 
   if(conteudo==='indicadores'){assert(raw.includes('Carlos Indicador')||raw.includes('CARLOS INDICADOR'));assert(!raw.includes('Orador Teste'));}
   if(conteudo==='completo'){assert(raw.includes('ORADOR TESTE'));assert(raw.includes('CARLOS INDICADOR'));}
   if(conteudo==='oradores')assert(raw.includes('Orador Teste')||raw.includes('ORADOR TESTE'));
-  if(modelo==='ilustrado'&&conteudo!=='completo')assert(raw.includes('/Subtype /Image'));
+  if(modelo==='ilustrado'&&conteudo!=='completo')assert(!raw.includes('/Subtype /Image'),'ilustração vetorial não usa logo ou imagem raster');
 });
 test('acesso apenas a Designações gera indicadores e bloqueia quadro completo',async()=>{
   const c=tela('indicadores','word',{oradores:false,designacoes:true}),meses=c.dadosQuadroAnuncios('2026-11',1);

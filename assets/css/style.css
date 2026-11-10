@@ -239,4 +239,5 @@ input,select,textarea{padding:11px 12px;border-radius:9px;background:var(--bg)}
 .quadro-modelos label{display:block;padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;font-size:13px}
 .quadro-modelos label:has(input:checked){border-color:var(--pur3);background:var(--pur-dim)}
 .quadro-modelos input{width:auto;accent-color:var(--pur)}.quadro-modelos small{display:block;margin:5px 0 0 23px;color:var(--whi3);line-height:1.5}
+.quadro-cores{margin:14px 0 20px;padding:12px;border:1px solid var(--border);border-radius:8px}.quadro-cores summary{cursor:pointer;font-size:13px;font-weight:600}.quadro-cores input[type=color]{width:100%;height:40px;padding:3px;cursor:pointer}
 @media(max-width:1050px){.quadro-workspace{grid-template-columns:1fr}.quadro-preview{position:static}.quadro-preview iframe{height:65vh}}

@@ -1,5 +1,6 @@
 // Quadro de anúncios das Designações: PDF A4 no mesmo estilo do quadro do Oradores.
 (function(raiz){
+  const Paleta=raiz.PdfPaleta||(typeof require==='function'?require('../assets/shared/pdf-paleta.js'):null);
   let carregando=null;
   function carregarJsPDF(){
     if(raiz.jspdf?.jsPDF)return Promise.resolve(raiz.jspdf.jsPDF);
@@ -13,55 +14,48 @@
   }
 
   // meses: [{data:Date, reunioes:[{data,tipo,semReuniao,motivo,linhas:[{funcao,nomes:[...]}]}]}]
-  function criarPdfDesignacoes(JsPDF,meses,congregacao){
-    const pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const tinta='#193e49',verde='#2a6770',borda='#d4e5e7',suave='#eef4f4';
-    const nomeMes=d=>d.toLocaleDateString('pt-BR',{month:'long'});
-    const DIAS=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
-    const escrever=(t,x,y,tam=10,estilo='normal',cor=tinta,op={})=>{pdf.setFont('helvetica',estilo);pdf.setFontSize(tam);pdf.setTextColor(cor);pdf.text(t,x,y,op);};
+  function criarPdfDesignacoes(JsPDF,meses,congregacao,cores={}){
+    const pdf=new JsPDF({unit:'mm',format:'a4'}),p=Paleta.criar('cartoes',cores);
+    const txt=(t,x,y,size=9,bold=false,cor=p.texto,op={})=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);pdf.setTextColor(cor);pdf.text(t,x,y,op);};
     let pagina=0;
     meses.forEach(m=>{
-      const periodo=nomeMes(m.data)+' de '+m.data.getFullYear();
-      let y;
-      function abrir(continuacao=false){
+      const periodo=m.data.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).toLocaleUpperCase('pt-BR');let y;
+      const abrir=(continuacao=false)=>{
         if(pagina++)pdf.addPage();
-        pdf.setFillColor(tinta);pdf.rect(0,0,210,52,'F');
-        pdf.setFillColor('#9fd3d0');pdf.rect(16,13,13,3,'F');
-        const nome=pdf.splitTextToSize('CONGREGAÇÃO '+String(congregacao).toLocaleUpperCase('pt-BR'),178);
-        escrever(nome,16,24,10,'normal','#ffffff');
-        const ty=Math.max(37,27+nome.length*4);
-        escrever('Designações',16,ty,22,'bold','#ffffff');
-        escrever('Reuniões da congregação  ·  '+periodo+(continuacao?' (continuação)':''),16,ty+8,10,'normal','#ffffff');
-        pdf.setDrawColor(borda);pdf.line(16,283,194,283);
-        escrever(congregacao,16,288,8,'normal',verde);
-        escrever(periodo,194,288,8,'normal',verde,{align:'right'});
-        y=60;
-      }
+        pdf.setFillColor(p.principal);pdf.rect(0,0,210,43,'F');pdf.setFillColor(p.destaque);pdf.rect(0,0,3,43,'F');
+        txt('CONGREGAÇÃO '+congregacao.toLocaleUpperCase('pt-BR'),13,14,9,false,Paleta.contraste(p.principal));
+        txt('Programação de designações',13,27,19,true,Paleta.contraste(p.principal));
+        txt('Áudio e vídeo  ·  Microfones  ·  Indicadores',13,36,8,false,Paleta.contraste(p.principal));
+        pdf.setFillColor(p.destaque);pdf.roundedRect(156,16,41,12,2,2,'F');txt(periodo,176.5,23,8,true,Paleta.contraste(p.destaque),{align:'center'});
+        txt('ESCALA DE REUNIÕES'+(continuacao?' · continuação':''),13,53,10,true);
+        txt('Designações organizadas por data e função',13,59,8);
+        pdf.setDrawColor(p.apoio);pdf.line(13,282,197,282);txt(congregacao,13,288,8,true);txt(periodo,197,288,8,false,p.texto,{align:'right'});y=65;
+      };
       abrir();
       m.reunioes.forEach(r=>{
-        pdf.setFontSize(9);
-        const linhas=r.semReuniao?[]:r.linhas.map(l=>({titulo:l.funcao.toLocaleUpperCase('pt-BR'),texto:pdf.splitTextToSize(l.nomes.length?l.nomes.join(', '):'A definir',112)}));
-        const corpo=r.semReuniao?10:linhas.reduce((s,l)=>s+Math.max(1,l.texto.length)*4.2+2.6,0);
-        const altura=Math.max(26,corpo+14);
-        if(y+altura>279&&y>60)abrir(true);
-        pdf.setDrawColor(borda);pdf.setLineWidth(.4);pdf.setFillColor('#ffffff');pdf.roundedRect(16,y,178,altura,4,4,'FD');
-        pdf.setFillColor(suave);pdf.roundedRect(21,y+5,24,22,3,3,'F');
-        const dt=new Date(r.data+'T12:00:00');
-        escrever(r.data.slice(8,10),33,y+16,20,'bold',verde,{align:'center'});
-        escrever(DIAS[dt.getDay()],33,y+23,8,'bold',verde,{align:'center'});
-        escrever(r.tipo==='fim'?'REUNIÃO DO FIM DE SEMANA':'REUNIÃO DO MEIO DE SEMANA',51,y+9,8,'bold',verde);
-        let ly=y+15;
-        if(r.semReuniao){escrever(r.motivo||'Não haverá reunião nesta data',51,ly,10,'bold');}
-        else linhas.forEach(l=>{
-          escrever(l.titulo,51,ly,7,'bold',verde);
-          escrever(l.texto,82,ly,9.5,'normal');
-          ly+=Math.max(1,l.texto.length)*4.2+2.6;
-        });
-        y+=altura+4;
+        // Três funções por faixa, preservando funções extras e nomes longos.
+        const ordem=['Áudio e vídeo','Microfones','Indicadores'];
+        const funcoes=[...(r.linhas||[])].sort((a,b)=>{const ai=ordem.indexOf(a.funcao),bi=ordem.indexOf(b.funcao);return (ai<0?9:ai)-(bi<0?9:bi);});
+        const faixas=[];
+        for(let i=0;i<funcoes.length;i+=3){
+          const cells=funcoes.slice(i,i+3).map(l=>{pdf.setFont('helvetica','normal');pdf.setFontSize(8);return {titulo:l.funcao.toLocaleUpperCase('pt-BR'),nomes:pdf.splitTextToSize(l.nomes?.length?l.nomes.join('\n'):'A definir',47)};});
+          faixas.push({cells,altura:5+Math.max(...cells.map(c=>c.nomes.length))*3.3});
+        }
+        pdf.setFontSize(9);const motivo=pdf.splitTextToSize(r.motivo||'Não haverá reunião nesta data',145);
+        const altura=Math.max(22,r.semReuniao?motivo.length*4+12:faixas.reduce((n,f)=>n+f.altura,0)+10);
+        if(y+altura>278&&y>65)abrir(true);
+        pdf.setFillColor(p.fundo);pdf.roundedRect(12,y,186,altura,3,3,'F');
+        const corData=r.tipo==='meio'?p.destaque:p.principal;
+        pdf.setFillColor(corData);pdf.roundedRect(15,y+3,19,16,2,2,'F');
+        txt(r.data.slice(8,10),24.5,y+10,16,true,Paleta.contraste(corData),{align:'center'});txt(m.data.toLocaleDateString('pt-BR',{month:'short'}).replace('.','').toLocaleUpperCase('pt-BR'),17.5,y+16,7,true,Paleta.contraste(corData));
+        txt(r.tipo==='fim'?'FIM DE SEMANA':'MEIO DE SEMANA',38,y+5,7,true,p.destaque);
+        let ly=y+10;
+        if(r.semReuniao)txt(motivo,38,ly+2,9,true);
+        else faixas.forEach(f=>{f.cells.forEach((c,i)=>{const x=38+i*53;txt(c.titulo,x,ly,6.5);txt(c.nomes,x,ly+4,8,i===0);});ly+=f.altura;});
+        y+=altura+3;
       });
-      if(!m.reunioes.length)escrever('Nenhuma reunião neste mês.',16,70,11);
-    });
-    return pdf;
+      if(!m.reunioes.length)txt('Nenhuma reunião neste mês.',13,y,10);
+    });return pdf;
   }
 
   // ── Modelo "Tabelas": programação completa do mês (igual ao modelo em Word) ──
@@ -69,9 +63,10 @@
   //       presidencia:[{data,presidente,leitor}|{data,mesclado}]|null,
   //       fim:{grupos:[{titulo,vagas:[rotulo]}],linhas:[{data,valores:[]}|{data,mesclado}]}|null, meio:(igual)|null,
   //       zoom:[{rotulo,nomes}]|null}
-  function criarPdfTabelas(JsPDF,meses,{congregacao,endereco='',titulo='Programação de indicadores'}){
+  function criarPdfTabelas(JsPDF,meses,{congregacao,endereco='',titulo='Programação de indicadores',cores={}}){
     const pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const COR={titulo:'#595959',azul:'#4f81bd',vermelho:'#943634',dourado:'#c99700',zebra:'#d9d9d9',borda:'#8c8c8c',texto:'#1a1a1a'};
+    const p=Paleta.criar('word',cores);
+    const COR={titulo:p.principal,azul:p.destaque,vermelho:p.principal,dourado:p.apoio,zebra:p.fundo,borda:'#8c8c8c',texto:p.texto};
     const X=16,L=178,UP=s=>String(s??'').toLocaleUpperCase('pt-BR');
     let y=0;
     const txt=(t,x,yy,tam,estilo,cor,op={})=>{pdf.setFont('helvetica',estilo);pdf.setFontSize(tam);pdf.setTextColor(cor);pdf.text(t,x,yy,op);};
@@ -79,12 +74,13 @@
     function cabecalhoPagina(m){
       txt(UP('Congregação '+congregacao),105,18,15,'normal',COR.azul,{align:'center'});
       pdf.setDrawColor(COR.azul);pdf.setLineWidth(.5);pdf.line(30,20.5,180,20.5);
-      txt(UP(titulo+' - '+m.data.toLocaleDateString('pt-BR',{month:'long'})+'/'+m.data.getFullYear()),105,32,15,'bold','#000000',{align:'center'});
+      txt(UP(titulo+' - '+m.data.toLocaleDateString('pt-BR',{month:'long'})+'/'+m.data.getFullYear()),105,32,15,'bold',COR.texto,{align:'center'});
       if(endereco){pdf.setDrawColor(COR.azul);pdf.setLineWidth(.2);pdf.line(30,284,180,284);txt(endereco,105,289,8,'normal',COR.azul,{align:'center'});}
       y=40;
     }
     // Desenha uma célula com texto centralizado (quebra linhas se precisar).
     function celula(x,yy,w,h,texto,{fundo=null,cor=COR.texto,negrito=false,tam=8.5}={}){
+      if(fundo&&cor==='#ffffff')cor=Paleta.contraste(fundo);
       if(fundo){pdf.setFillColor(fundo);pdf.rect(x,yy,w,h,'F');}
       pdf.setDrawColor(COR.borda);pdf.setLineWidth(.2);pdf.rect(x,yy,w,h);
       pdf.setFont('helvetica',negrito?'bold':'normal');pdf.setFontSize(tam);

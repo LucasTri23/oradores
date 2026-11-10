@@ -79,10 +79,10 @@ function carregarBibliotecaQuadro(){
   return bibliotecaQuadroPromise;
 }
 
-function criarPdfQuadro(JsPDF,meses,congregacao,incluirResponsaveis=false,modelo='cartoes'){
-  if(modelo!=='cartoes')return criarPdfQuadroAlternativo(JsPDF,meses,congregacao,incluirResponsaveis,modelo);
+function criarPdfQuadro(JsPDF,meses,congregacao,incluirResponsaveis=false,modelo='cartoes',cores={}){
+  if(modelo!=='cartoes')return criarPdfQuadroAlternativo(JsPDF,meses,congregacao,incluirResponsaveis,modelo,{cores});
   const pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const tinta='#193e49',verde='#2a6770',borda='#d4e5e7',suave='#eef4f4';
+  const p=PdfPaleta.criar('cartoes',cores),tinta=p.texto,verde=p.destaque,borda=p.apoio,suave=p.fundo;
   const nomeMes=d=>d.toLocaleDateString('pt-BR',{month:'long'});
   const escrever=(texto,x,y,tamanho=10,estilo='normal',cor=tinta,opcoes={})=>{
     pdf.setFont('helvetica',estilo);pdf.setFontSize(tamanho);pdf.setTextColor(cor);pdf.text(texto,x,y,opcoes);
@@ -93,18 +93,18 @@ function criarPdfQuadro(JsPDF,meses,congregacao,incluirResponsaveis=false,modelo
     let y;
     function abrirPagina(continuacao=false){
       if(pagina++)pdf.addPage();
-      pdf.setFillColor(tinta);pdf.rect(0,0,210,61,'F');
-      pdf.setFillColor('#9fd3d0');pdf.rect(16,15,13,3,'F');
+    pdf.setFillColor(p.principal);pdf.rect(0,0,210,61,'F');
+    pdf.setFillColor(p.apoio);pdf.rect(16,15,13,3,'F');
       pdf.setFont('helvetica','normal');pdf.setFontSize(10);
       const nome=pdf.splitTextToSize('CONGREGAÇÃO '+congregacao.toLocaleUpperCase('pt-BR'),178);
-      escrever(nome,16,27,10,'normal','#ffffff');
+    escrever(nome,16,27,10,'normal',PdfPaleta.contraste(p.principal));
       const tituloY= Math.max(42,30+nome.length*4);
-      escrever('Programação de Oradores',16,tituloY,22,'bold','#ffffff');
-      escrever('Discursos públicos  ·  '+periodo,16,tituloY+9,10,'normal','#ffffff');
+    escrever('Programação de Oradores',16,tituloY,22,'bold',PdfPaleta.contraste(p.principal));
+    escrever('Discursos públicos  ·  '+periodo,16,tituloY+9,10,'normal',PdfPaleta.contraste(p.principal));
       pdf.setFillColor(verde);pdf.roundedRect(16,65,178,11,2,2,'F');
       const dias=[...new Set(m.linhas.map(r=>new Date(r.data+'T12:00:00').getDay()))];
       const dia=dias.length===1?(dias[0]===6?'SÁBADOS':dias[0]===0?'DOMINGOS':'REUNIÕES'):'REUNIÕES';
-      escrever(dia+'  ·  '+nomeMes(m.data).toLocaleUpperCase('pt-BR')+' '+m.data.getFullYear()+(continuacao?' (continuação)':''),21,72,9,'bold','#ffffff');
+    escrever(dia+'  ·  '+nomeMes(m.data).toLocaleUpperCase('pt-BR')+' '+m.data.getFullYear()+(continuacao?' (continuação)':''),21,72,9,'bold',PdfPaleta.contraste(verde));
       pdf.setDrawColor(borda);pdf.line(16,283,194,283);
       escrever(congregacao,16,288,8,'normal',verde);
       escrever(periodo,194,288,8,'normal',verde,{align:'right'});
@@ -175,21 +175,21 @@ function modeloQuadroAtual(){return document.querySelector('input[name="quadroMo
 
 function criarPdfQuadroAlternativo(JsPDF,meses,congregacao,incluir,modelo,opcoes={}){
   const pdf=new JsPDF({unit:'mm',format:'a4'}),compacto=modelo==='compacto';
-  const azul='#23486b',cinza='#536273',borda='#dce3ea';let pagina=0,y=0;
-  const texto=(t,x,top,size=10,bold=false,cor='#172b3e')=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);pdf.setTextColor(cor);pdf.text(t,x,top);};
+  const paleta=PdfPaleta.criar(modelo==='ilustrado'?'ilustrado':modelo,opcoes.cores),azul=paleta.principal,cinza=paleta.destaque,borda=paleta.apoio;let pagina=0,y=0;
+  const texto=(t,x,top,size=10,bold=false,cor=paleta.texto)=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);pdf.setTextColor(cor);pdf.text(t,x,top);};
   const quebra=(t,w,size=10,bold=false)=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);return pdf.splitTextToSize(String(t||'A definir'),w);};
   meses.forEach(m=>{
     const periodo=m.data.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
     function abrir(continuacao=false){
       if(pagina++)pdf.addPage();
       texto(congregacao,16,20,11,true,azul);
-      texto(opcoes.titulo||'Programação de oradores',16,33,opcoes.imagem?18:compacto?20:23,true);
-      if(opcoes.imagem)pdf.addImage(opcoes.imagem,'PNG',170,8,24,24);
+      texto(opcoes.titulo||'Programação de oradores',16,33,opcoes.ilustrado?18:compacto?20:23,true);
+      if(opcoes.ilustrado)PdfPaleta.ilustrar(pdf,paleta);
       texto(periodo+(continuacao?' · continuação':''),16,43,11,false,cinza);
       pdf.setDrawColor(azul);pdf.setLineWidth(compacto?.4:1.3);pdf.line(16,49,194,49);
       texto('Quadro de anúncios · '+pagina,16,287,8,false,cinza);
       y=compacto?64:57;
-      if(compacto){pdf.setFillColor('#edf2f7');pdf.rect(16,53,178,9,'F');texto('DATA',19,59,8,true);texto(opcoes.indicadores?'REUNIÃO':'ORADOR / CONGREGAÇÃO',40,59,8,true);texto(opcoes.indicadores?'FUNÇÕES E RESPONSÁVEIS':'TEMA',111,59,8,true);}
+      if(compacto){pdf.setFillColor(paleta.fundo);pdf.rect(16,53,178,9,'F');texto('DATA',19,59,8,true);texto(opcoes.indicadores?'REUNIÃO':'ORADOR / CONGREGAÇÃO',40,59,8,true);texto(opcoes.indicadores?'FUNÇÕES E RESPONSÁVEIS':'TEMA',111,59,8,true);}
     }
     abrir();
     m.linhas.forEach(r=>{
@@ -239,6 +239,7 @@ function alterarConteudoQuadro(){
   document.getElementById('quadroResponsaveis').hidden=conteudo!=='oradores'||!check.checked;
   document.querySelectorAll('input[name="quadroModelo"]').forEach(input=>{input.disabled=completo&&input.value!=='word';});
   if(completo)document.querySelector('input[name="quadroModelo"][value="word"]').checked=true;
+  sincronizarCoresQuadro();
   document.getElementById('quadroConteudoHint').textContent=completo?'Reúne discursos, presidente/leitor, indicadores, microfones, áudio/vídeo e Zoom no modelo do Word.':conteudo==='indicadores'?'Usa as datas e os nomes cadastrados em Designações, incluindo meio e fim de semana.':'Usa a programação de discursos públicos.';
   agendarPreviaQuadro();
 }
@@ -255,29 +256,38 @@ async function carregarDadosIndicadores(){
   const nomes=new Map(pessoas.map(p=>[p.id,p]));central.forEach(p=>nomes.set(p.id,{...nomes.get(p.id),...p}));
   return {reunioes,pessoas:[...nomes.values()],cfg:config.find(c=>c.id==='app')||{}};
 }
-let imagemQuadroPromise;
-function carregarImagemQuadro(){
-  if(!imagemQuadroPromise)imagemQuadroPromise=fetch('/assets/images/designa-mascote-v1.png').then(r=>{if(!r.ok)throw new Error('Não foi possível carregar a ilustração. Tente novamente ou escolha outro modelo.');return r.blob();}).then(blob=>new Promise((ok,erro)=>{const reader=new FileReader();reader.onload=()=>ok(reader.result);reader.onerror=()=>erro(new Error('Não foi possível abrir a ilustração.'));reader.readAsDataURL(blob);})).catch(error=>{imagemQuadroPromise=null;throw error;});
-  return imagemQuadroPromise;
-}
 async function gerarPdfQuadroTela(JsPDF,meses,congregacao,incluir){
   const conteudo=conteudoQuadroAtual(),modelo=modeloQuadroAtual(),designacoes=conteudo!=='oradores';
+  const cores=coresQuadroAtuais(conteudo==='completo'?'word':modelo);
   if(!designacoes&&window.quadroAcesso?.oradores===false)throw new Error('Sua conta não tem acesso aos Oradores.');
-  if(!designacoes&&!['word','ilustrado'].includes(modelo))return criarPdfQuadro(JsPDF,meses,congregacao,incluir,modelo);
+  if(!designacoes&&!['word','ilustrado'].includes(modelo))return criarPdfQuadro(JsPDF,meses,congregacao,incluir,modelo,cores);
   if(designacoes&&(!window.quadroAcesso?.designacoes||conteudo==='completo'&&!window.quadroAcesso?.oradores))throw new Error('Sua conta não tem acesso aos módulos deste quadro.');
   const dados=designacoes?await carregarDadosIndicadores():{cfg:{},reunioes:[],pessoas:[]};
   const porData=new Map([...discursos,...programa].map(r=>[r.data,r]));
   const tabelas=meses.map(m=>QuadroDados.montarMes({data:m.data,regras:Regras,...dados,cfgOradores:window.quadroAcesso?.oradores===false?null:cfg,programa:[...porData.values()],temas:TL,incluirDiscursos:conteudo!=='indicadores',incluirDesignacoes:designacoes}));
   if(!designacoes)tabelas.forEach((m,i)=>{m.discursos=meses[i].linhas.map(r=>({data:r.data.slice(8,10)+'/'+r.data.slice(5,7),nome:r.nome,cong:r.congregacao,tema:r.tema}));});
   if(!designacoes&&incluir)tabelas.forEach((m,i)=>{m.presidencia=meses[i].linhas.map(r=>({data:r.data.slice(8,10)+'/'+r.data.slice(5,7),presidente:r.presidente,leitor:r.leitor}));});
-  if(modelo==='word'||conteudo==='completo')return PdfDesignacoes.criarPdfTabelas(JsPDF,tabelas,{congregacao,endereco:cfg.end||'',titulo:conteudo==='oradores'?'Programação de oradores':conteudo==='completo'?'Programação da congregação':'Programação de indicadores'});
-  if(designacoes&&modelo==='cartoes')return PdfDesignacoes.criarPdfDesignacoes(JsPDF,tabelas,congregacao);
-  const imagem=modelo==='ilustrado'?await carregarImagemQuadro():null;
+  if(modelo==='word'||conteudo==='completo')return PdfDesignacoes.criarPdfTabelas(JsPDF,tabelas,{congregacao,endereco:cfg.end||'',cores,titulo:conteudo==='oradores'?'Programação de oradores':conteudo==='completo'?'Programação da congregação':'Programação de indicadores'});
+  if(designacoes&&modelo==='cartoes')return PdfDesignacoes.criarPdfDesignacoes(JsPDF,tabelas,congregacao,cores);
   const linhas=designacoes?tabelas.map(m=>({data:m.data,linhas:m.reunioes.map(r=>({data:r.data,nome:r.tipo==='fim'?'Fim de semana':'Meio de semana',congregacao:r.semReuniao?'Evento da congregação':'Designações da reunião',tema:r.semReuniao?(r.motivo||'Não haverá reunião'):r.linhas.map(l=>l.funcao+': '+l.nomes.join(' / ')).join('\n')}))})):meses;
-  return criarPdfQuadroAlternativo(JsPDF,linhas,congregacao,designacoes?false:incluir,modelo==='ilustrado'?'editorial':modelo,{imagem,indicadores:designacoes,titulo:designacoes?'Programação de indicadores':'Programação de oradores'});
+  return criarPdfQuadroAlternativo(JsPDF,linhas,congregacao,designacoes?false:incluir,modelo,{cores,ilustrado:modelo==='ilustrado',indicadores:designacoes,titulo:designacoes?'Programação de indicadores':'Programação de oradores'});
+}
+
+function chavePaletasQuadro(){return 'quadro-paletas-v1:'+(typeof activeWorkspaceId==='undefined'?'local':activeWorkspaceId||'local');}
+function lerPaletasQuadro(){try{const p=JSON.parse(localStorage.getItem(chavePaletasQuadro())||'{}');return p&&typeof p==='object'&&!Array.isArray(p)?p:{};}catch{return {};}}
+function coresQuadroAtuais(modelo=modeloQuadroAtual()){return PdfPaleta.criar(modelo,lerPaletasQuadro()[modelo]);}
+function sincronizarCoresQuadro(){
+  const cores=coresQuadroAtuais();Object.entries(cores).forEach(([k,v])=>{const input=document.getElementById('quadroCor-'+k);if(input)input.value=v;});
+}
+function salvarCoresQuadro(restaurar=false){
+  const modelo=modeloQuadroAtual(),paletas=lerPaletasQuadro();
+  if(restaurar)delete paletas[modelo];else{paletas[modelo]=Object.fromEntries(Object.keys(PdfPaleta.criar(modelo)).map(k=>[k,document.getElementById('quadroCor-'+k).value]));}
+  try{localStorage.setItem(chavePaletasQuadro(),JSON.stringify(paletas));}
+  catch{toast('Não foi possível guardar as cores neste navegador. Verifique se o armazenamento está disponível.',6000);return;}
+  sincronizarCoresQuadro();agendarPreviaQuadro();
 }
 if(typeof window!=='undefined'){
   document.getElementById('page-quadro')?.addEventListener('input',agendarPreviaQuadro);
-  document.getElementById('page-quadro')?.addEventListener('change',agendarPreviaQuadro);
+  document.getElementById('page-quadro')?.addEventListener('change',event=>{if(event.target?.name==='quadroModelo')sincronizarCoresQuadro();agendarPreviaQuadro();});
   window.addEventListener('beforeunload',()=>{if(previaQuadroUrl)URL.revokeObjectURL(previaQuadroUrl);});
 }

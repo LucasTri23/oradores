@@ -8,7 +8,7 @@ function setup(){
   const elements={};
   const node=()=>({style:{},children:[],value:'',checked:false,hidden:false,append(...items){this.children.push(...items);},appendChild(item){this.children.push(item);},replaceChildren(){this.children=[];},addEventListener(event,fn){this[event]=fn;}});
   const el=id=>elements[id]??=node();
-  const c={document:{getElementById:el,createElement:node},Date,Map,isoLocal:()=> '2026-11-01',fD:d=>d,discursos:[],programa:[],TL:{},completarDadosPrograma:r=>r,allMeetingDays:()=>['2026-11-07','2026-11-14','2026-11-21','2026-11-28']};
+  const c={PdfPaleta:require('../assets/shared/pdf-paleta.js'),document:{getElementById:el,createElement:node},Date,Map,isoLocal:()=> '2026-11-01',fD:d=>d,discursos:[],programa:[],TL:{},completarDadosPrograma:r=>r,allMeetingDays:()=>['2026-11-07','2026-11-14','2026-11-21','2026-11-28']};
   vm.createContext(c);vm.runInContext(fs.readFileSync('assets/js/features/noticeboard.js','utf8'),c);
   el('quadroQuantidade').value='1';return {c,el};
 }
