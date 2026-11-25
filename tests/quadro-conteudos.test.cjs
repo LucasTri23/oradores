@@ -39,6 +39,12 @@ test('acesso apenas a Designações gera indicadores e bloqueia quadro completo'
   c.document.getElementById('quadroConteudo').value='completo';await assert.rejects(()=>c.gerarPdfQuadroTela(jsPDF,meses,'Central',false),/acesso/);
 });
 
+test('PDF do Quadro usa os dados projetados sem acesso direto aos módulos de origem',async()=>{
+  const c=tela('completo','word');c.window.quadroRegistros={desig_reunioes:base.reunioes,desig_pessoas:base.pessoas,cong_pessoas:[],desig_config:[{id:'app',diaMeio:3}]};
+  c.supabase.from=()=>{throw new Error('Acesso direto não autorizado');};
+  const pdf=await c.gerarPdfQuadroTela(jsPDF,c.dadosQuadroAnuncios('2026-11',1),'Central',false);assert(pdf.output().includes('CARLOS INDICADOR'));assert(pdf.output().includes('ORADOR TESTE'));
+});
+
 test('campo funciona sem Oradores e bloqueia quem não acessa Designações',async()=>{
   const c=tela('campo','cartoes',{oradores:false,designacoes:true});
   const pdf=await c.gerarPdfQuadroTela(jsPDF,c.dadosQuadroAnuncios('2026-12',2),'Central',false);

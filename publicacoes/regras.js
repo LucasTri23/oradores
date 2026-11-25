@@ -59,5 +59,43 @@
     if(!itens.length)throw new Error('Nenhuma publicação foi reconhecida. Use o PDF com texto exportado do JW Hub; imagens digitalizadas não são lidas automaticamente.');
     return {mes,itens:validarItens(itens),avisos};
   }
-  const api={normalizar,chave,inteiro,validarItens,validarPedido,totais,situacao,movimentar,cancelar,linhasPagina,lerMovimento};root.PublicacoesRegras=api;if(typeof module!=='undefined')module.exports=api;
+  // Histórico de pedidos do JW Hub (página "Histórico de pedidos" impressa em PDF).
+  function lerHistoricoHub(linhas){
+    const texto=normalizar(linhas.join('\n'));
+    if(!/historico de pedidos/.test(texto))throw new Error('Selecione o PDF do Histórico de pedidos do JW Hub.');
+    const ruido=l=>/^\d{2}\/\d{2}\/\d{4},?\s+\d{1,2}:\d{2}/.test(l)||/^https?:\/\//i.test(l)||/^\d+\/\d+$/.test(l);
+    // O pdf.js pode separar ligaduras do código ("l ff -T"), por isso espaços são aceitos e removidos.
+    const cabecalho=/^([A-Za-z0-9][\w. ]*?)\s*(?:-\s*([A-Z]{1,4}))?\s*\|\s*(.+?)(\s+Pedido especial)?$/;
+    const blocos=[];let atual=null,especialPendente=false;
+    for(const bruta of linhas){
+      const linha=bruta.trim();if(!linha||ruido(linha))continue;
+      if(/^pedido especial$/i.test(linha)){if(atual&&!atual.titulo.length&&!atual.resto)atual.especial=true;else especialPendente=true;continue;}
+      const h=linha.match(cabecalho);
+      if(h&&!/enviado em/i.test(linha)){const cod=h[1].replace(/\s+/g,'');atual={codigoHub:cod+(h[2]?'-'+h[2]:''),codigo:cod,idioma:h[3].trim(),especial:!!h[4]||especialPendente,titulo:[],resto:null};especialPendente=false;blocos.push(atual);continue;}
+      if(!atual)continue;
+      if(/^enviado em\b/i.test(linha)){if(atual.resto)atual.duplicado=true;atual.resto=[];atual.rotulo=linha.replace(/^enviado em\s*/i,'').replace(/^situa[çc][ãa]o\s*/i,'').trim();continue;}
+      if(atual.resto)atual.resto.push(linha);else atual.titulo.push(linha.replace(/\s*Pedido especial$/i,''));
+    }
+    const pedidos=[],avisos=[],vistos=new Map();
+    for(const b of blocos){
+      const rotulo=b.codigoHub+' · '+(b.titulo.join(' ')||'sem título');
+      if(!b.resto){avisos.push('Não foi possível ler a data e a quantidade de: '+rotulo);continue;}
+      if(b.duplicado){avisos.push('Há um pedido não reconhecido logo após '+rotulo+'. Confira os dois e adicione manualmente o que faltar.');continue;}
+      let resto=b.resto.join(' ').replace(/\s+/g,' ').trim();
+      const d=resto.match(/(\d{1,2})\s+de\s+([A-Za-zÀ-ÿ]+)\s+de(?:\s+(20\d{2}))?/);const mesN=d?MESES.map(normalizar).indexOf(normalizar(d[2])):-1;
+      if(!d||mesN<0){avisos.push('Data não reconhecida em: '+rotulo);continue;}
+      let ano=d[3];resto=resto.replace(d[0],' ').trim();
+      if(!ano){const a=resto.match(/\b(20\d{2})\b/);if(a){ano=a[1];resto=resto.replace(a[0],' ').trim();}}
+      const q=resto.match(/^(.*?)\s*(\d[\d.]*)\s*$/);
+      if(!ano||!q){avisos.push('Quantidade ou ano não reconhecidos em: '+rotulo);continue;}
+      const data=ano+'-'+String(mesN+1).padStart(2,'0')+'-'+d[1].padStart(2,'0');
+      const quantidade=Number(q[2].replace(/\./g,''));const situacaoHub=q[1].replace(/\s+/g,' ').trim()||'—';
+      if(!Number.isSafeInteger(quantidade)||quantidade<1||quantidade>1000000){avisos.push('Quantidade inválida em: '+rotulo);continue;}
+      const base=['hub',normalizar(b.codigoHub).replace(/[^a-z0-9.-]/g,''),data,quantidade].join('-');const n=(vistos.get(base)||0)+1;vistos.set(base,n);
+      pedidos.push({idHub:(base+'-'+n).slice(0,100),codigo:b.codigo,codigoHub:b.codigoHub,titulo:b.titulo.join(' ').trim()||b.codigoHub,idioma:b.idioma,especial:b.especial,data,quantidade,situacaoHub,rotuloQuantidade:b.rotulo||'',cancelado:/cancel/.test(normalizar(situacaoHub))});
+    }
+    if(!pedidos.length)throw new Error('Nenhum pedido foi reconhecido. Imprima a página Histórico de pedidos do JW Hub como PDF (com texto, não imagem).');
+    return {pedidos,avisos};
+  }
+  const api={normalizar,chave,inteiro,validarItens,validarPedido,totais,situacao,movimentar,cancelar,linhasPagina,lerMovimento,lerHistoricoHub};root.PublicacoesRegras=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -223,6 +223,7 @@ body.sem-cong .so-cong{display:none!important}
             <label class="acesso">Territórios<select id="convTerritorios"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
             <label class="acesso">Designações<select id="convDesignacoes"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
             <label class="acesso">Publicações<select id="convPublicacoes"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
+            <label class="acesso">Quadro de anúncios<select id="convQuadro"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
             <button class="dz-btn pri" id="convBtn" onclick="convidar()"><i data-lucide="user-plus"></i> Criar link de convite</button>
           </div>
           <p class="hint" style="margin:10px 0 0">O link vale por 24 horas e pode ser usado uma vez.</p>
@@ -287,11 +288,11 @@ body.sem-cong .so-cong{display:none!important}
 </div>
 
 <script src="/assets/js/data.js?v=20261110-7"></script>
-<script src="/assets/shared/conta.js?v=20261125-p1"></script>
+<script src="/assets/shared/conta.js?v=20261125-q1"></script>
 <script src="/designacoes/regras.js?v=20261125-5"></script>
 <script src="/assets/shared/congregacao.js?v=20261125-3"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script><script src="/assets/shared/config-store.js?v=20261110-7"></script><script src="/assets/shared/config-central.js?v=20261125-6"></script>
-<script src="/assets/shared/inicio-congregacao.js?v=20261124-3"></script>
+<script src="/assets/shared/inicio-congregacao.js?v=20261125-q1"></script>
 <script>
 const $=id=>document.getElementById(id);
 const toast=(m,ms)=>DesignaUI.toast(m,ms);
@@ -460,7 +461,7 @@ function renderConfigModulos(){
 function renderConfig(){
   renderConfigModulos();
   $('cfgNome').value=vinc.nome;
-  const pode=Object.keys(Conta.MODULOS).some(m=>Conta.podeEditar(vinc,m));
+  const pode=Object.keys(Conta.MODULOS).some(m=>m!=='quadro'&&Conta.podeEditar(vinc,m));
   $('cfgNome').disabled=!pode;$('cfgNomeBtn').hidden=!pode;
   $('meuAcesso').textContent=descreverAcesso(vinc);
   if(vinc.role==='owner'){$('painelDono').hidden=false;$('modulosAtivosResumo').textContent='Ativos: '+vinc.modulosAtivos.map(m=>Conta.MODULOS[m].nome).join(', ');renderMembros();}
@@ -531,7 +532,7 @@ async function removerMembro(userId,email){
 }
 
 async function convidar(){
-  const niveis={oradores:$('convOradores').value,territorios:$('convTerritorios').value,designacoes:$('convDesignacoes').value,publicacoes:$('convPublicacoes').value};
+  const niveis={oradores:$('convOradores').value,territorios:$('convTerritorios').value,designacoes:$('convDesignacoes').value,publicacoes:$('convPublicacoes').value,quadro:$('convQuadro').value};
   const mods=Object.keys(niveis).filter(k=>niveis[k]);
   const ro=mods.filter(k=>niveis[k]==='ver');
   if(!mods.length)return toast('Escolha acesso a pelo menos um módulo.');

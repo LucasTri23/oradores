@@ -1,5 +1,12 @@
 (function(root){
   async function carregar(sb,vinc,conta){
+    if(Array.isArray(vinc.modulos)){
+      if(!conta.podeVer(vinc,'quadro'))throw new Error('Sua conta não tem acesso ao Quadro de anúncios.');
+      const {data,error}=await sb.rpc('get_workspace_noticeboard',{target_workspace:vinc.workspaceId});
+      if(error)throw new Error('Não foi possível carregar o quadro. Confira a conexão e a migration de acessos do Quadro de anúncios.');
+      const registros=data?.registros||{},config=registros.config||[];
+      return {acesso:data.acesso,registros,cfg:{dia:6,dia2027:null,...config.find(r=>r.id==='app'),cong:vinc.nome},oradores:registros.oradores||[],programa:registros.programa||[],discursos:registros.discursos||[],temas:config.find(r=>r.id==='temas')?.overrides||{}};
+    }
     const acesso={oradores:conta.podeVer(vinc,'oradores'),designacoes:conta.podeVer(vinc,'designacoes')};
     if(!acesso.oradores&&!acesso.designacoes)throw new Error('Sua conta não tem acesso às programações do quadro.');
     const ler=async collection=>{

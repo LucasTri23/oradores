@@ -20,11 +20,16 @@ async function iniciarQuadro(){
     const user=await Conta.usuario();if(!user){location.replace('/?voltar=/quadro');return;}
     const vinc=await Conta.vinculo(user);if(!vinc){location.replace('/');return;}
     const podeOradores=Conta.podeVer(vinc,'oradores'),podeDesignacoes=Conta.podeVer(vinc,'designacoes');
-    if(!podeOradores&&!podeDesignacoes){location.replace('/');return;}
+    if(Array.isArray(vinc.modulos)?!Conta.podeVer(vinc,'quadro'):!podeOradores&&!podeDesignacoes){location.replace('/');return;}
     supabase=await Conta.supabase();activeWorkspaceId=vinc.workspaceId;
     const dados=await QuadroFonte.carregar(supabase,vinc,Conta);
+    if(!dados.acesso.oradores&&!dados.acesso.designacoes)throw new Error('Ative Oradores ou Designações nos módulos da congregação para disponibilizar programações no Quadro.');
     cfg=dados.cfg;oradores=dados.oradores;programa=dados.programa;discursos=dados.discursos;TL={...TEMAS,...dados.temas};
     window.quadroAcesso=dados.acesso;
+    window.quadroRegistros=dados.registros||null;
+    window.quadroSomenteLeitura=Array.isArray(vinc.modulos)&&!Conta.podeEditar(vinc,'quadro');
+    document.getElementById('quadroPermissao').hidden=!window.quadroSomenteLeitura;
+    document.querySelectorAll('.quadro-modelos input,.quadro-cores input,.quadro-cores button').forEach(input=>input.disabled=window.quadroSomenteLeitura);
     document.title='Quadro de anúncios — '+vinc.nome;
     document.querySelectorAll('.nomeCong').forEach(el=>el.textContent=vinc.nome);
     DesignaUI.montarSeletor(document.getElementById('dzSwitch'),vinc,'quadro');
@@ -33,8 +38,8 @@ async function iniciarQuadro(){
     document.getElementById('quadroLinkDesignacoes').hidden=!podeDesignacoes;
     const select=document.getElementById('quadroConteudo');
     if(!select.querySelector('option[value="campo"]')){const option=document.createElement('option');option.value='campo';option.textContent='Serviço de campo';select.appendChild(option);}
-    [...select.options].forEach(o=>o.disabled=o.value==='oradores'?!podeOradores:['indicadores','campo'].includes(o.value)?!podeDesignacoes:!podeOradores||!podeDesignacoes);
-    if(select.selectedOptions[0].disabled)select.value=podeOradores?'oradores':'indicadores';
+    [...select.options].forEach(o=>o.disabled=o.value==='oradores'?!dados.acesso.oradores:['indicadores','campo'].includes(o.value)?!dados.acesso.designacoes:!dados.acesso.oradores||!dados.acesso.designacoes);
+    if(select.selectedOptions[0].disabled)select.value=dados.acesso.oradores?'oradores':'indicadores';
     responsaveisDesignacoes=null;
     alterarConteudoQuadro(false);
     document.getElementById('quadroApp').hidden=false;estado.hidden=true;

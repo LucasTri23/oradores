@@ -38,6 +38,7 @@ function renderResponsaveisQuadro(){
           const label=document.createElement('label'),input=document.createElement('input');
           input.id='quadro-'+chave+'-'+r.data;label.htmlFor=input.id;label.textContent=chave==='presidente'?'Presidente':'Leitor de A Sentinela';
           input.type='text';input.maxLength=120;input.placeholder='Nome completo';input.value=responsavelQuadro(r.data,chave);
+          input.disabled=typeof window!=='undefined'&&!!window.quadroSomenteLeitura;
           input.addEventListener('input',()=>responsaveisQuadro.set(r.data,{...responsaveisQuadro.get(r.data),[chave]:input.value}));
           campo.append(label,input);campos.appendChild(campo);
         });grupo.appendChild(campos);painel.appendChild(grupo);
@@ -247,6 +248,7 @@ function alterarConteudoQuadro(atualizar=true){
 async function carregarDadosIndicadores(avisarDiaMeio=true){
   if(!window.quadroAcesso?.designacoes)throw new Error('Sua conta não tem acesso às Designações.');
   const ler=async collection=>{
+    if(window.quadroRegistros)return window.quadroRegistros[collection]||[];
     const{data,error}=await supabase.from('app_records').select('id,data').eq('workspace_id',activeWorkspaceId).eq('collection',collection);
     if(error)throw new Error('Não foi possível carregar as designações. Tente novamente.');
     return (data||[]).map(r=>({...r.data,id:r.id}));
@@ -268,9 +270,10 @@ async function gerarPdfCampoQuadro(JsPDF,meses,congregacao,modelo,cores){
     await bibliotecaCampoPromise;
   }
   const dados=await carregarDadosIndicadores(false);
-  const {data,error}=await supabase.from('app_records').select('id,data').eq('workspace_id',activeWorkspaceId).eq('collection','desig_campo');
-  if(error)throw new Error('Não foi possível carregar o serviço de campo. Tente novamente.');
-  const salvas=(data||[]).map(r=>({...r.data,id:r.id}));
+  let salvas;
+  if(window.quadroRegistros)salvas=window.quadroRegistros.desig_campo||[];
+  else{const {data,error}=await supabase.from('app_records').select('id,data').eq('workspace_id',activeWorkspaceId).eq('collection','desig_campo');
+    if(error)throw new Error('Não foi possível carregar o serviço de campo. Tente novamente.');salvas=(data||[]).map(r=>({...r.data,id:r.id}));}
   const grupos=meses.map(m=>({...window.QuadroCampo.montarMes(m.data,Regras,dados.cfg,salvas,dados.pessoas),endereco:cfg.end||''}));
   return window.QuadroCampo.criarPdf(JsPDF,grupos,congregacao,modelo,cores);
 }
@@ -299,6 +302,7 @@ function sincronizarCoresQuadro(){
   const cores=coresQuadroAtuais();Object.entries(cores).forEach(([k,v])=>{const input=document.getElementById('quadroCor-'+k);if(input)input.value=v;});
 }
 function salvarCoresQuadro(restaurar=false){
+  if(typeof window!=='undefined'&&window.quadroSomenteLeitura)return;
   const modelo=modeloQuadroAtual(),paletas=lerPaletasQuadro();
   if(restaurar)delete paletas[modelo];else{paletas[modelo]=Object.fromEntries(Object.keys(PdfPaleta.criar(modelo)).map(k=>[k,document.getElementById('quadroCor-'+k).value]));}
   try{localStorage.setItem(chavePaletasQuadro(),JSON.stringify(paletas));}

@@ -14,3 +14,5 @@
   :is(#estoqueLista,#pedidosLista,#relatoriosLista) td:last-child:before{display:none}
   #pedidosLista td:nth-child(2),#pedidosLista td:nth-child(3),#pedidosLista td:nth-child(4){grid-column:1/-1}
 }
+.pub-head-actions{margin:0}#hubAvisos{color:var(--amber);font-size:13px;white-space:pre-line}.pub-table td.pub-center{text-align:center}.pub-table tr.pub-off td{opacity:.55}
+@media(max-width:650px){.pub-head-actions>.dz-btn{flex:1 1 100%}}

@@ -2,7 +2,7 @@
 // Usa da página: $, toast, vinc, user.
 const C=Congregacao;
 let pessoasCong=null,eventosCong=null,pessoaCongEditando=null,eventoEditando=null,nomeEventoManual=false;
-const podeCong=()=>Object.keys(Conta.MODULOS).some(m=>Conta.podeEditar(vinc,m));
+const podeCong=()=>Object.keys(Conta.MODULOS).some(m=>m!=='quadro'&&Conta.podeEditar(vinc,m));
 
 async function sbCong(){return Conta.supabase();}
 async function carregarPessoasCong(){

@@ -7,7 +7,8 @@ window.Conta=(function(){
     oradores:{nome:'Oradores',caminho:'/oradores',icone:'mic',descricao:'Programação de discursos, cadastro de oradores e histórico.'},
     territorios:{nome:'Territórios',caminho:'/territorios',icone:'map',descricao:'Registro de territórios, cartões de mapa, dirigentes e campanhas.'},
     designacoes:{nome:'Designações',caminho:'/designacoes',icone:'clipboard-list',descricao:'Presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões.'},
-    publicacoes:{nome:'Publicações',caminho:'/publicacoes',icone:'book-open',descricao:'Estoque mensal por PDF e pedidos de pessoas ou da congregação.'}
+    publicacoes:{nome:'Publicações',caminho:'/publicacoes',icone:'book-open',descricao:'Estoque mensal por PDF e pedidos de pessoas ou da congregação.'},
+    quadro:{nome:'Quadro de anúncios',caminho:'/quadro',icone:'megaphone',descricao:'Consultar e baixar programações. Editar permite personalizar modelos, cores e nomes no PDF.'}
   };
   let cliente=null;
 
@@ -140,8 +141,7 @@ window.DesignaUI=(function(){
     // Cada item tem ícone e nome; no celular só o ícone aparece (o nome fica no title).
     const item=(href,nome,ic,on)=>{const a=document.createElement('a');a.href=href;a.title=nome;a.setAttribute('aria-label',nome);a.className=on?'on':'';if(on)a.setAttribute('aria-current','page');a.innerHTML=icone(ic)+'<span></span>';a.querySelector('span').textContent=nome;el.appendChild(a);};
     item('/','Início','house',location.pathname==='/'&&location.hash!=='#configuracoes');
-    meus.forEach(([k,m])=>item(m.caminho,m.nome,m.icone,k===atual&&!location.pathname.startsWith('/quadro')&&location.hash!=='#quadro'));
-    if(Conta.podeVer(vinc,'oradores')||Conta.podeVer(vinc,'designacoes'))item('/quadro','Quadro de anúncios','megaphone',location.pathname.startsWith('/quadro')||location.hash==='#quadro');
+    meus.forEach(([k,m])=>item(m.caminho,m.nome,m.icone,k===atual&&location.hash!=='#configuracoes'));
     item('/#configuracoes','Configurações','settings',location.pathname==='/'&&location.hash==='#configuracoes');
     desenharIcones();
   }

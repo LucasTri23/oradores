@@ -36,3 +36,23 @@ test('leitura de texto PDF reagrupa colunas e páginas sem trocar códigos e qua
 test('SQL independente inclui permissões, arquivos privados e proteção contra gravações concorrentes',()=>{
   const sql=fs.readFileSync('publicacoes/migration.sql','utf8');assert(sql.includes("left(coll,4)='pub_'"));assert(sql.includes("can_write_module(target_workspace,'publicacoes')"));assert(sql.includes('expected_revision'));assert(sql.includes('for update'));assert(sql.includes('Pedido alterado por outra pessoa'));assert(sql.includes("'publicacoes','publicacoes',false"));assert(!/\bas \$(?!\$)|\bend \$(?!\$);/.test(sql),'delimitadores SQL completos');assert(!sql.includes("$$'"),'âncoras de expressões regulares preservadas');
 });
+test('histórico de pedidos do JW Hub vira lista de pedidos com data, código e quantidade',()=>{
+  const linhas=['25/11/2026, 08:15 Histórico de pedidos :: Publicações da congregação :: JW Hub','Publicações da congregação','VERA CRUZ DE MINAS (82032)','Histórico de pedidos','Resultados: 77',
+    'w27.04-T | Português (Brasil)','A Sentinela (estudo)','Enviado em Situação Pendente','23 de novembro de Pendente 10','2026',
+    'Pedido especial','gwt2-T | Português (Brasil)','A Palavra de Deus É a Verdade — Um Guia Para Seu Estudo da Bíblia:','Amós - Sofonias','Enviado em Situação Pendente','18 de novembro de Pendente 4','2026',
+    'https://hub.jw.org/congregation-literature/pt/x/request-history/search 1/6','25/11/2026, 08:15 Histórico de pedidos :: Publicações da congregação :: JW Hub',
+    'eslp27-T | Português (Brasil) Pedido especial','Examine as Escrituras Diariamente — 2027 — Letras Grandes','Enviado em Situação Pendente','18 de novembro de Pendente 2','2026',
+    'mvpwp27.1-T | Português (Brasil)','A Sentinela (público)','Enviado em Situação Pendente','27 de outubro de 2026 Pendente 3',
+    'mwb27.05-T | Português (Brasil)','Nossa Vida e Ministério Cristão — Apostila da Reunião','Enviado em Situação Pendente','5 de outubro de 2026 Pendente 24',
+    'l ff -T | Português (Brasil)','Seja Feliz para Sempre! — Um Curso da Bíblia para Você','Enviado em Situação Pendente','30 de setembro de Pendente 5','2026',
+    'w27.03-T | Português (Brasil)','A Sentinela (estudo)','Enviado em Situação Pendente','23 de março de 2026 Cancelado 10',
+    'w27.03-T | Português (Brasil)','A Sentinela (estudo)','Enviado em Situação Pendente','23 de março de 2026 Cancelado 10'];
+  const {pedidos:todos,avisos}=R.lerHistoricoHub(linhas);assert.deepEqual(avisos,[]);assert.equal(todos.length,8);
+  assert.deepEqual([todos[4].codigo,todos[4].data,todos[4].quantidade],['mwb27.05','2026-10-05',24]);assert.deepEqual([todos[5].codigoHub,todos[5].data,todos[5].quantidade],['lff-T','2026-09-30',5]);
+  const pedidos=todos.filter((_,i)=>i!==4&&i!==5);
+  assert.deepEqual([pedidos[0].codigo,pedidos[0].codigoHub,pedidos[0].titulo,pedidos[0].data,pedidos[0].quantidade,pedidos[0].situacaoHub,pedidos[0].idioma],['w27.04','w27.04-T','A Sentinela (estudo)','2026-11-23',10,'Pendente','Português (Brasil)']);
+  assert.equal(pedidos[1].titulo,'A Palavra de Deus É a Verdade — Um Guia Para Seu Estudo da Bíblia: Amós - Sofonias');assert.equal(pedidos[1].especial,true);assert.equal(pedidos[2].especial,true);assert.equal(pedidos[0].especial,false);
+  assert.equal(pedidos[3].data,'2026-10-27');assert.equal(pedidos[3].quantidade,3);assert.equal(pedidos[4].data,'2026-03-23');assert.equal(pedidos[4].cancelado,true);
+  assert.notEqual(pedidos[4].idHub,pedidos[5].idHub);assert.equal(R.lerHistoricoHub(linhas).pedidos[0].idHub,pedidos[0].idHub);
+  assert.throws(()=>R.lerHistoricoHub(['Movimento mensal de publicações']),/Histórico de pedidos/);
+});

@@ -20,6 +20,20 @@ test('sem acesso não consulta dados e falhas de leitura são apresentadas',asyn
   const b=banco();await assert.rejects(()=>QuadroFonte.carregar(b.sb,{workspaceId:'equipe'},conta(false,false)),/acesso/);assert.equal(b.consultas.length,0);
   await assert.rejects(()=>QuadroFonte.carregar(banco({},true).sb,{workspaceId:'equipe'},conta(true,false)),/carregar/);
 });
+
+test('acesso exclusivo ao Quadro usa leitura protegida sem consultar diretamente outros módulos',async()=>{
+  const calls=[];const sb={from(){throw new Error('Não deve ler tabelas diretamente');},async rpc(name,args){calls.push({name,args});return {data:{acesso:{oradores:true,designacoes:true},registros:{config:[{id:'app',dia:0}],programa:[{id:'r',nome:'Pessoa do programa'}],cong_pessoas:[{id:'p',nome:'Pessoa'}]}},error:null};}};
+  const dados=await QuadroFonte.carregar(sb,{workspaceId:'w',nome:'Central',modulos:['quadro']},{podeVer:(_,m)=>m==='quadro'});
+  assert.equal(calls[0].name,'get_workspace_noticeboard');assert.equal(calls[0].args.target_workspace,'w');assert.equal(dados.cfg.dia,0);assert.equal(dados.acesso.designacoes,true);assert.equal(dados.programa[0].nome,'Pessoa do programa');assert.equal(dados.registros.cong_pessoas[0].nome,'Pessoa');
+});
+
+test('ter Oradores não concede acesso ao Quadro quando o acesso individual está desativado',async()=>{
+  let called=false;await assert.rejects(QuadroFonte.carregar({rpc(){called=true;}},{modulos:['oradores']},{podeVer:(_,m)=>m==='oradores'}),/acesso ao Quadro/);assert.equal(called,false);
+});
+
+test('migration do Quadro preserva escolhas em reexecuções e não libera dados particulares',()=>{
+  const sql=fs.readFileSync('migrations/20261125_02_quadro_acessos.sql','utf8');assert(sql.includes('noticeboard_access_migrated_at is null'));assert(sql.includes("has_workspace_module(target_workspace,'quadro')"));assert(sql.includes('get_workspace_noticeboard'));assert(sql.includes('from public,anon'));assert(!sql.includes("'telefone'"));assert(!sql.includes("'obs'"));assert(!/\bas \$(?!\$)|\bend \$(?!\$);/.test(sql));
+});
 test('rota independente mantém os controles sem carregar o aplicativo Oradores',()=>{
   const html=fs.readFileSync('quadro/index.html','utf8');
   assert(!html.includes('http-equiv="refresh"'));assert(!html.includes('/oradores#quadro'));

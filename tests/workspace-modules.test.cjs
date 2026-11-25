@@ -35,6 +35,11 @@ test('Publicações tem acesso independente e só é liberado quando ativo e per
   await c.salvarModulos(v,['publicacoes']);assert.equal(c.podeEditar(v,'publicacoes'),true);assert.equal(c.podeVer(v,'designacoes'),false);
   const member=setup('editor');const m=await member.c.vinculo({id:'u'});m.modulosAtivos=['publicacoes'];assert.equal(member.c.podeVer(m,'publicacoes'),false);
 });
+
+test('Quadro de anúncios pode ser liberado sem editar Oradores ou Designações',async()=>{
+  const {c}=setup(),v=await c.vinculo({id:'u'});assert.equal(c.podeVer(v,'quadro'),false);await c.salvarModulos(v,['oradores','quadro']);
+  const consulta={...v,role:'editor',modulos:['quadro'],somenteLeitura:['quadro']};assert(c.podeVer(consulta,'quadro'));assert(!c.podeEditar(consulta,'quadro'));assert(!c.podeVer(consulta,'oradores'));assert(!c.podeEditar(consulta,'designacoes'));
+});
 test('primeiro acesso do proprietário aguarda escolha; membro não recebe diálogo',async()=>{
   const {c,dialogs,calls}=setup('owner',false);let ready=false;
   const pending=c.vinculo({id:'u'}).then(v=>{ready=true;return v;});
