@@ -78,7 +78,7 @@
     const ids=new Set(pedidos.map(p=>p.id)),body=tabela(['Importar','Enviado em','Publicação','Quantidade','Situação no Hub','Já chegou?'],$('hubItens'));let novos=0;
     hub.pedidos.forEach(p=>{const existe=ids.has(p.idHub),row=el('tr',existe?'pub-off':''),marcar=el('input'),chegou=el('input');marcar.type=chegou.type='checkbox';marcar.checked=!existe&&!p.cancelado;marcar.disabled=existe;chegou.disabled=existe;marcar.setAttribute('aria-label','Importar '+p.titulo);chegou.setAttribute('aria-label','Já chegou: '+p.titulo);if(!existe)novos++;
       const c1=cel(row,'');c1.className='pub-center';c1.appendChild(marcar);if(existe)c1.appendChild(el('small','','Já importado'));cel(row,dataBr(p.data));cel(row,p.titulo,p.codigoHub+' · '+p.idioma+(p.especial?' · Pedido especial':''));cel(row,String(p.quantidade));cel(row,p.situacaoHub,p.rotuloQuantidade&&p.rotuloQuantidade!==p.situacaoHub?'Coluna: '+p.rotuloQuantidade:'');const c6=cel(row,'');c6.className='pub-center';c6.appendChild(chegou);
-      marcar.onchange=chegou.onchange=()=>{$('hubConferido').checked=false;};linhaTabela(body,row);linhasHub.push({p,marcar,chegou});});
+      marcar.onchange=chegou.onchange=()=>{$('hubConferido').checked=false;};linhaTabela(body,row);linhasHub.push({p,marcar,chegou,feito:existe});});
     $('hubResumo').textContent=hub.pedidos.length+' pedido(s) lido(s) no PDF · '+novos+' novo(s) · '+(hub.pedidos.length-novos)+' já importado(s). Desmarque o que não quiser trazer e marque "Já chegou?" para pedidos que já foram recebidos.';
     $('hubAvisos').textContent=hub.avisos.join('\n');$('hubReview').hidden=false;$('confirmarHub').hidden=!novos;$('hubConferido').checked=false;return true;},{bloquear:true});}
   function pedidoDoHub({p,chegou}){const agora=new Date().toISOString(),q=p.quantidade,recebido=chegou.checked?q:0;
@@ -86,10 +86,10 @@
       itens:[{codigo:p.codigo,titulo:p.titulo,idioma:p.idioma,formato:'',quantidade:q,enviado:q,recebido,entregue:0}],
       eventos:[{tipo:'criado',autor:autor(),data:agora},{tipo:'enviado',quantidades:[q],autor:autor(),data:agora},...(recebido?[{tipo:'recebido',quantidades:[q],autor:autor(),data:agora}]:[])]});}
   async function confirmarHub(e){e.preventDefault();await FormUX.executar($('hubForm'),$('confirmarHub'),$('hubStatus'),async()=>{exigir();if(!hub||hubArquivo!==$('hubArquivo').files[0])throw new Error('Leia o arquivo selecionado antes de confirmar.');if(!$('hubConferido').checked)throw new Error('Confira os dados e marque a confirmação.');
-    const escolhidos=linhasHub.filter(l=>l.marcar.checked&&!l.marcar.disabled);if(!escolhidos.length)throw new Error('Selecione pelo menos um pedido para importar.');
+    const escolhidos=linhasHub.filter(l=>l.marcar.checked&&!l.feito);if(!escolhidos.length)throw new Error('Selecione pelo menos um pedido para importar.');
     const prontos=escolhidos.map(pedidoDoHub);let ok=0,ignorados=0;const falhas=[];
     for(const [n,pedido] of prontos.entries()){$('hubStatus').textContent='Importando '+(n+1)+' de '+prontos.length+'…';
-      try{const salvo=await store.pedido(pedido);pedidos=[salvo,...pedidos.filter(x=>x.id!==salvo.id)];ok++;escolhidos[n].marcar.checked=false;escolhidos[n].marcar.disabled=true;}
+      try{const salvo=await store.pedido(pedido);pedidos=[salvo,...pedidos.filter(x=>x.id!==salvo.id)];ok++;escolhidos[n].feito=true;escolhidos[n].marcar.checked=false;}
       catch(err){if(/outra pessoa/.test(err.message||''))ignorados++;else falhas.push(pedido.itens[0].titulo+' ('+dataBr(pedido.data)+')');}}
     pedidos.sort((a,b)=>b.data.localeCompare(a.data)||String(b.atualizadoEm||'').localeCompare(String(a.atualizadoEm||'')));renderPedidos();renderEstoque();
     if(falhas.length)throw new Error(ok+' importado(s), mas '+falhas.length+' falharam: '+falhas.join('; ')+'. Tente confirmar novamente; os já importados serão ignorados.');
