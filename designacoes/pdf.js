@@ -162,6 +162,57 @@
     return pdf;
   }
 
-  raiz.PdfDesignacoes={carregarJsPDF,criarPdfDesignacoes,criarPdfTabelas};
+  // Programação da reunião do meio de semana (Vida e Ministério), no modelo usado pelas congregações.
+  // semanas: [{data,leitura,presidente,semReuniao,motivo,linhas:[{secao,titulo}|{hora,texto,min,nomes,rotulos}]}]
+  function criarPdfVmc(JsPDF,semanas,{congregacao=''}={}){
+    const pdf=new JsPDF({unit:'mm',format:'a4'});
+    const CORES={tesouros:'#575a5d',ministerio:'#be8900',vida:'#7e0024'},CINZA='#6b7280',TEXTO='#1f2328';
+    const ML=18,MR=192,XT=27,XR=128,XN=130,ALTURA=5.2;
+    const txt=(t,x,y,size,bold=false,cor=TEXTO,op={})=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);pdf.setTextColor(cor);pdf.text(String(t),x,y,op);};
+    const largura=(t,size,bold=false)=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);return pdf.getTextWidth(String(t));};
+    // Texto que cabe no espaço: diminui a fonte até 7.5 e depois corta com reticências.
+    function caber(t,max,size){let s=size;while(s>7.5&&largura(t,s)>max)s-=.5;let r=String(t);while(r.length>3&&largura(r,s)>max)r=r.slice(0,-2).trimEnd()+'…';return {t:r,s};}
+    let y=0;
+    function pagina(){
+      if(y)pdf.addPage();
+      txt('Programação da reunião do meio de semana',105,24,17,true,TEXTO,{align:'center'});
+      txt(String(congregacao).toLocaleUpperCase('pt-BR'),ML,33,8.5,true);
+      pdf.setDrawColor('#6b7280');pdf.setLineWidth(.6);pdf.line(ML,35.2,MR,35.2);pdf.setLineWidth(.25);pdf.line(ML,36.4,MR,36.4);
+      y=45;
+    }
+    const alturaSemana=s=>s.semReuniao?22:16+s.linhas.length*ALTURA;
+    pagina();
+    semanas.forEach(s=>{
+      if(y+alturaSemana(s)>287)pagina();
+      const titulo=s.data.split('-').reverse().join('/')+(s.leitura?' | '+s.leitura.toLocaleUpperCase('pt-BR'):'');
+      txt(caber(titulo,XR-ML-22,10).t,ML,y,10,true);
+      if(!s.semReuniao){txt('Presidente:',XR,y,6.5,true,CINZA,{align:'right'});txt(caber((s.presidente||'').toLocaleUpperCase('pt-BR'),MR-XN,10).t,XN,y,10);}
+      y+=9;
+      if(s.semReuniao){txt('Não haverá reunião'+(s.motivo?': '+s.motivo:'.'),ML,y,10,false,CINZA);y+=16;return;}
+      s.linhas.forEach(l=>{
+        if(l.secao){
+          pdf.setFillColor(CORES[l.secao]||CINZA);pdf.rect(ML,y-3.7,120-ML,4.8,'F');
+          txt(l.titulo,ML+1,y,7.5,true,'#ffffff');
+          if(l.secao!=='vida')txt('Salão principal',XN,y,6,true,CINZA);
+          y+=ALTURA;return;
+        }
+        if(l.hora)txt(l.hora,ML,y,6.5,true,CINZA);
+        const rotulo=(l.rotulos||[]).filter(Boolean).join('/');
+        const fimTexto=(rotulo?XR-largura(rotulo+':',6.5,true)-3:XN-3)-(XT+2.5);
+        const sufixo=l.min?' ('+l.min+'min)':'';
+        const c=caber(l.texto,fimTexto-largura(sufixo,8),10);
+        txt('•',XT-.5,y,10);txt(c.t,XT+2.5,y,c.s);
+        if(sufixo)txt(sufixo,XT+2.5+largura(c.t,c.s),y,8);
+        if(rotulo)txt(rotulo+':',XR,y,6.5,true,CINZA,{align:'right'});
+        const nomes=(l.nomes||[]).filter(Boolean).join('/');
+        if(nomes){const n=caber(nomes.toLocaleUpperCase('pt-BR'),MR-XN+4,9.5);txt(n.t,XN,y,n.s);}
+        y+=ALTURA;
+      });
+      y+=9;
+    });
+    return pdf;
+  }
+
+  raiz.PdfDesignacoes={carregarJsPDF,criarPdfDesignacoes,criarPdfTabelas,criarPdfVmc};
   if(typeof module!=='undefined')module.exports=raiz.PdfDesignacoes;
 })(typeof window!=='undefined'?window:globalThis);

@@ -44,7 +44,7 @@ async function carregar(){
     for(const p of antigas){try{await Congregacao.salvar(sb,vinc.workspaceId,user.id,'cong_pessoas',p.id,{nome:p.nome,grupo:p.grupo||'',telefone:'',obs:p.obs||'',ativo:p.ativo!==false});central.push({id:p.id,nome:p.nome,grupo:p.grupo||'',telefone:'',obs:p.obs||'',ativo:p.ativo!==false});}catch(e){}}
   }
   const lista_=[...central,...antigas.filter(a=>!central.some(c=>c.id===a.id))];
-  pessoas=lista_.map(p=>({id:p.id,nome:p.nome,grupo:p.grupo||'',telefone:p.telefone||'',obs:p.obs||'',ativo:p.ativo!==false,funcoes:funcoesPorId.get(p.id)||{}}))
+  pessoas=lista_.map(p=>({id:p.id,nome:p.nome,grupo:p.grupo||'',sexo:p.sexo||'',telefone:p.telefone||'',obs:p.obs||'',ativo:p.ativo!==false,funcoes:funcoesPorId.get(p.id)||{}}))
     .sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
   reunioes=rs.filter(r=>r.data);
   campo=cp.filter(c=>c.data&&c.saidaId);
@@ -75,13 +75,14 @@ const reuniaoSalva=data=>reunioes.find(r=>r.data===data);
 
 // ── Navegação ──
 function irAba(){
-  const aba=['#pessoas','#config','#historico','#campo'].includes(location.hash)?location.hash.slice(1):'programacao';
+  const aba=['#pessoas','#config','#historico','#campo','#vmc'].includes(location.hash)?location.hash.slice(1):'programacao';
   // O que cada pessoa pode fazer agora fica em Configurações → Funções.
   if(aba==='config'||aba==='pessoas'){location.href='/#configuracoes';return;}
   document.querySelectorAll('.secao').forEach(s=>s.hidden=s.id!=='sec-'+aba);
   document.querySelectorAll('[data-aba]').forEach(a=>a.classList.toggle('active',a.dataset.aba===aba));
   if(aba==='programacao')renderProgramacao();
   if(aba==='campo')renderCampo();
+  if(aba==='vmc')abrirAbaVmc();
   if(aba==='config')renderConfig();
   if(aba==='historico')renderHistorico();
 }
@@ -608,6 +609,7 @@ function descreverAlteracao(a){
     if(a.action==='DELETE')return{titulo:'Tirou '+nome+' das Designações',detalhes:[]};
     const x=antes.funcoes||{},y=depois.funcoes||{};
     const det=[...Object.keys(R.FUNCOES),CAMPO].filter(f=>!!x[f]!==!!y[f]).map(f=>(y[f]?'Liberou ':'Tirou ')+infoFuncao(f).nome);
+    if(typeof Vmc!=='undefined'){Object.keys(Vmc.FUNCOES_VMC).filter(f=>!!x[f]!==!!y[f]).forEach(f=>det.push((y[f]?'Liberou ':'Tirou ')+Vmc.FUNCOES_VMC[f].nome));if((x.estudante!==false)!==(y.estudante!==false))det.push(y.estudante===false?'Tirou das partes de estudante':'Voltou às partes de estudante');}
     return det.length?{titulo:'Funções de '+nome,detalhes:det}:null;
   }
   if(a.collection==='cong_pessoas'){
@@ -625,6 +627,7 @@ function descreverAlteracao(a){
     if(!det.length)return null;
     return{titulo:'Alterou a '+titulo+(depois.recorrente?' (recorrente no mês)':''),detalhes:det};
   }
+  if(a.collection==='desig_vmc'&&typeof descreverAlteracaoVmc==='function')return descreverAlteracaoVmc(a);
   if(a.collection==='desig_config')return{titulo:'Alterou as configurações das Designações',detalhes:[]};
   return null;
 }
@@ -633,7 +636,7 @@ async function renderHistorico(){
   try{
     const[{data,error},membros]=await Promise.all([
       sb.from('app_record_audit').select('record_id,collection,action,old_data,new_data,changed_by,changed_at').eq('workspace_id',vinc.workspaceId)
-        .in('collection',['desig_reunioes','desig_pessoas','desig_config','cong_pessoas','desig_campo']).order('changed_at',{ascending:false}).limit(80),
+        .in('collection',['desig_reunioes','desig_pessoas','desig_config','cong_pessoas','desig_campo','desig_vmc']).order('changed_at',{ascending:false}).limit(80),
       sb.rpc('list_workspace_access',{target_workspace:vinc.workspaceId})
     ]);
     if(error)throw error;

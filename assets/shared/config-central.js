@@ -107,40 +107,49 @@
     const pessoas=[...central,...desig.filter(p=>p.nome&&!central.some(c=>c.id===p.id||C.normalizar(c.nome)===C.normalizar(p.nome)))]
       .filter(p=>p.nome&&p.ativo!==false).sort((a,b)=>(ordemGrupo[a.grupo]??3)-(ordemGrupo[b.grupo]??3)||a.nome.localeCompare(b.nome,'pt-BR'));
     const q=Regras.quantidades(d);
-    const colunas=[...Object.keys(Regras.FUNCOES).filter(f=>(q.meio[f]||0)+(q.fim[f]||0)>0).map(f=>[f,Regras.FUNCOES[f]]),[Regras.FUNCAO_CAMPO.chave,Regras.FUNCAO_CAMPO]];
-    const linhas=[];
-    const f=formulario(pai,'Funções das pessoas',pode,async()=>{
-      const mudaram=linhas.filter(l=>l.caixas.some(([k,cb])=>cb.checked!==!!l.funcoes[k]));
-      for(const l of mudaram){
-        const funcoes={...l.funcoes};l.caixas.forEach(([k,cb])=>{if(cb.checked)funcoes[k]=true;else delete funcoes[k];});
-        await C.salvar(sb,ws,user.id,'desig_pessoas',l.id,{...(porId.get(l.id)||{}),funcoes});
-        l.funcoes=funcoes;porId.set(l.id,{...(porId.get(l.id)||{}),id:l.id,nome:l.nome,funcoes});
-      }
-      if(mudaram.length)aoSalvar?.(central,[...porId.values()]);
-    });
-    f.body.appendChild(el('p','hint','Selecione as funções que cada pessoa pode realizar. Pessoas inativas não aparecem nesta lista. Salve as alterações ao terminar.'));
-    if(!pessoas.length){f.body.appendChild(el('p','hint','Nenhuma pessoa cadastrada ainda. Cadastre em Início → Pessoas.'));f.button.hidden=true;return;}
-    const busca=el('input','pf-busca');busca.type='search';busca.placeholder='Buscar nome…';busca.setAttribute('aria-label','Buscar pessoa');
-    // A busca não conta como alteração do formulário.
-    ['input','change'].forEach(ev=>busca.addEventListener(ev,e=>e.stopPropagation()));
-    f.body.appendChild(busca);
-    const tabela=el('table','pf-tabela'),thead=el('thead'),trh=el('tr'),tbody=el('tbody');
-    trh.appendChild(el('th','pf-nome','Nome'));
-    colunas.forEach(([,info])=>{const th=el('th','',info.curto||info.nome);th.title=info.nome;th.scope='col';trh.appendChild(th);});
-    thead.appendChild(trh);tabela.append(thead,tbody);
-    pessoas.forEach(p=>{
-      const tr=el('tr'),th=el('th','pf-nome');th.scope='row';
-      th.appendChild(el('strong','',p.nome));th.appendChild(el('small','',C.GRUPOS?.[p.grupo||'']||''));tr.appendChild(th);
-      const funcoes={...(porId.get(p.id)?.funcoes||{})},caixas=[];
-      colunas.forEach(([k,info])=>{
-        const td=el('td'),label=el('label','pf-escolha'),cb=el('input'),texto=el('span','pf-funcao',info.curto||info.nome);
-        cb.type='checkbox';cb.disabled=!pode;cb.checked=!!funcoes[k];cb.setAttribute('aria-label',p.nome+' — '+info.nome);
-        label.append(cb,texto);td.appendChild(label);tr.appendChild(td);caixas.push([k,cb]);
+    const gerais=[...Object.keys(Regras.FUNCOES).filter(f=>(q.meio[f]||0)+(q.fim[f]||0)>0).map(f=>[f,Regras.FUNCOES[f]]),[Regras.FUNCAO_CAMPO.chave,Regras.FUNCAO_CAMPO]];
+    montarTabela('Funções das pessoas','Selecione as funções que cada pessoa pode realizar. Pessoas inativas não aparecem nesta lista. Salve as alterações ao terminar.',gerais);
+    const V=root.Vmc;
+    if(V)montarTabela('Funções — Vida e Ministério','Quem pode fazer cada parte da reunião do meio de semana. "Estudante" vem marcado para todos: desmarque quem não participa das partes de estudante (Iniciando conversas, Cultivando o interesse, Fazendo discípulos, Explicando suas crenças).',[[V.ESTUDANTE.chave,V.ESTUDANTE,true],...Object.entries(V.FUNCOES_VMC)]);
+    // "inverso": marcada por padrão; desmarcar grava funcoes[k]=false.
+    function montarTabela(titulo,dica,colunas){
+      const valor=(funcoes,k,inverso)=>inverso?funcoes[k]!==false:!!funcoes[k];
+      const linhas=[];
+      const f=formulario(pai,titulo,pode,async()=>{
+        const mudaram=linhas.filter(l=>l.caixas.some(([k,cb,inv])=>cb.checked!==valor(porId.get(l.id)?.funcoes||{},k,inv)));
+        for(const l of mudaram){
+          // Parte das funções mais recentes: a outra tabela pode ter salvo antes.
+          const funcoes={...(porId.get(l.id)?.funcoes||{})};
+          l.caixas.forEach(([k,cb,inv])=>{if(inv){if(cb.checked)delete funcoes[k];else funcoes[k]=false;}else if(cb.checked)funcoes[k]=true;else delete funcoes[k];});
+          await C.salvar(sb,ws,user.id,'desig_pessoas',l.id,{...(porId.get(l.id)||{}),funcoes});
+          porId.set(l.id,{...(porId.get(l.id)||{}),id:l.id,nome:l.nome,funcoes});
+        }
+        if(mudaram.length)aoSalvar?.(central,[...porId.values()]);
       });
-      tbody.appendChild(tr);linhas.push({id:p.id,nome:p.nome,funcoes,caixas,tr});
-    });
-    busca.oninput=()=>{const t=C.normalizar(busca.value);linhas.forEach(l=>l.tr.hidden=!!t&&!C.normalizar(l.nome).includes(t));};
-    const wrap=el('div','table-scroll pf-wrap');wrap.appendChild(tabela);f.body.appendChild(wrap);
+      f.body.appendChild(el('p','hint',dica));
+      if(!pessoas.length){f.body.appendChild(el('p','hint','Nenhuma pessoa cadastrada ainda. Cadastre em Início → Pessoas.'));f.button.hidden=true;return;}
+      const busca=el('input','pf-busca');busca.type='search';busca.placeholder='Buscar nome…';busca.setAttribute('aria-label','Buscar pessoa');
+      // A busca não conta como alteração do formulário.
+      ['input','change'].forEach(ev=>busca.addEventListener(ev,e=>e.stopPropagation()));
+      f.body.appendChild(busca);
+      const tabela=el('table','pf-tabela'),thead=el('thead'),trh=el('tr'),tbody=el('tbody');
+      trh.appendChild(el('th','pf-nome','Nome'));
+      colunas.forEach(([,info])=>{const th=el('th','',info.curto||info.nome);th.title=info.nome;th.scope='col';trh.appendChild(th);});
+      thead.appendChild(trh);tabela.append(thead,tbody);
+      pessoas.forEach(p=>{
+        const tr=el('tr'),th=el('th','pf-nome');th.scope='row';
+        th.appendChild(el('strong','',p.nome));th.appendChild(el('small','',C.GRUPOS?.[p.grupo||'']||''));tr.appendChild(th);
+        const funcoes=porId.get(p.id)?.funcoes||{},caixas=[];
+        colunas.forEach(([k,info,inv])=>{
+          const td=el('td'),label=el('label','pf-escolha'),cb=el('input'),texto=el('span','pf-funcao',info.curto||info.nome);
+          cb.type='checkbox';cb.disabled=!pode;cb.checked=valor(funcoes,k,inv);cb.setAttribute('aria-label',p.nome+' — '+info.nome);
+          label.append(cb,texto);td.appendChild(label);tr.appendChild(td);caixas.push([k,cb,!!inv]);
+        });
+        tbody.appendChild(tr);linhas.push({id:p.id,nome:p.nome,caixas,tr});
+      });
+      busca.oninput=()=>{const t=C.normalizar(busca.value);linhas.forEach(l=>l.tr.hidden=!!t&&!C.normalizar(l.nome).includes(t));};
+      const wrap=el('div','table-scroll pf-wrap');wrap.appendChild(tabela);f.body.appendChild(wrap);
+    }
   }
   async function gruposDeCampo(pai,d,pode,store,sb,vinc){
     const pessoas=await Congregacao.listar(sb,vinc.workspaceId,'cong_pessoas');

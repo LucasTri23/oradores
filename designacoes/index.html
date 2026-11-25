@@ -104,9 +104,31 @@ button.campo-linha:hover{background:var(--pur-dim2)}
 .hist ul{margin:4px 0 0 16px;padding:0;font-size:12px;color:var(--whi2)}
 .evento-nota{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--whi2);background:var(--pur-dim);border-radius:8px;padding:7px 10px;margin-top:10px}
 .evento-nota svg{width:14px;height:14px;color:var(--pur)}
+.vmc-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.vmc-card{background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.vmc-card.passada{opacity:.7}
+.vmc-topo{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;background:none;border:0;border-bottom:1px solid var(--border);color:inherit;text-align:left;font:inherit;cursor:pointer}
+div.vmc-topo{cursor:default}
+.vmc-topo .dia{display:grid;place-items:center;min-width:44px;padding:4px;border-radius:8px;background:var(--pur-dim);color:var(--pur)}
+.vmc-topo .dia b{font:700 18px 'Space Grotesk',sans-serif;line-height:1}.vmc-topo .dia small{font-size:10px;text-transform:uppercase}
+.vmc-topo .tx{flex:1;min-width:0}.vmc-topo .tx strong{display:block;font-size:14px}.vmc-topo .tx span{font-size:12px;color:var(--whi3)}
+.vmc-status{font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;background:var(--surf2);color:var(--whi2)}.vmc-status.ok{color:var(--green)}
+.vmc-resumo{padding:8px 14px 12px}
+.vmc-l{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:12.5px;border-bottom:1px dashed var(--border)}
+.vmc-l:last-child{border-bottom:0}.vmc-l span{color:var(--whi2);min-width:0}.vmc-l b{font-weight:600;text-align:right;display:flex;gap:4px;align-items:center}
+.vmc-l b.alerta{color:var(--amber)}.vmc-l b svg{width:13px;height:13px}
+.vmc-hora{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}.vmc-hora input{min-height:38px;border:1px solid var(--border2);border-radius:8px;background:var(--surf);color:var(--whi);padding:0 8px;font:inherit}
+.vmc-secao{margin:16px 0 6px;padding:5px 9px;border-radius:5px;color:#fff;font:700 11px Inter,sans-serif;letter-spacing:.03em}
+.vmc-secao.tesouros{background:#575a5d}.vmc-secao.ministerio{background:#be8900}.vmc-secao.vida{background:#7e0024}
+.vmc-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid var(--border)}
+.vmc-ed-tx{font-size:13px;font-weight:600}.vmc-ed-tx small{display:block;font-weight:400;color:var(--whi3);margin-top:3px}
+.vmc-ed-sel{display:grid;gap:6px}.vmc-vaga{display:flex;flex-direction:column;gap:3px;font:600 10px Inter,sans-serif;color:var(--whi3);text-transform:uppercase;letter-spacing:.04em}
+.vmc-vaga select{text-transform:none;letter-spacing:0}.vmc-vaga .hint,.vmc-vaga .aviso{text-transform:none;letter-spacing:0;font-weight:400}
 @media(max-width:899px){
   .reunioes{grid-template-columns:1fr}
+  .vmc-lista{grid-template-columns:1fr}
 }
+@media(max-width:600px){.vmc-ed{grid-template-columns:1fr}}
 </style>
 </head>
 <body class="dz-shell">
@@ -122,6 +144,7 @@ button.campo-linha:hover{background:var(--pur-dim2)}
 <nav class="dz-nav">
   <a class="dz-brand" href="/"><img src="/assets/images/designa-icon-v1.png" alt=""><span><span class="nomeApp">Designa</span><small class="nomeCong"></small></span></a>
   <a class="dz-tab active" data-aba="programacao" href="#programacao"><i data-lucide="calendar-days"></i><span>Programação</span></a>
+  <a class="dz-tab" data-aba="vmc" href="#vmc"><i data-lucide="book-open-text"></i><span>Vida e Ministério</span></a>
   <a class="dz-tab" data-aba="campo" href="#campo"><i data-lucide="map-pinned"></i><span>Campo</span></a>
   <a class="dz-tab" data-aba="historico" href="#historico"><i data-lucide="history"></i><span>Histórico</span></a>
 </nav>
@@ -146,6 +169,25 @@ button.campo-linha:hover{background:var(--pur-dim2)}
     </div>
     <div class="legenda"><span><i data-lucide="triangle-alert"></i> aviso: a pessoa já está em outra função nesta mesma reunião, faz discurso no dia ou fez esta mesma função na reunião anterior</span></div>
     <div class="reunioes" id="listaReunioes"></div>
+  </section>
+
+  <!-- VIDA E MINISTÉRIO -->
+  <section class="secao" id="sec-vmc" hidden>
+    <div class="barra">
+      <div class="mes-nav">
+        <button class="dz-icon-btn" onclick="mudarMesVmc(-1)" title="Mês anterior" aria-label="Mês anterior"><i data-lucide="chevron-left"></i></button>
+        <strong id="vmcMesTitulo"></strong>
+        <button class="dz-icon-btn" onclick="mudarMesVmc(1)" title="Próximo mês" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button>
+        <button class="dz-btn" onclick="irHojeVmc()">Hoje</button>
+      </div>
+      <div class="esp"></div>
+      <label class="vmc-hora">Início <input type="time" id="vmcHora" onchange="salvarHoraVmc()" aria-label="Horário de início da reunião do meio de semana"></label>
+      <button class="dz-btn so-edicao" id="vmcBuscar" onclick="buscarApostila()"><i data-lucide="cloud-download"></i> Buscar apostila</button>
+      <button class="dz-btn so-edicao" onclick="sugerirVmcMes()"><i data-lucide="wand-sparkles"></i> Sugerir vagas vazias</button>
+      <button class="dz-btn pri" onclick="abrirPdfVmc()"><i data-lucide="file-down"></i> PDF da programação</button>
+    </div>
+    <p class="sub-sec">As partes vêm da apostila Nossa Vida e Ministério Cristão publicada no jw.org. Quem pode fazer cada parte é marcado em Configurações → Funções → Vida e Ministério. O horário de início é usado para calcular os horários do PDF.</p>
+    <div id="vmcLista" class="vmc-lista"></div>
   </section>
 
   <!-- SAÍDAS DE CAMPO -->
@@ -213,6 +255,37 @@ button.campo-linha:hover{background:var(--pur-dim2)}
       <button class="dz-btn" onclick="fecharJanela('janReuniao')">Cancelar</button>
       <button class="dz-btn pri" id="rSalvar" onclick="salvarReuniao()">Salvar</button>
     </div>
+  </div>
+</div>
+
+<!-- Janela: designações de uma semana (Vida e Ministério) -->
+<div class="fundo" id="janVmc" hidden onclick="if(event.target===this)fecharJanela('janVmc')">
+  <div class="janela">
+    <h2 id="vTitulo"></h2>
+    <p class="sub" id="vSub"></p>
+    <label class="check"><input type="checkbox" id="vSem" onchange="alternarSemVmc()"> Não haverá reunião (assembleia, congresso…)</label>
+    <div id="vMotivoBox" hidden><label class="campo" for="vMotivo">Motivo</label><input type="text" id="vMotivo" maxlength="80" placeholder="Ex.: Assembleia de circuito"></div>
+    <p class="evento-nota" id="vEvento" hidden></p>
+    <div id="vPartes"></div>
+    <div class="acoes">
+      <button class="dz-btn" onclick="sugerirSemanaVmc()"><i data-lucide="wand-sparkles"></i> Sugerir vagas</button>
+      <button class="dz-btn" onclick="limparSemanaVmc()">Limpar</button>
+      <div class="esp"></div>
+      <button class="dz-btn" onclick="fecharJanela('janVmc')">Cancelar</button>
+      <button class="dz-btn pri" id="vSalvar" onclick="salvarSemanaVmc()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Janela: PDF da programação do meio de semana -->
+<div class="fundo" id="janPdfVmc" hidden onclick="if(event.target===this)fecharJanela('janPdfVmc')">
+  <div class="janela" style="max-width:420px">
+    <h2>Programação do meio de semana</h2>
+    <p class="sub">PDF em A4 com duas semanas por página, no modelo do quadro de anúncios.</p>
+    <label class="campo" for="vmcPdfMes">Mês inicial</label><input type="month" id="vmcPdfMes" class="sel" style="width:100%">
+    <label class="campo" for="vmcPdfQtd">Período</label>
+    <select id="vmcPdfQtd"><option value="1">1 mês</option><option value="2">2 meses</option></select>
+    <div class="acoes"><div class="esp"></div><button class="dz-btn" onclick="fecharJanela('janPdfVmc')">Cancelar</button><button class="dz-btn" id="vmcPdfShare" onclick="baixarPdfVmc(true)"><i data-lucide="share-2"></i> Enviar pelo WhatsApp</button><button class="dz-btn pri" id="vmcPdfBtn" onclick="baixarPdfVmc()"><i data-lucide="file-down"></i> Baixar PDF</button></div>
   </div>
 </div>
 
@@ -285,11 +358,13 @@ button.campo-linha:hover{background:var(--pur-dim2)}
 <script src="/assets/shared/conta.js?v=20261125-q1"></script>
 <script src="/assets/shared/congregacao.js?v=20261125-3"></script>
 <script src="/designacoes/regras.js?v=20261125-5"></script>
+<script src="/designacoes/vmc.js?v=20261125-v1"></script>
 <script src="/assets/shared/pdf-paleta.js?v=20261110-7"></script>
-<script src="/designacoes/pdf.js?v=20261110-7"></script>
+<script src="/designacoes/pdf.js?v=20261125-v1"></script>
 <script src="/assets/shared/quadro-dados.js?v=20261124-1"></script>
 <script src="/designacoes/campo-quadro.js?v=20261125-4"></script>
-<script src="/designacoes/app.js?v=20261125-4"></script>
+<script src="/designacoes/app.js?v=20261125-v1"></script>
+<script src="/designacoes/vmc-app.js?v=20261125-v1"></script>
 <script src="/assets/shared/module-flow.js?v=20261110-7"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script>
 <script src="/assets/shared/ajuda.js?v=20261124-5" data-modulo="designacoes"></script>

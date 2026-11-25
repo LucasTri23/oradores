@@ -52,8 +52,8 @@ function abrirPessoaCong(id){
   pessoaCongEditando=id?pessoasCong.find(p=>p.id===id):null;
   const p=pessoaCongEditando||{nome:'',grupo:'publicador',telefone:'',obs:'',ativo:true};
   $('pcTitulo').textContent=pessoaCongEditando?p.nome:'Nova pessoa';
-  $('pcNome').value=p.nome||'';$('pcGrupo').value=p.grupo||'';$('pcTel').value=p.telefone||'';$('pcObs').value=p.obs||'';$('pcAtivo').checked=p.ativo!==false;
-  ['pcNome','pcGrupo','pcTel','pcObs','pcAtivo'].forEach(i=>$(i).disabled=!podeCong());
+  $('pcNome').value=p.nome||'';$('pcGrupo').value=p.grupo||'';$('pcSexo').value=p.sexo||'';$('pcTel').value=p.telefone||'';$('pcObs').value=p.obs||'';$('pcAtivo').checked=p.ativo!==false;
+  ['pcNome','pcGrupo','pcSexo','pcTel','pcObs','pcAtivo'].forEach(i=>$(i).disabled=!podeCong());
   $('pcExcluir').hidden=!pessoaCongEditando;
   $('janPessoaC').hidden=false;
 }
@@ -61,7 +61,7 @@ async function salvarPessoaCong(){
   const nome=$('pcNome').value.trim();if(nome.length<2)return toast('Informe o nome.');
   if(pessoasCong.some(p=>C.normalizar(p.nome)===C.normalizar(nome)&&p.id!==pessoaCongEditando?.id))return toast('Já existe uma pessoa com esse nome.');
   const id=pessoaCongEditando?.id||C.novoId();
-  const dados={nome,grupo:$('pcGrupo').value,telefone:$('pcTel').value.trim(),obs:$('pcObs').value.trim(),ativo:$('pcAtivo').checked};
+  const dados={nome,grupo:$('pcGrupo').value,sexo:$('pcSexo').value,telefone:$('pcTel').value.trim(),obs:$('pcObs').value.trim(),ativo:$('pcAtivo').checked};
   try{
     await C.salvar(await sbCong(),vinc.workspaceId,user.id,'cong_pessoas',id,dados);
     pessoasCong=[...pessoasCong.filter(p=>p.id!==id),{...dados,id}].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
