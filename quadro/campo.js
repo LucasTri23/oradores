@@ -5,8 +5,8 @@
     const grupos=new Map();
     regras.campoDoMes(data.getFullYear(),data.getMonth()+1,cfg,salvas).forEach(c=>{
       // Apenas recorrências explícitas são unidas. Exceções e saídas distintas permanecem visíveis.
-      const chave=c.recorrente?JSON.stringify([c.saidaId,new Date(c.data+'T12:00:00').getDay(),c.hora,c.localId,c.dirigente,c.grupo||'',!!c.semSaida]):c.id;
-      if(!grupos.has(chave))grupos.set(chave,{...c,grupo:c.grupo||gruposLocais.get(c.localId)||'',datas:[],local:locais.get(c.localId)||'Local não informado',nome:c.semSaida?'Não haverá saída':nomes.get(c.dirigente)||(c.dirigente?'Pessoa removida':'A definir')});
+      const chave=c.recorrente?JSON.stringify([c.saidaId,new Date(c.data+'T12:00:00').getDay(),c.hora,c.localId,c.dirigente,c.grupoId||c.grupo||'',!!c.semSaida]):c.id;
+      if(!grupos.has(chave))grupos.set(chave,{...c,grupo:c.grupoNome||c.grupo||gruposLocais.get(c.localId)||'',datas:[],local:locais.get(c.localId)||'Local não informado',nome:c.semSaida?'Não haverá saída':nomes.get(c.dirigente)||(c.dirigente?'Pessoa removida':'A definir')});
       grupos.get(chave).datas.push(c.data);
     });
     const linhas=[...grupos.values()].sort((a,b)=>a.data.localeCompare(b.data)||String(a.hora).localeCompare(String(b.hora)));
@@ -37,9 +37,9 @@
       const secoes=[{titulo:'SEGUNDA A SEXTA',tipo:'semana',linhas:[]},{titulo:'SÁBADO',tipo:'sabado',linhas:[]},{titulo:'DOMINGO',tipo:'domingo',linhas:[]}];
       m.linhas.forEach(c=>{const dia=new Date(c.data+'T12:00:00').getDay();secoes[dia===6?1:dia===0?2:0].linhas.push(c);});
       const usadas=secoes.filter(s=>s.linhas.length);
-      if(!secoes[0].linhas.some(c=>new Date(c.data+'T12:00:00').getDay()===5))secoes[0].titulo='SEGUNDA A QUINTA';
+      secoes[0].linhas.sort((a,b)=>new Date(a.data+'T12:00:00').getDay()-new Date(b.data+'T12:00:00').getDay()||String(a.hora).localeCompare(String(b.hora))||a.data.localeCompare(b.data));
       const medidas=size=>usadas.map(s=>{
-        const grupos=s.tipo==='domingo'&&s.linhas.some(c=>c.grupo);
+        const grupos=s.tipo!=='semana'&&s.linhas.some(c=>c.grupo);
         const larguras=grupos?[42,23,57,56]:[42,23,56,57];
         const headers=grupos?['GRUPO / DIA','HORÁRIO','DIRIGENTE','LOCAL']:['DIA','HORÁRIO','LOCAL','DIRIGENTE'];
         const rows=s.linhas.map(c=>{

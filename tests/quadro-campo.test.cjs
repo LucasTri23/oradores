@@ -5,6 +5,24 @@ const {jsPDF}=require('../assets/js/vendor/jspdf.umd.min.js');
 const cfg={campo:{locais:[{id:'l',nome:'Salão do Reino'},{id:'c',nome:'Casa da família Silva'}],saidas:[{id:'s',dia:6,hora:'09:00',localId:'l'}]}};
 const pessoas=[{id:'a',nome:'Carlos Teste'},{id:'b',nome:'Bruno Exceção'}];
 const salvas=R.recorrenciaCampo({saida:R.saidasCampo(cfg)[0],ano:2026,mes:12,dirigente:'a',aPartirDe:'2026-12-01',hoje:'2026-11-24'});
+
+test('PDF ordena segunda a sexta por dia e horário, com sábado e domingo em seções próprias',()=>{
+  const linhas=[['2026-12-04','SEX'],['2026-12-01','TER'],['2026-12-03','QUI'],['2026-12-07','SEG'],['2026-12-02','QUA'],['2026-12-05','SAB'],['2026-12-06','DOM']].map(([data,nome])=>({data,datas:[data],hora:'09:00',nome:'Pessoa'+nome,local:'Local'}));
+  for(const modelo of ['cartoes','editorial','compacto','word','ilustrado']){
+    const raw=Campo.criarPdf(jsPDF,[{data:new Date(2026,11,1),linhas}],'Central',modelo,{}).output();
+    const pos=['SEG','TER','QUA','QUI','SEX','SAB','DOM'].map(d=>raw.indexOf('Pessoa'+d));
+    assert(pos.every((p,i)=>p>=0&&(i===0||p>pos[i-1])));
+    assert(raw.includes('SEGUNDA A SEXTA'));assert(!raw.includes('SEGUNDA A QUINTA'));
+    const semSexta=Campo.criarPdf(jsPDF,[{data:new Date(2026,11,1),linhas:linhas.filter(c=>c.nome!=='PessoaSEX')}],'Central',modelo,{}).output();
+    assert(semSexta.includes('SEGUNDA A SEXTA'));
+  }
+});
+
+test('grupo e superintendente aparecem no PDF de campo',()=>{
+  const mes=Campo.montarMes(new Date(2026,11,1),R,cfg,salvas.map(c=>({...c,grupoId:'g',grupoNome:'Esperanca'})),pessoas);
+  assert.equal(mes.linhas[0].grupo,'Esperanca');
+  const raw=Campo.criarPdf(jsPDF,[mes],'Central','compacto',{}).output();assert(raw.includes('Esperanca'));assert(raw.includes('Carlos Teste'));
+});
 test('datas numéricas somente no sábado em todos os modelos',()=>{
   const linhas=['2026-12-07','2026-12-05','2026-12-06'].map(data=>({data,datas:[data],hora:'09:00',local:'Local',nome:'Dirigente'}));
   for(const modelo of ['cartoes','editorial','compacto','word','ilustrado']){

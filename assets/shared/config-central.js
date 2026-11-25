@@ -80,7 +80,13 @@
         await saidasCampo(paineis.campo,d,editar('designacoes'),store);
       }else{botoes.funcoes.hidden=true;botoes.campo.hidden=true;}
       if(ver('territorios')){
-        listaEditavel(paineis.preferencias,'Dirigentes — Territórios',extras[0].lista||[],[['nome','Nome'],['num','WhatsApp com país e DDD']],editar('territorios'),lista=>store.salvar('terr_tj_config','contatos',{lista,updatedAt:new Date().toISOString()}));
+        const contatos=extras[0].lista||[],importados=pessoasDirigentes?Congregacao.contatosDirigentes(...pessoasDirigentes,contatos):contatos;
+        const dirigentes=listaEditavel(paineis.preferencias,'Dirigentes — Territórios',importados,[['nome','Nome'],['num','WhatsApp com país e DDD']],editar('territorios'),lista=>store.salvar('terr_tj_config','contatos',{lista,updatedAt:new Date().toISOString()}));
+        if(pessoasDirigentes){
+          dirigentes.form.querySelector('.settings-list-description').textContent='Pessoas marcadas como Dirigente em Funções aparecem automaticamente aqui. Confira os telefones e salve para usar em Territórios. Contatos manuais são mantidos.';
+          if(JSON.stringify(importados)!==JSON.stringify(contatos)&&editar('territorios'))dirigentes.marcar();
+        }
+        atualizarDirigentes=(central,desig)=>dirigentes.substituir(Congregacao.contatosDirigentes(central,desig,dirigentes.valores()));
         listaEditavel(paineis.preferencias,'Mensagens — Territórios',extras[1].lista||[],[['label','Título'],['texto','Mensagem','textarea']],editar('territorios'),lista=>store.salvar('terr_tj_config','mensagens',{lista,updatedAt:new Date().toISOString()}));
         listaEditavel(paineis.preferencias,'Campanhas',extras[2].lista||[],[['sigla','Sigla'],['nome','Nome']],editar('territorios'),lista=>store.salvar('terr_tj_config','campanhas',{lista,updatedAt:new Date().toISOString()}));
       }
@@ -108,8 +114,9 @@
       for(const l of mudaram){
         const funcoes={...l.funcoes};l.caixas.forEach(([k,cb])=>{if(cb.checked)funcoes[k]=true;else delete funcoes[k];});
         await C.salvar(sb,ws,user.id,'desig_pessoas',l.id,{...(porId.get(l.id)||{}),funcoes});
-        l.funcoes=funcoes;porId.set(l.id,{...(porId.get(l.id)||{}),funcoes});
+        l.funcoes=funcoes;porId.set(l.id,{...(porId.get(l.id)||{}),id:l.id,nome:l.nome,funcoes});
       }
+      if(mudaram.length)aoSalvar?.(central,[...porId.values()]);
     });
     f.body.appendChild(el('p','hint','Selecione as funções que cada pessoa pode realizar. Pessoas inativas não aparecem nesta lista. Salve as alterações ao terminar.'));
     if(!pessoas.length){f.body.appendChild(el('p','hint','Nenhuma pessoa cadastrada ainda. Cadastre em Início → Pessoas.'));f.button.hidden=true;return;}
@@ -145,12 +152,16 @@
       const atual=await store.ler('desig_config','app');await store.salvar('desig_config','app',{campo:{...atual.campo,grupos}});
     });
     f.body.appendChild(el('p','hint','Nas saídas de sábado e domingo, escolha Campo de grupo para designar automaticamente o superintendente do grupo.'));
-    const box=el('div');f.body.appendChild(box);
-    function adicionar(g={}){const row=el('fieldset','settings-item');row.appendChild(el('legend','','Grupo'));const nome=campo(row,'Nome do grupo',g.nome||''),superintendente=campo(row,'Superintendente do grupo',g.superintendenteId||'','select',[['','Escolha uma pessoa'],...ativas.map(p=>[p.id,p.nome])]);nome.required=true;superintendente.required=true;
+    f.form.classList.add('settings-list-form');
+    const toolbar=el('div','settings-list-toolbar'),count=el('span'),add=el('button','dz-btn pri','+ Adicionar grupo'),box=el('div','settings-list-items'),empty=el('p','settings-list-empty','Nenhum grupo cadastrado. Adicione o nome e o superintendente do grupo.');add.type='button';add.hidden=!pode;toolbar.append(count,add);f.body.append(toolbar,empty,box);
+    const atualizar=()=>{count.textContent=linhas.length+' grupo(s)';empty.hidden=linhas.length>0;};
+    function adicionar(g={},abrir=false){const row=el('details','settings-list-item'),summary=el('summary'),heading=el('strong'),preview=el('span'),body=el('div','settings-list-fields');summary.append(heading,preview);row.append(summary,body);row.open=abrir;
+      const nome=campo(body,'Nome do grupo',g.nome||''),superintendente=campo(body,'Superintendente do grupo',g.superintendenteId||'','select',[['','Escolha uma pessoa'],...ativas.map(p=>[p.id,p.nome])]);nome.required=true;superintendente.required=true;
       if(g.superintendenteId&&!ativas.some(p=>p.id===g.superintendenteId)){superintendente.add(new Option('Pessoa inativa ou removida',g.superintendenteId));superintendente.value=g.superintendenteId;}
-      const item={id:g.id||Congregacao.novoId(),nome,super:superintendente},remover=el('button','dz-btn danger','Remover grupo');remover.type='button';remover.onclick=()=>{if(!confirm('Remover este grupo? As saídas já salvas serão preservadas.'))return;row.remove();linhas=linhas.filter(l=>l!==item);FormUX.rastrear(f.form,f.button,f.status).marcar();};row.appendChild(remover);box.appendChild(row);linhas.push(item);
+      const resumir=()=>{heading.textContent=nome.value.trim()||'Novo grupo';preview.textContent=superintendente.selectedOptions[0]?.textContent||'Escolha o superintendente';};row.addEventListener('input',resumir);row.addEventListener('change',resumir);row.addEventListener('invalid',()=>row.open=true,true);resumir();
+      const item={id:g.id||Congregacao.novoId(),nome,super:superintendente},remover=el('button','dz-btn danger','Remover grupo');remover.type='button';remover.hidden=!pode;remover.onclick=()=>{if(!confirm('Remover este grupo? As saídas já salvas serão preservadas.'))return;row.remove();linhas=linhas.filter(l=>l!==item);atualizar();FormUX.rastrear(f.form,f.button,f.status).marcar();};body.appendChild(remover);box.appendChild(row);linhas.push(item);atualizar();if(abrir)nome.focus();
     }
-    Regras.gruposCampo(d).forEach(adicionar);const add=el('button','dz-btn','+ Adicionar grupo');add.type='button';add.onclick=()=>{adicionar();FormUX.rastrear(f.form,f.button,f.status).marcar();};f.body.appendChild(add);
+    Regras.gruposCampo(d).forEach(g=>adicionar(g));atualizar();add.onclick=()=>{adicionar({},true);FormUX.rastrear(f.form,f.button,f.status).marcar();};
   }
   // Locais e dias da semana das saídas de campo (desig_config → campo:{locais,saidas}).
   async function saidasCampo(pai,d,pode,store){

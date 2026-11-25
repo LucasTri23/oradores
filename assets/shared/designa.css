@@ -297,6 +297,14 @@ body.somente-leitura [onclick^="compartilharOradores"],body.somente-leitura #cre
 .settings-center .settings-list-empty{color:var(--whi3);border-color:var(--border2);line-height:1.6}
 .settings-center .settings-list-toolbar,.settings-center .settings-list-item summary span{color:var(--whi3)}
 .settings-center .settings-list-fields{border-color:var(--border)}
+.settings-center .settings-list-fields{align-items:start}
+.settings-center .settings-list-fields>button{width:auto;min-width:0;justify-self:start;min-height:36px;padding:7px 12px}
+.settings-center .settings-list-item summary{display:flex;align-items:center;gap:12px;cursor:pointer}
+.settings-center .settings-list-item[open]{border-color:var(--border2)}
+.settings-center .settings-list-toolbar>.dz-btn{width:auto;flex:0 0 auto}
+.settings-center .cfg-campo-local .settings-item{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.settings-center .cfg-campo-local .settings-item>button{grid-column:1/-1;justify-self:start;width:auto;min-height:36px;padding:7px 12px}
+@media(max-width:600px){.settings-center .cfg-campo-local .settings-item{grid-template-columns:minmax(0,1fr)}}
 .settings-center .membro{padding:16px 0;gap:12px}
 .settings-center .acesso{font-size:11px;gap:7px;text-transform:none;letter-spacing:0}
 .settings-center .convite{margin-top:18px;padding-top:18px;gap:14px}
