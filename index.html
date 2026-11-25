@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/shared/designa.css?v=20261125-6">
-<link rel="stylesheet" href="/assets/shared/saida.css?v=20261125-s1">
+<link rel="stylesheet" href="/assets/shared/saida.css?v=20261125-c2">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
@@ -123,14 +123,68 @@ body.sem-cong .so-cong{display:none!important}
 <body class="dz-shell">
 
 <!-- Login / sem congregação (sem menu) -->
-<div id="vLogin" class="center" hidden>
-  <div class="dz-card">
-    <img src="/assets/images/designa-mascote-v1.png" alt="">
-    <h1 class="nomeApp">Designa</h1>
-    <p>Discursos, designações, territórios e publicações da congregação em um só lugar. Entre com sua conta Google.</p>
-    <button class="dz-btn pri" onclick="entrar()">Entrar com Google</button>
-    <div class="err" id="loginErr" hidden></div>
-  </div>
+<div id="vLogin" class="exit-screen auth-entry" hidden>
+  <header class="exit-header">
+    <a class="exit-brand" href="/" aria-label="Designa — página de entrada"><img src="/assets/images/designa-icon-v1.png" alt=""><span class="nomeApp">Designa</span></a>
+    <span>Organização da congregação</span>
+  </header>
+  <main class="exit-main" aria-labelledby="entradaTitulo">
+    <section class="exit-copy">
+      <p class="exit-eyebrow">Bem-vindo ao Designa</p>
+      <h1 id="entradaTitulo">Organize a rotina da sua congregação.</h1>
+      <p>Planeje as programações, acompanhe os territórios e organize os pedidos de publicações.</p>
+      <ul class="entry-modules" aria-label="Áreas do sistema"><li>Oradores</li><li>Designações</li><li>Territórios</li><li>Publicações</li></ul>
+    </section>
+    <div class="exit-aside">
+      <section class="exit-return" aria-labelledby="entradaConta">
+        <span class="exit-return-label">Acesso à congregação</span>
+        <h2 id="entradaConta">Entre com sua conta</h2>
+        <p>Use sua conta Google para acessar os módulos liberados para você.</p>
+        <button type="button" class="exit-login" id="loginEntrar" onclick="entrar(this)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.23c1.89-1.74 2.99-4.3 2.99-7.36Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.41l-3.23-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.41 13.92A6 6 0 0 1 6.1 12c0-.67.11-1.32.31-1.92V7.49H3.07A10 10 0 0 0 2 12c0 1.61.39 3.14 1.07 4.51l3.34-2.59Z"/><path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.82 1.49l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.59C7.2 7.72 9.4 5.96 12 5.96Z"/></svg>
+          <span>Entrar com Google</span>
+        </button>
+        <p class="exit-error" id="loginErr" role="alert" hidden></p>
+      </section>
+      <aside class="exit-security" aria-labelledby="entradaPrimeiroAcesso">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M19 8v6M16 11h6"/></svg>
+        <div><h2 id="entradaPrimeiroAcesso">É seu primeiro acesso?</h2><p>Se recebeu um convite, abra o link enviado pelo responsável da congregação. Para começar uma nova congregação, entre e siga a configuração inicial.</p></div>
+      </aside>
+    </div>
+  </main>
+  <footer class="exit-footer"><span>Designa · Organização da congregação</span><span>Acesso conforme as permissões da congregação.</span></footer>
+</div>
+<div id="vConvite" class="exit-screen auth-entry" hidden>
+  <header class="exit-header">
+    <a class="exit-brand" href="/" aria-label="Designa — página de entrada"><img src="/assets/images/designa-icon-v1.png" alt=""><span class="nomeApp">Designa</span></a>
+    <span>Convite para a equipe</span>
+  </header>
+  <main class="exit-main" aria-labelledby="conviteTitulo">
+    <section class="exit-copy">
+      <div class="exit-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M19 8v6M16 11h6"/></svg></div>
+      <p class="exit-eyebrow" id="conviteEtapa">Um convite para colaborar</p>
+      <h1 id="conviteTitulo">Você recebeu um convite.</h1>
+      <p id="conviteDescricao">Um responsável convidou você para fazer parte da equipe da congregação no Designa. Entre com sua conta Google para continuar.</p>
+    </section>
+    <div class="exit-aside">
+      <section class="exit-return invite-actions" aria-labelledby="conviteContaTitulo">
+        <span class="exit-return-label" id="conviteRotulo">Acesso à congregação</span>
+        <h2 id="conviteContaTitulo">Entre para continuar</h2>
+        <p id="conviteContaTexto">Depois de entrar, confira a conta escolhida e confirme o aceite do convite.</p>
+        <div id="conviteConta" class="invite-account" hidden><small>Conta Google selecionada</small><strong id="conviteEmail"></strong></div>
+        <button type="button" id="conviteAcao" class="exit-login" onclick="acaoConvite(this)"><span>Entrar com Google</span></button>
+        <button type="button" id="conviteTrocar" class="invite-switch" onclick="trocarContaConvite()" hidden>Usar outra conta Google</button>
+        <p id="conviteErr" class="exit-error" role="alert" hidden></p>
+        <button type="button" id="conviteRecarregar" class="invite-switch" onclick="carregarNomeConvite()" hidden>Tentar carregar o nome novamente</button>
+      </section>
+      <aside class="exit-security" aria-labelledby="conviteNotaTitulo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <div><h2 id="conviteNotaTitulo">Sobre este convite</h2><p id="conviteNota">O link tem uso único. Se tiver expirado, peça um novo ao responsável. Seus acessos serão os definidos pela congregação.</p></div>
+      </aside>
+      <a href="/" class="invite-later" id="conviteVoltar">Agora não, voltar ao início</a>
+    </div>
+  </main>
+  <footer class="exit-footer"><span>Designa · Organização da congregação</span><span>Seu acesso, com a conta que você escolher.</span></footer>
 </div>
 <div id="vSemCong" class="center" hidden>
   <div class="dz-card">
@@ -388,6 +442,7 @@ body.sem-cong .so-cong{display:none!important}
 
 <script src="/assets/js/data.js?v=20261110-7"></script>
 <script src="/assets/shared/conta.js?v=20261125-s1"></script>
+<script src="/assets/shared/convite.js?v=20261125-c2"></script>
 <script src="/designacoes/regras.js?v=20261125-v3"></script><script src="/designacoes/vmc.js?v=20261125-v2"></script>
 <script src="/assets/shared/congregacao.js?v=20261125-3"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script><script src="/assets/shared/config-store.js?v=20261110-7"></script><script src="/assets/shared/config-central.js?v=20261125-v4"></script>
@@ -400,11 +455,11 @@ const MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','
 const hojeISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const diasDesde=iso=>iso?Math.floor((new Date()-new Date(iso+'T00:00:00'))/864e5):null;
 
-function mostrar(id){['vCarregando','vLogin','vSemCong','vSaiu','vBoasVindas','vApp'].forEach(v=>$(v).hidden=v!==id);document.body.classList.toggle('is-signed-out',id==='vSaiu');}
+function mostrar(id){['vCarregando','vLogin','vConvite','vSemCong','vSaiu','vBoasVindas','vApp'].forEach(v=>$(v).hidden=v!==id);document.body.classList.toggle('is-signed-out',id==='vSaiu');document.body.classList.toggle('is-auth-screen',['vLogin','vSaiu','vConvite'].includes(id));}
 function erro(msg){mostrar('');$('erroGeral').textContent=msg;$('erroGeral').hidden=false;}
 
 async function entrar(botao){
-  const tela=$('vSaiu').hidden?'vLogin':'vSaiu',status=$(tela==='vSaiu'?'saiuErr':'loginErr');
+  const tela=!$('vSaiu').hidden?'vSaiu':$('vConvite')?.hidden===false?'vConvite':'vLogin',status=$({vSaiu:'saiuErr',vConvite:'conviteErr',vLogin:'loginErr'}[tela]);
   const b=botao||document.querySelector('#'+tela+' button[onclick^="entrar"]');if(b?.disabled)return;
   const rotulo=b?.innerHTML;status.hidden=true;if(b){b.disabled=true;b.textContent='Abrindo Google…';b.setAttribute('aria-busy','true');}
   try{await Conta.entrar(location.origin+'/'+location.search);}
@@ -465,15 +520,67 @@ async function criarCongregacao(){
   catch(e){toast('Não foi possível criar a congregação: '+e.message,6000);b.disabled=false;}
 }
 
-// Aceita links ?equipe=... (os antigos do Oradores e os novos daqui).
+// O link só é consumido depois de a pessoa confirmar a conta e aceitar.
+let conviteAceito=false,conviteOcupado=false,conviteIndisponivel=false,conviteNome='',conviteNomeCarregando=false;
+function mostrarConvite(){
+  mostrar('vConvite');
+  const conectado=!!user,token=new URLSearchParams(location.search).get('equipe');
+  if(!conviteAceito&&!ConviteAcesso.tokenValido(token))conviteIndisponivel=true;
+  $('conviteConta').hidden=!conectado;$('conviteEmail').textContent=user?.email||user?.user_metadata?.full_name||'Conta conectada';
+  $('conviteTrocar').hidden=!conectado||conviteAceito||conviteIndisponivel;
+  const b=$('conviteAcao');b.replaceChildren();b.disabled=conviteIndisponivel;
+  if(!conectado&&!conviteIndisponivel){const icone=$('loginEntrar').querySelector('svg').cloneNode(true);b.appendChild(icone);}
+  const label=document.createElement('span');label.textContent=conviteAceito?'Abrir congregação':conviteIndisponivel?'Convite indisponível':conectado?'Aceitar convite':'Entrar com Google';b.appendChild(label);
+  $('conviteContaTitulo').textContent=conviteAceito?'Acesso confirmado':conectado?'Confirme sua conta':'Entre para continuar';
+  $('conviteContaTexto').textContent=conviteAceito?'Você já faz parte da equipe. Entre para consultar os módulos liberados para sua conta.':conectado?'O convite será aceito com a conta abaixo. Confira antes de continuar.':'Depois de entrar, confira a conta escolhida e confirme o aceite do convite.';
+  if(!conviteAceito)$('conviteDescricao').textContent=conectado?'Confira sua conta Google e confirme o convite para fazer parte da equipe da congregação.':'Um responsável convidou você para fazer parte da equipe da congregação no Designa. Entre com sua conta Google para continuar.';
+  if(conviteNome&&!conviteAceito&&!conviteIndisponivel){
+    $('conviteEtapa').textContent='Você recebeu um convite';$('conviteTitulo').textContent=conviteNome;
+    $('conviteDescricao').textContent='Você recebeu um convite para acessar a congregação '+conviteNome+'. '+(conectado?'Confira sua conta Google e confirme o convite.':'Entre com sua conta Google para continuar.');
+  }
+  if(conviteAceito){
+    $('conviteEtapa').textContent='Bem-vindo à equipe';$('conviteTitulo').textContent='Convite aceito.';
+    $('conviteDescricao').textContent=conviteNome?'Seu acesso à congregação '+conviteNome+' foi confirmado. Agora você pode entrar com sua conta Google.':'Sua entrada na equipe foi confirmada. Agora você pode acessar a congregação com sua conta Google.';
+    $('conviteNotaTitulo').textContent='Seus acessos';$('conviteNota').textContent='Os módulos disponíveis e as permissões são definidos pelo responsável da congregação.';$('conviteVoltar').hidden=true;
+  }
+  if(conviteIndisponivel){$('conviteEtapa').textContent='Convite indisponível';$('conviteTitulo').textContent='Convite indisponível.';$('conviteDescricao').textContent='Solicite um novo link ao responsável da congregação para continuar.';$('conviteErr').textContent='Este link de convite está incompleto ou não está disponível. Peça um novo link ao responsável da congregação.';$('conviteErr').hidden=false;}
+}
+async function carregarNomeConvite(){
+  if(conviteNomeCarregando||conviteAceito||conviteIndisponivel)return;
+  const token=new URLSearchParams(location.search).get('equipe'),b=$('conviteRecarregar');conviteNomeCarregando=true;b.disabled=true;
+  try{
+    const nome=await ConviteAcesso.consultarNome(await Conta.supabase(),token);
+    if(conviteAceito||token!==new URLSearchParams(location.search).get('equipe'))return;
+    if(conviteOcupado){if(nome)conviteNome=nome;return;}
+    conviteNome=nome||'';if(!nome)conviteIndisponivel=true;
+    $('conviteErr').hidden=true;b.hidden=true;mostrarConvite();
+  }catch(error){
+    if(!conviteAceito&&!conviteOcupado){$('conviteErr').textContent=error.message;$('conviteErr').hidden=false;b.hidden=false;}
+  }finally{conviteNomeCarregando=false;b.disabled=false;}
+}
+async function acaoConvite(botao){
+  if(conviteOcupado)return;
+  if(conviteAceito){location.replace('/');return;}
+  if(!user){await entrar(botao);return;}
+  await aceitarConvite(new URLSearchParams(location.search));
+}
 async function aceitarConvite(params){
-  const token=params.get('equipe');if(!token)return;
-  params.delete('equipe');
-  history.replaceState({},'',location.pathname+(params.toString()?'?'+params:'')+location.hash);
-  const sb=await Conta.supabase();
-  const{error}=await sb.rpc('accept_workspace_invite',{invite_token:token});
-  if(error)toast('Não foi possível aceitar o convite: '+error.message,8000);
-  else toast('Convite aceito. Bem-vindo à equipe!',5000);
+  if(conviteOcupado||conviteAceito||conviteIndisponivel)return;
+  conviteOcupado=true;const b=$('conviteAcao');b.disabled=true;b.textContent='Confirmando convite…';b.setAttribute('aria-busy','true');$('conviteTrocar').disabled=true;$('conviteErr').hidden=true;
+  try{
+    const sb=await Conta.supabase();await ConviteAcesso.aceitar(sb,params.get('equipe'));
+    conviteAceito=true;params.delete('equipe');history.replaceState({},'',location.pathname+(params.toString()?'?'+params:'')+location.hash);
+    $('conviteRecarregar').hidden=true;mostrarConvite();$('conviteTitulo').setAttribute('tabindex','-1');$('conviteTitulo').focus();
+  }catch(error){
+    conviteIndisponivel=!!error.indisponivel;if(error.sessaoExpirada)user=null;
+    mostrarConvite();$('conviteErr').textContent=error.message||'Não foi possível aceitar o convite. Tente novamente.';$('conviteErr').hidden=false;
+  }finally{conviteOcupado=false;b.disabled=conviteIndisponivel;b.removeAttribute('aria-busy');$('conviteTrocar').disabled=false;}
+}
+async function trocarContaConvite(){
+  if(conviteOcupado)return;conviteOcupado=true;const b=$('conviteTrocar');b.disabled=true;$('conviteAcao').disabled=true;
+  try{await Conta.sair();user=null;$('conviteErr').hidden=true;mostrarConvite();}
+  catch(error){$('conviteErr').textContent='Não foi possível trocar de conta. Verifique a conexão e tente novamente.';$('conviteErr').hidden=false;}
+  finally{conviteOcupado=false;b.disabled=false;$('conviteAcao').disabled=conviteIndisponivel;}
 }
 
 // ── Navegação entre Início e Configurações ──
@@ -754,8 +861,8 @@ async function iniciar(){
   try{
     const params=new URLSearchParams(location.search);
     user=await Conta.usuario();
+    if(params.has('equipe')){mostrarConvite();await carregarNomeConvite();return;}
     if(!user){mostrar(params.get('saiu')?'vSaiu':'vLogin');if(params.get('saiu'))history.replaceState(null,'','/');return;}
-    await aceitarConvite(params);
     vinc=await Conta.vinculo(user);
     if(!vinc){mostrar('vSemCong');return;}
     // Volta para o módulo que pediu o login (ex.: /?voltar=/territorios).

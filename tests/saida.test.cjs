@@ -14,6 +14,14 @@ test('Entrar novamente bloqueia clique duplicado e apresenta falha na tela de sa
   vm.createContext(c);vm.runInContext(fn,c);const pending=c.entrar(b);assert.equal(b.disabled,true);await c.entrar(b);assert.equal(calls,1);
   reject(new Error('erro técnico'));await pending;assert.equal(b.disabled,false);assert.equal(nodes.saiuErr.hidden,false);assert.equal(nodes.loginErr.hidden,true);assert(!nodes.saiuErr.textContent.includes('erro técnico'));assert.equal(b.innerHTML,'<span>Entrar novamente</span>');
 });
+
+test('primeira entrada mantém o convite no retorno do Google e mostra erro no login visível',async()=>{
+  const fn=fs.readFileSync('index.html','utf8').match(/async function entrar\(botao\)\{[\s\S]*?\n\}/)[0],urls=[];
+  const b={innerHTML:'Entrar com Google',disabled:false,setAttribute(){},removeAttribute(){}};
+  const nodes={vSaiu:{hidden:true},saiuErr:{hidden:true},loginErr:{hidden:true}};
+  const c={$:id=>nodes[id],Conta:{entrar:async url=>{urls.push(url);throw new Error('offline');}},location:{origin:'https://example.invalid',search:'?equipe=convite'},document:{querySelector:()=>b}};
+  vm.createContext(c);vm.runInContext(fn,c);await c.entrar(b);assert.deepEqual(urls,['https://example.invalid/?equipe=convite']);assert.equal(nodes.loginErr.hidden,false);assert.equal(nodes.saiuErr.hidden,true);assert.equal(b.disabled,false);
+});
 test('saída antiga de Oradores também vai para a confirmação e mantém a sessão em caso de erro',async()=>{
   const source=fs.readFileSync('assets/js/supabase-client.js','utf8'),fn=source.match(/async function logout\(\)\{[\s\S]*?\n\}/)[0];
   for(const falha of [false,true]){const redirects=[],messages=[],c={supabase:{auth:{signOut:async()=>({error:falha?{}:null})}},currentUser:{id:'u'},activeWorkspaceId:'w',localStorage:{removeItem(){}},location:{replace:u=>redirects.push(u)},toast:t=>messages.push(t)};vm.createContext(c);vm.runInContext(fn,c);await c.logout();

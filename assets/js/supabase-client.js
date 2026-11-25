@@ -63,6 +63,8 @@ async function loadSupabase(config){
 }
 
 async function checkSetup(){
+  const conviteParams=new URLSearchParams(location.search);
+  if(conviteParams.has('equipe')){const destino=new URLSearchParams({equipe:conviteParams.get('equipe'),voltar:'/oradores'});location.replace('/?'+destino);return;}
   if(location.hash==='#quadro'){location.replace('/quadro');return;}
   renderHome();renderTemas();renderMensagens();updateThemeButton();
   if(window.DesignaUI)DesignaUI.registrarApp();
