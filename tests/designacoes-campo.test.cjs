@@ -62,7 +62,7 @@ test('candidatos a dirigente: só quem está marcado, quem dirigiu há mais temp
   const c=R.candidatosCampo({item,pessoas:[x,y,z],campo,reunioes});
   assert.deepEqual(c.map(c=>c.pessoa.id),['y','x'],'Z não é dirigente; Y nunca dirigiu antes desta data');
   assert.deepEqual(c.find(c=>c.pessoa.id==='y').avisos,['Já dirige outra saída neste dia']);
-  assert.deepEqual(c.find(c=>c.pessoa.id==='x').avisos,['Está como Microfones na reunião deste dia']);
+  assert.deepEqual(c.find(c=>c.pessoa.id==='x').avisos,[],'Funções na reunião não geram aviso no Campo');
   assert.equal(R.ultimaVezCampo(campo,'x','2026-11-28'),'2026-11-07');
 });
 

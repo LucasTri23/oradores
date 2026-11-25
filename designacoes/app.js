@@ -445,6 +445,8 @@ function abrirCampo(id){
   if(!loc.options.length)loc.add(new Option('Sem local cadastrado',''));
   loc.value=c.localId||loc.options[0].value;
   $('cSem').checked=!!c.semSaida;
+  $('cGrupoOpcao').hidden=![0,6].includes(dt.getDay());$('cDeGrupo').checked=!!c.grupoId;
+  const grupos=$('cGrupo');grupos.innerHTML='';grupos.add(new Option('Escolha o grupo',''));R.gruposCampo(cfg).forEach(g=>grupos.add(new Option(g.nome,g.id)));if(c.grupoId&&!R.gruposCampo(cfg).some(g=>g.id===c.grupoId))grupos.add(new Option((c.grupoNome||'Grupo')+' (removido)',c.grupoId));grupos.value=c.grupoId||'';
   const nomeMes=dt.toLocaleDateString('pt-BR',{month:'long'});
   $('cRecorrenteTxt').textContent='Gostaria de deixar essa designação recorrente pelo mês?';
   const plural=['todos os domingos','todas as segundas-feiras','todas as terças-feiras','todas as quartas-feiras','todas as quintas-feiras','todas as sextas-feiras','todos os sábados'][dt.getDay()];
@@ -461,21 +463,28 @@ function renderEdCampo(){
   cands.forEach(c=>sel.add(new Option(c.pessoa.nome+' · dirigiu: '+R.tempoSem(c.ultima,edCampo.data)+(c.avisos.length?' ⚠':''),c.pessoa.id)));
   if(edCampo.dirigente&&!cands.some(c=>c.pessoa.id===edCampo.dirigente))sel.add(new Option(nomePessoa(edCampo.dirigente)+' (não marcado como dirigente)',edCampo.dirigente));
   sel.value=edCampo.dirigente||'';
+  $('cGrupoBox').hidden=!$('cDeGrupo').checked;sel.disabled=$('cDeGrupo').checked;
   const av=$('cAvisos');av.innerHTML='';
   if(!sem&&edCampo.dirigente)R.conflitosCampo({item:edCampo,pessoaId:edCampo.dirigente,campo:campoDoMesAtual(),reunioes}).forEach(a=>{
     const d=document.createElement('div');d.className='aviso';d.innerHTML=icone('triangle-alert');const t=document.createElement('span');t.textContent=a;d.appendChild(t);av.appendChild(d);
   });
-  if(!cands.length){const v=document.createElement('div');v.className='hint';v.style.margin='6px 0 0';v.textContent='Ninguém marcado como dirigente de campo. Marque em Início → Configurações → Funções, coluna "Campo".';av.appendChild(v);}
+  if(!cands.length){const v=document.createElement('div');v.className='hint';v.style.margin='6px 0 0';v.textContent='Ninguém marcado como dirigente de campo. Marque em Início → Configurações → Funções, coluna "Dirigente".';av.appendChild(v);}
   DesignaUI.desenharIcones();
 }
+function alterarGrupoCampo(){
+  try{edCampo=R.aplicarGrupoCampo(edCampo,$('cDeGrupo').checked?$('cGrupo').value:null,cfg,pessoas);}
+  catch(e){if($('cGrupo').value)toast(e.message);edCampo.dirigente=null;}
+  renderEdCampo();
+}
 function escolherDirigente(){edCampo.dirigente=$('cDirigente').value||null;renderEdCampo();}
-const dadosCampo=c=>({data:c.data,saidaId:c.saidaId,hora:c.hora||'',localId:c.localId||'',dirigente:c.semSaida?null:(c.dirigente||null),semSaida:!!c.semSaida,recorrente:!!c.recorrente});
+const dadosCampo=c=>({grupoId:c.grupoId||null,grupoNome:c.grupoNome||'',data:c.data,saidaId:c.saidaId,hora:c.hora||'',localId:c.localId||'',dirigente:c.semSaida?null:(c.dirigente||null),semSaida:!!c.semSaida,recorrente:!!c.recorrente});
 async function salvarCampo(){
   const b=$('cSalvar');b.disabled=true;
   try{
     exigirEdicao();
     const hoje=hojeISO();
-    const base={...edCampo,localId:$('cLocal').value||'',semSaida:$('cSem').checked,dirigente:$('cSem').checked?null:($('cDirigente').value||null),recorrente:false};
+    let base={...edCampo,localId:$('cLocal').value||'',semSaida:$('cSem').checked,dirigente:$('cSem').checked?null:($('cDirigente').value||null),recorrente:false};
+    if(!base.semSaida){base=R.aplicarGrupoCampo(base,$('cDeGrupo').checked?$('cGrupo').value:null,cfg,pessoas);if($('cDeGrupo').checked&&!$('cGrupo').value)throw new Error('Escolha um grupo.');}
     let registros=[base];
     if($('cRecorrente').checked&&!base.semSaida){
       if(!base.dirigente)throw new Error('Escolha o dirigente antes de deixar recorrente.');
@@ -488,7 +497,7 @@ async function salvarCampo(){
       let substituir=true;
       if(outros.length)substituir=confirm(outros.length+' data(s) deste mês já têm outro dirigente ('+outros.map(r=>r.data.slice(8,10)+'/'+r.data.slice(5,7)).join(', ')+').\n\nOK = trocar por '+nomePessoa(base.dirigente)+'\nCancelar = manter quem já está e preencher só as datas vagas');
       registros=mesmo.filter(r=>r.id===base.id||(!semSaida.includes(r)&&(substituir||!outros.includes(r))))
-        .map(r=>r.id===base.id?{...base,recorrente:true}:r);
+        .map(r=>({...r,...(r.id===base.id?base:{}),grupoId:base.grupoId,grupoNome:base.grupoNome,recorrente:true}));
     }
     for(const r of registros){
       if(!R.dentroDoLimiteCampo(r.data,hoje))continue;
@@ -509,7 +518,7 @@ function compartilharCampo(){
   let dataAnterior='';
   lista.forEach(c=>{
     if(c.data!==dataAnterior){const dt=new Date(c.data+'T12:00:00');linhas.push('','*'+dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'})+'*');dataAnterior=c.data;}
-    linhas.push((c.hora||'')+' · '+nomeLocal(c.localId)+' — '+(c.semSaida?'sem saída':c.dirigente?nomePessoa(c.dirigente):'a definir'));
+    linhas.push((c.hora||'')+' · '+nomeLocal(c.localId)+(c.grupoId?' · Campo de grupo: '+c.grupoNome:'')+' — '+(c.semSaida?'sem saída':c.dirigente?nomePessoa(c.dirigente):'a definir'));
   });
   window.open('https://wa.me/?text='+encodeURIComponent(linhas.join('\n')),'_blank','noopener');
 }

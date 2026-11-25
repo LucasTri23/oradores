@@ -176,7 +176,15 @@
   }
 
   // ── Saídas de campo ──
-  const FUNCAO_CAMPO={chave:'dirigente_campo',nome:'Dirigente de campo',curto:'Campo',icone:'map-pinned'};
+  const FUNCAO_CAMPO={chave:'dirigente_campo',nome:'Dirigente de campo',curto:'Dirigente',icone:'map-pinned'};
+  function gruposCampo(cfg){return (Array.isArray(cfg?.campo?.grupos)?cfg.campo.grupos:[]).filter(g=>g&&g.id&&String(g.nome||'').trim());}
+  function aplicarGrupoCampo(item,grupoId,cfg,pessoas){
+    if(!grupoId)return {...item,grupoId:null,grupoNome:''};
+    if(![0,6].includes(new Date(item.data+'T12:00:00').getDay()))throw new Error('Campo de grupo só pode ser marcado no sábado ou domingo.');
+    const grupo=gruposCampo(cfg).find(g=>g.id===grupoId);if(!grupo)throw new Error('Escolha um grupo cadastrado.');
+    const dirigente=pessoas.find(p=>p.id===grupo.superintendenteId&&p.ativo!==false);if(!dirigente)throw new Error('O grupo precisa ter um superintendente ativo cadastrado.');
+    return {...item,grupoId:grupo.id,grupoNome:grupo.nome,dirigente:dirigente.id};
+  }
   const MESES_CAMPO=4; // até quantos meses à frente dá para designar
   const horaValida=h=>/^([01]\d|2[0-3]):[0-5]\d$/.test(String(h||''));
   function locaisCampo(cfg){return (Array.isArray(cfg?.campo?.locais)?cfg.campo.locais:[]).filter(l=>l&&l.id&&String(l.nome||'').trim());}
@@ -214,12 +222,10 @@
   function ultimaVezCampo(campo,pessoaId,antesDe){
     let u=null;campo.forEach(c=>{if(c.dirigente===pessoaId&&!c.semSaida&&c.data<antesDe&&(!u||c.data>u))u=c.data;});return u;
   }
-  function conflitosCampo({item,pessoaId,campo=[],reunioes=[]}){
+  function conflitosCampo({item,pessoaId,campo=[]}){
     const avisos=[];if(!pessoaId||!item)return avisos;
     campo.filter(c=>c.data===item.data&&c.id!==item.id&&c.dirigente===pessoaId&&!c.semSaida)
       .forEach(c=>avisos.push('Já dirige outra saída neste dia'+(c.hora?' ('+c.hora+')':'')));
-    const r=reunioes.find(x=>valida(x)&&x.data===item.data);
-    if(r)Object.keys(FUNCOES).forEach(f=>{if(pessoasDe(r,f).includes(pessoaId))avisos.push('Está como '+FUNCOES[f].nome+' na reunião deste dia');});
     return avisos;
   }
   function candidatosCampo({item,pessoas,campo,reunioes}){
@@ -227,7 +233,7 @@
       .sort((a,b)=>{if(!a.ultima!==!b.ultima)return a.ultima?1:-1;if(a.ultima!==b.ultima)return a.ultima.localeCompare(b.ultima);return a.pessoa.nome.localeCompare(b.pessoa.nome,'pt-BR');});
   }
 
-  const api={FUNCAO_CAMPO,MESES_CAMPO,horaValida,locaisCampo,saidasCampo,idCampo,datasDoDia,limiteCampo,dentroDoLimiteCampo,campoDoMes,recorrenciaCampo,ultimaVezCampo,conflitosCampo,candidatosCampo,FUNCOES,FUNCOES_POR_TIPO,TIPOS,QTD_PADRAO,GRUPOS,DIAS,ROTULOS_VAGAS,rotuloVaga,diaMeioDoAno,mostrarPergunta2027,parSemanal,zoomSemanal,segundaDaSemana,iso,normalizar,quantidades,diaFimDoAno,reunioesDoMes,pessoasDe,ultimaVez,tempoSem,conflitos,candidatos,sugerir,podeFazer};
+  const api={gruposCampo,aplicarGrupoCampo,FUNCAO_CAMPO,MESES_CAMPO,horaValida,locaisCampo,saidasCampo,idCampo,datasDoDia,limiteCampo,dentroDoLimiteCampo,campoDoMes,recorrenciaCampo,ultimaVezCampo,conflitosCampo,candidatosCampo,FUNCOES,FUNCOES_POR_TIPO,TIPOS,QTD_PADRAO,GRUPOS,DIAS,ROTULOS_VAGAS,rotuloVaga,diaMeioDoAno,mostrarPergunta2027,parSemanal,zoomSemanal,segundaDaSemana,iso,normalizar,quantidades,diaFimDoAno,reunioesDoMes,pessoasDe,ultimaVez,tempoSem,conflitos,candidatos,sugerir,podeFazer};
   raiz.Regras=api;
   if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

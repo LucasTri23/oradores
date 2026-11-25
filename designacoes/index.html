@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/shared/designa.css?v=20261124-6">
-<link rel="stylesheet" href="/designacoes/campo-quadro.css?v=20261124-1">
+<link rel="stylesheet" href="/designacoes/campo-quadro.css?v=20261125-4">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
@@ -161,7 +161,7 @@ button.campo-linha:hover{background:var(--pur-dim2)}
       <a class="dz-btn so-edicao" href="/#configuracoes"><i data-lucide="map-pin"></i> Locais e dias</a>
       <button class="dz-btn" onclick="compartilharCampo()"><i data-lucide="send"></i> WhatsApp</button>
     </div>
-    <p class="sub-sec">Saídas em ordem cronológica. Toque no horário para escolher o dirigente ou ajustar o local. Cadastre horários semanais em Locais e dias.</p>
+    <p class="sub-sec">Saídas em colunas por dia da semana. Toque no horário para escolher o dirigente ou o grupo no fim de semana. Cadastre grupos e horários em Locais e dias.</p>
     <div id="listaCampo"></div>
   </section>
 
@@ -223,6 +223,7 @@ button.campo-linha:hover{background:var(--pur-dim2)}
     <p class="sub" id="cSub"></p>
     <label class="check"><input type="checkbox" id="cSem" onchange="renderEdCampo()"> Não haverá saída neste dia</label>
     <div id="cDirigenteBox">
+      <div id="cGrupoOpcao"><label class="check"><input type="checkbox" id="cDeGrupo" onchange="alterarGrupoCampo()"> Campo de grupo</label><div id="cGrupoBox" hidden><label class="campo" for="cGrupo">Grupo</label><select id="cGrupo" onchange="alterarGrupoCampo()"></select><p class="hint">O superintendente cadastrado será o dirigente. Cadastre os grupos em Configurações → Campo.</p></div></div>
       <label class="campo" for="cDirigente">Dirigente de campo</label>
       <select id="cDirigente" onchange="escolherDirigente()"></select>
       <label class="campo" for="cLocal">Local</label>
@@ -282,13 +283,13 @@ button.campo-linha:hover{background:var(--pur-dim2)}
 
 <script src="/assets/js/data.js?v=20261110-7"></script>
 <script src="/assets/shared/conta.js?v=20261110-9"></script>
-<script src="/assets/shared/congregacao.js?v=20261110-7"></script>
-<script src="/designacoes/regras.js?v=20261124-3"></script>
+<script src="/assets/shared/congregacao.js?v=20261125-3"></script>
+<script src="/designacoes/regras.js?v=20261125-5"></script>
 <script src="/assets/shared/pdf-paleta.js?v=20261110-7"></script>
 <script src="/designacoes/pdf.js?v=20261110-7"></script>
 <script src="/assets/shared/quadro-dados.js?v=20261124-1"></script>
-<script src="/designacoes/campo-quadro.js?v=20261125-1"></script>
-<script src="/designacoes/app.js?v=20261124-5"></script>
+<script src="/designacoes/campo-quadro.js?v=20261125-4"></script>
+<script src="/designacoes/app.js?v=20261125-4"></script>
 <script src="/assets/shared/module-flow.js?v=20261110-7"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script>
 <script src="/assets/shared/ajuda.js?v=20261124-5" data-modulo="designacoes"></script>

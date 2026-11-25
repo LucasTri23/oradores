@@ -26,3 +26,5 @@ button.campo-slot{cursor:pointer;transition:border-color .15s,box-shadow .15s}bu
 .campo-add-dialog input,.campo-add-dialog select{padding:12px;border:1px solid var(--border2);border-radius:8px;background:var(--surf2);color:var(--whi);font:14px Inter,sans-serif;width:100%;box-sizing:border-box}
 .campo-add-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.campo-add-dialog button:disabled{opacity:.5}
 @media(max-width:600px){.campo-column{flex-basis:85vw;max-width:320px}.campo-hide{padding:8px}.campo-day-tab{padding:11px 14px}.campo-slot{padding:16px}.campo-board-tools{align-items:flex-start}}
+
+.campo-column>.reuniao{margin-bottom:14px;padding:12px;width:100%;box-sizing:border-box}.campo-column .reuniao-topo{gap:8px}.campo-column .campo-linha{grid-template-columns:1fr;gap:6px}.campo-column .campo-linha>.nome{justify-self:start}.campo-board:focus-visible{outline:2px solid var(--pur);outline-offset:3px}@media(max-width:600px){.campo-column{flex-basis:85vw;max-width:320px}}

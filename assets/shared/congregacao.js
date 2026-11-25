@@ -120,7 +120,20 @@
   }
   function semId(o){const{id,...r}=o||{};return r;}
 
-  const api={GRUPOS,TIPOS_EVENTO,normalizar,novoId,telefoneWa,listar,salvar,apagar,juntarCadastros,planejarEvento,periodo,semReuniao};
+  function contatosDirigentes(central=[],designacoes=[],contatos=[]){
+    const resultado=[],usados=new Set();
+    for(const d of designacoes){
+      const p=central.find(p=>p.id===d.id)||central.find(p=>normalizar(p.nome)===normalizar(d.nome))||d;
+      if(!d.funcoes?.dirigente_campo||d.ativo===false||p.ativo===false||!p.nome)continue;
+      const antigo=contatos.find(c=>c.pessoaId===d.id)||contatos.find(c=>normalizar(c.nome)===normalizar(p.nome));
+      if(antigo)usados.add(antigo);
+      const chave=normalizar(p.nome);if(resultado.some(c=>normalizar(c.nome)===chave))continue;
+      resultado.push({...antigo,pessoaId:d.id,nome:p.nome,num:antigo?.num||telefoneWa(p.telefone||d.telefone)});
+    }
+    // Mantém contatos manuais; os importados seguem a marcação nas funções.
+    return [...resultado,...contatos.filter(c=>!c.pessoaId&&!usados.has(c)&&!resultado.some(r=>normalizar(r.nome)===normalizar(c.nome)))];
+  }
+  const api={GRUPOS,TIPOS_EVENTO,normalizar,novoId,telefoneWa,listar,salvar,apagar,juntarCadastros,contatosDirigentes,planejarEvento,periodo,semReuniao};
   raiz.Congregacao=api;
   if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

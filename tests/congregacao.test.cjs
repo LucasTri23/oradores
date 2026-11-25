@@ -2,6 +2,19 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const C=require('../assets/shared/congregacao.js');
 
+test('dirigentes vêm das funções com nome e telefone da congregação, sem duplicar contatos manuais',()=>{
+  const central=[{id:'1',nome:'Bruno',telefone:'(31) 99999-8888'},{id:'2',nome:'Igor',ativo:false}];
+  const desig=[{id:'1',funcoes:{dirigente_campo:true}},{id:'2',funcoes:{dirigente_campo:true}},{id:'3',nome:'Outro',funcoes:{leitor:true}}];
+  const lista=C.contatosDirigentes(central,desig,[{nome:'BRUNO',num:'5531888887777'},{nome:'Manual',num:'5511999999999'}]);
+  assert.equal(lista.length,2);assert.equal(lista[0].nome,'Bruno');assert.equal(lista[0].pessoaId,'1');assert.equal(lista[0].num,'5531888887777');assert.equal(lista[1].nome,'Manual');
+  assert.equal(C.contatosDirigentes(central,desig)[0].num,'5531999998888');
+});
+
+test('desmarcar dirigente retira somente o contato importado e mantém cadastros manuais',()=>{
+  const lista=C.contatosDirigentes([{id:'1',nome:'Bruno'}],[{id:'1',funcoes:{}}],[{pessoaId:'1',nome:'Bruno',num:'55'},{nome:'Manual',num:'56'}]);
+  assert.deepEqual(lista,[{nome:'Manual',num:'56'}]);
+});
+
 const datas={fim:['2026-11-07','2026-11-14','2026-11-21'],meio:['2026-11-04','2026-11-11','2026-11-18']};
 
 test('telefone para o WhatsApp',()=>{

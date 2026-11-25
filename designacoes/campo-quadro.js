@@ -16,9 +16,12 @@
       ocultos.forEach(d=>{if(o.pode)details.appendChild(botao('Reativar '+dias[d],()=>alterarDia(d,false,o)));else details.appendChild(el('span','campo-day-label',dias[d]));});ferramentas.appendChild(details);
     }
     pai.appendChild(ferramentas);
-    const grade=el('div','reunioes');
+    const grade=el('div','campo-board');grade.setAttribute('aria-label','Saídas por dia da semana');grade.tabIndex=0;
     const lista=o.lista.filter(c=>!ocultos.includes(new Date(c.data+'T12:00:00').getDay())).slice().sort((a,b)=>a.data.localeCompare(b.data)||String(a.hora).localeCompare(String(b.hora)));
-    [...new Set(lista.map(c=>c.data))].forEach(data=>{
+    colunas.forEach(coluna=>{
+      const colunaEl=el('section','campo-column'),head=el('div','campo-column-head');head.append(el('h2','',dias[coluna.dia]),el('small','',coluna.itens.length+' saídas no mês'));
+      if(o.pode)head.appendChild(botao('Ocultar',()=>alterarDia(coluna.dia,true,o),'campo-hide'));colunaEl.appendChild(head);
+      [...new Set(coluna.itens.map(c=>c.data))].forEach(data=>{
       const itens=lista.filter(c=>c.data===data),date=new Date(data+'T12:00:00');
       const card=el('article','reuniao'+(data<o.hoje?' passada':'')+(!o.pode?' leitura':''));
       const topo=el('div','reuniao-topo'),dia=el('div','dia'),tx=el('div','tx');
@@ -29,12 +32,16 @@
         const row=el(o.pode?'button':'div','campo-linha'),info=el('div','campo-info');
         if(o.pode){row.type='button';row.onclick=()=>o.abrir(c.id);row.setAttribute('aria-label','Editar saída de '+data+' às '+c.hora);}
         info.append(el('strong','',c.hora||'Horário a definir'),el('span','',o.local(c.localId)));
+        if(c.grupoId)info.appendChild(el('small','','Campo de grupo · '+(c.grupoNome||'Grupo')));
         row.append(info,el('span','nome'+(!c.dirigente&&!c.semSaida?' vago':''),c.semSaida?'Sem saída':c.dirigente?o.nome(c.dirigente):'Escolher dirigente'));
         const avisos=c.dirigente&&!c.semSaida?o.conflitos(c):[];
         if(avisos.length){row.title=avisos.join(' · ');row.appendChild(el('small','campo-slot-warning',avisos.join(' · ')));}
         if(c.recorrente)info.appendChild(el('small','','Recorrente no mês'));
         card.appendChild(row);
-      });grade.appendChild(card);
+      });colunaEl.appendChild(card);
+      });
+      if(!coluna.itens.length)colunaEl.appendChild(el('p','campo-empty','Nenhuma saída neste mês.'));
+      if(o.pode)colunaEl.appendChild(botao('+ Adicionar saída',()=>adicionar(coluna.dia,o),'dz-btn campo-add'));grade.appendChild(colunaEl);
     });
     if(!lista.length)grade.appendChild(el('p','campo-empty','Nenhuma saída visível neste mês. Confira os dias ocultos ou cadastre horários em Locais e dias.'));
     pai.appendChild(grade);
