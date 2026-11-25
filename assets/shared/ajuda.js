@@ -11,7 +11,8 @@
     ['O que é o Designa?','Um sistema da congregação dividido em módulos: Oradores (discursos públicos), Designações (indicadores, microfones, áudio e vídeo, presidente, leitor e saídas de campo), Territórios e Quadro de anúncios. Use os ícones no topo para trocar de módulo.'],
     ['Por que não consigo editar?','Sua conta tem acesso só para ver aquele módulo. Peça ao proprietário da congregação para liberar a edição em Início → Configurações → Equipe.'],
     ['Onde ficam as configurações?','Tudo fica em Início → Configurações: nome da congregação, dias das reuniões, quantas pessoas em cada função, locais e dias de saída de campo, equipe e mensagens.'],
-    ['Onde cadastro as pessoas da congregação?','Em Início → Pessoas. Essa lista é única: as Designações e os dirigentes dos Territórios usam os mesmos nomes. O que cada pessoa pode fazer nas Designações é marcado em Designações → Pessoas.'],
+    ['Onde cadastro as pessoas da congregação?','Em Início → Pessoas. Essa lista é única: as Designações e os dirigentes dos Territórios usam os mesmos nomes.'],
+    ['Onde marco o que cada pessoa pode fazer?','Em Início → Configurações → Funções, no quadro "Quem pode fazer cada função". Marque as caixinhas e toque em Salvar alterações.'],
     ['Como instalar no celular?','No Android, abra o menu do navegador e toque em "Instalar app" ou "Adicionar à tela inicial". No iPhone, toque em Compartilhar → "Adicionar à Tela de Início".'],
     ['Posso ver o passo a passo de novo?','Sim. Toque no botão "?" e depois em "Ver o passo a passo desta tela". Para rever todas as telas, use "Mostrar os passo a passo de novo".']
   ];
@@ -33,7 +34,7 @@
           {texto:'Aqui fica a lista única de pessoas da congregação. Todos os módulos usam esta lista.'},
           {alvo:'[onclick="abrirPessoaCong()"]',texto:'Use "Nova pessoa" para cadastrar alguém com nome, grupo e telefone.'},
           {alvo:'[onclick="juntarCadastros()"]',texto:'"Juntar cadastros existentes" traz para a lista quem já estava nas Designações, nos Territórios ou nos Oradores.'},
-          {texto:'O que cada pessoa pode fazer (microfone, áudio, dirigente de campo…) é marcado em Designações → Pessoas.'}
+          {texto:'O que cada pessoa pode fazer (microfone, áudio, dirigente de campo…) é marcado em Configurações → Funções, no quadro "Quem pode fazer cada função".'}
         ]},
         eventos:{titulo:'Eventos',passos:[
           {texto:'Cadastre aqui assembleias, congressos, a visita do superintendente e a Celebração.'},
@@ -42,6 +43,7 @@
         configuracoes:{titulo:'Configurações',passos:[
           {texto:'Todas as configurações da congregação ficam aqui, separadas por assunto.'},
           {alvo:'.config-tabs',texto:'Escolha o assunto: Congregação, Reuniões, Funções, Campo, Equipe e Mensagens.'},
+          {texto:'Em Funções você define quantas pessoas cada reunião precisa e marca, numa tabela só, quem pode fazer cada função (inclusive dirigente de campo).'},
           {texto:'Depois de alterar, toque em "Salvar alterações" no fim de cada bloco.'}
         ]}
       },
@@ -68,13 +70,7 @@
           {alvo:'#campoMesNav',texto:'Troque de mês pelas setas. Dá para designar até 4 meses para frente.'},
           {alvo:'#listaCampo',texto:'Cada linha é uma saída (dia, horário e local). Toque para escolher o dirigente.'},
           {texto:'Ao escolher o dirigente, marque "Gostaria de deixar essa designação recorrente pelo mês?" para colocar a mesma pessoa em todas as datas daquela saída no mês.'},
-          {texto:'Os locais e os dias de saída são cadastrados em Início → Configurações → Campo. Quem pode dirigir é marcado em Designações → Pessoas, na coluna "Campo".'}
-        ]},
-        pessoas:{titulo:'Pessoas',passos:[
-          {texto:'Aqui você marca o que cada pessoa pode fazer.'},
-          {alvo:'#listaPessoas',texto:'Toque numa função para liberar ou tirar. Embaixo aparece há quanto tempo a pessoa não faz AQUELA função.'},
-          {texto:'A coluna "Campo" libera a pessoa para ser dirigente de campo.'},
-          {alvo:'[onclick="abrirPessoa()"]',texto:'"Nova pessoa" cadastra alguém novo direto daqui. O cadastro vai para a lista da congregação.'}
+          {texto:'Os locais e os dias de saída são cadastrados em Início → Configurações → Campo. Quem pode dirigir é marcado em Configurações → Funções, na coluna "Campo".'}
         ]},
         historico:{titulo:'Histórico',passos:[
           {texto:'O histórico mostra quem alterou o quê nas designações, com data e hora. Útil para conferir mudanças feitas pela equipe.'}
@@ -84,7 +80,7 @@
         ['Coloquei alguém em Áudio na quarta. Por que não aparece aviso ao colocar no Microfone no sábado?','Está certo: o controle é por função. O tempo sem fazer e o aviso "fez na reunião anterior" só olham a MESMA função. Só aparece aviso quando a pessoa está em duas funções na MESMA reunião.'],
         ['A mesma pessoa pode ter duas funções na mesma reunião?','Pode. O sistema só mostra um aviso ("Já está como … nesta reunião") para você conferir.'],
         ['O que significa "há 3 semanas" ao lado do nome?','É quanto tempo faz que a pessoa fez AQUELA função. Quem está há mais tempo sem fazer aparece primeiro na lista.'],
-        ['Alguém não aparece na lista de uma função. Por quê?','A pessoa não está liberada para essa função ou está inativa. Marque em Designações → Pessoas.'],
+        ['Alguém não aparece na lista de uma função. Por quê?','A pessoa não está liberada para essa função ou está inativa. Marque em Configurações → Funções.'],
         ['Como funciona a designação recorrente do campo?','Ao escolher o dirigente de uma saída, marque a caixa de recorrência. A mesma pessoa é colocada em todas as datas daquela saída (mesmo dia da semana, horário e local) no mês, a partir de hoje.'],
         ['Até quando posso designar as saídas de campo?','Até 4 meses para frente, contando o mês atual.'],
         ['Onde cadastro os locais e os dias de saída de campo?','Em Início → Configurações → Campo. Cadastre os locais (Salão do Reino, casa de alguém…) e depois os dias da semana, horários e local de cada saída.'],
@@ -100,6 +96,10 @@
           {texto:'Aqui fica a programação dos discursos públicos: quem vem, de qual congregação e com qual tema.'},
           {alvo:'nav',texto:'Pelo menu você chega no histórico, nos temas, no cadastro de oradores, nas sugestões e na análise.'},
           {texto:'Toque em uma data para designar o orador e o tema. Quem fez o tema recentemente gera aviso.'}
+        ],passosLeitura:[
+          {texto:'Aqui você acompanha a programação dos discursos públicos: quem vem, de qual congregação e com qual tema. Seu acesso é só para ver.'},
+          {alvo:'.calendar-nav',texto:'Use as setas para ver os meses anteriores e os próximos. "Mês atual" volta para hoje.'},
+          {alvo:'#agendaAnoCheck',texto:'Marque aqui para ver de hoje até o fim do ano, separado por mês.'}
         ]},
         programa:{titulo:'Histórico',passos:[{texto:'O histórico mostra os discursos já feitos, para evitar repetir tema ou orador cedo demais.'}]},
         temas:{titulo:'Temas',passos:[{texto:'Lista de temas dos discursos públicos, com a última vez que cada um foi apresentado.'}]},
@@ -110,6 +110,7 @@
       },
       faq:[
         ['Como compartilho oradores com outra congregação?','Em Minha Cong. → Compartilhar oradores. Envie pelo código da outra congregação ou por um link válido por 7 dias.'],
+        ['Onde coloco o arquivo .jwpub ou .jwlplaylist do discurso?','No cartão "Próximo discurso", durante a semana do discurso (de segunda até o dia), aparece "Arquivos do discurso". Quem pode editar envia; quem tem acesso só para ver baixa. Depois que a semana passa, o arquivo é apagado sozinho.'],
         ['Como importo uma lista antiga?','Use o botão de pasta no topo para importar o histórico, ou Oradores → Importar lista.']
       ]
     },
@@ -128,7 +129,7 @@
       },
       faq:[
         ['Onde cadastro os dirigentes dos territórios?','Em Início → Configurações → Mensagens e territórios → Dirigentes.'],
-        ['O dirigente de território é o mesmo dirigente de campo?','São cadastros diferentes: o dirigente de campo é marcado em Designações → Pessoas (coluna Campo).']
+        ['O dirigente de território é o mesmo dirigente de campo?','São cadastros diferentes: o dirigente de campo é marcado em Configurações → Funções (coluna Campo).']
       ]
     },
     quadro:{
@@ -169,7 +170,8 @@
   function iniciarTour(chaveAba){
     const aba=conf.abas[chaveAba];if(!aba)return;
     fecharTour();
-    const passos=aba.passos.filter(p=>!p.alvo||visivel(document.querySelector(p.alvo)));
+    const base=(document.body.classList.contains('so-programacao')&&aba.passosLeitura)||aba.passos;
+    const passos=base.filter(p=>!p.alvo||visivel(document.querySelector(p.alvo)));
     if(!passos.length)return;
     const camada=el('div','dz-tour-foco'),cartao=el('div','dz-tour-cartao');
     cartao.setAttribute('role','dialog');cartao.setAttribute('aria-modal','false');cartao.setAttribute('aria-label','Passo a passo: '+aba.titulo);

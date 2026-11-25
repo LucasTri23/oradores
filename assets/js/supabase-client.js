@@ -83,12 +83,14 @@ async function checkSetup(){
     if(!(await aplicarAcessoDesigna()))return;
     updateUserHeader();
     await loadAll();
-    if(location.hash&&document.getElementById('page-'+location.hash.slice(1)))irTab(location.hash.slice(1));
+    if(window.SOMENTE_LEITURA)irTab('home');
+    else if(location.hash&&document.getElementById('page-'+location.hash.slice(1)))irTab(location.hash.slice(1));
     if(new URLSearchParams(location.search).has('ferramentas'))irTab('config');
     document.getElementById('setup').style.display='none';
     if(!new URLSearchParams(location.search).has('ferramentas'))perguntarDiaReuniao2027();
     await renderTeamPanel();
     await checkSharedImport();
+    if(window.ArquivosDiscurso)ArquivosDiscurso.limparAntigos();
   }catch(error){mostrarTelaLogin(true);showSetupError(error.message);}
 }
 
@@ -110,9 +112,12 @@ async function aplicarAcessoDesigna(){
   DesignaUI.montarSeletor(document.getElementById('dzSwitch'),vinc,'oradores');
   window.SOMENTE_LEITURA=!Conta.podeEditar(vinc,'oradores');
   if(window.SOMENTE_LEITURA){
-    document.body.classList.add('somente-leitura');
+    document.body.classList.add('somente-leitura','so-programacao');
+    // Só ver a Programação: sem editar, agendar, mandar mensagens, compartilhar, importar ou abrir outras abas.
+    ['editarAgend','openNovoAgend','abrirMsgPadrao','abrirMsgGrupo','abrirMensagensAgendamento','compartilharProgramacao','openImportHistorico','abrirCentralNotificacoes']
+      .forEach(nome=>{if(typeof window[nome]==='function')window[nome]=()=>{};});
     const aviso=document.createElement('div');aviso.className='dz-readonly';
-    aviso.innerHTML='<i data-lucide="eye"></i><span>Você tem acesso <strong>só para ver</strong> o Oradores. Para editar, peça ao proprietário da congregação.</span>';
+    aviso.innerHTML='<i data-lucide="eye"></i><span>Você tem acesso <strong>só para ver</strong> a programação de discursos. Para editar, peça ao proprietário da congregação.</span>';
     document.querySelector('main')?.prepend(aviso);
     if(window.lucide)lucide.createIcons();
   }

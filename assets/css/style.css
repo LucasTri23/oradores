@@ -231,3 +231,33 @@ input,select,textarea{padding:11px 12px;border-radius:9px;background:var(--bg)}
 [hidden]{display:none!important}
 #workspaceWelcome p{font-size:13px;line-height:1.6;color:var(--whi2);margin:16px 0}
 #workspaceWelcome .btn{margin:4px 4px 4px 0;white-space:normal}
+
+/* Acesso "só ver" no Oradores: somente a Programação, sem editar nem mandar mensagens */
+body.so-programacao nav .tab:not([data-p="home"]),
+body.so-programacao .optional-action,
+body.so-programacao #notificationsBtn,
+body.so-programacao .home-heading .btn,
+body.so-programacao .quick-card,
+body.so-programacao #homeNextAction,
+body.so-programacao .week-card-edit,
+body.so-programacao #homeWeekCard .btn,
+body.so-programacao .agenda-actions,
+body.so-programacao .agenda-state .btn{display:none!important}
+body.so-programacao .agenda-row{cursor:default}
+body.so-programacao .agenda-row:hover{transform:none}
+@media(max-width:899px){body.so-programacao nav{display:none!important}body.so-programacao{padding-bottom:20px}}
+
+/* Arquivos do discurso da semana (.jwpub / .jwlplaylist) */
+.discurso-arquivo{margin:12px 0;padding:12px;border:1px dashed color-mix(in srgb,var(--pur) 45%,var(--border));border-radius:10px;background:var(--surf);display:grid;gap:8px}
+.discurso-arquivo-titulo{display:flex;align-items:center;gap:6px;font:700 11px Inter,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--pur3)}
+.discurso-arquivo-titulo svg{width:14px;height:14px}
+.discurso-arquivo-lista{display:grid;gap:6px;font-size:12px;color:var(--whi3)}
+.discurso-arquivo-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surf2)}
+.discurso-arquivo-item>span{flex:1;min-width:0;display:flex;flex-direction:column}
+.discurso-arquivo-item strong{font-size:12px;color:var(--whi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.discurso-arquivo-item small{font-size:10px;color:var(--whi3)}
+.discurso-arquivo .btn{display:inline-flex;align-items:center;gap:5px;justify-self:start}
+.discurso-arquivo .btn svg{width:14px;height:14px}
+.discurso-arquivo-hint,.discurso-arquivo-vazio{font-size:11px;color:var(--whi3)}
+/* Quem só vê: o botão Baixar continua aparecendo (os outros botões do cartão ficam escondidos). */
+body.so-programacao #homeWeekCard .discurso-arquivo .btn{display:inline-flex!important}

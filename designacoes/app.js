@@ -10,7 +10,7 @@ let sb=null,vinc=null,user=null,pode=false;
 let pessoas=[],reunioes=[],cfg={},cfgOradores=null,campo=[];
 let oradores={programa:[],discursantes:[]};
 let mes=new Date();mes.setDate(1);
-let edicao=null,pessoaEditando=null,edCampo=null;
+let edicao=null,edCampo=null;
 let mesCampo=new Date();mesCampo.setDate(1);
 
 // ── Banco ──
@@ -64,11 +64,9 @@ function funcoesEmUso(){
   const q=R.quantidades(cfg);
   return Object.keys(R.FUNCOES).filter(f=>(q.meio[f]||0)>0||(q.fim[f]||0)>0);
 }
-// Colunas da aba Pessoas: funções das reuniões + Dirigente de campo.
+// Dirigente de campo: marcado junto com as outras funções em Configurações → Funções.
 const CAMPO=R.FUNCAO_CAMPO.chave;
-const colunasPessoas=()=>[...funcoesEmUso(),CAMPO];
 const infoFuncao=f=>f===CAMPO?R.FUNCAO_CAMPO:R.FUNCOES[f];
-const ultimaDe=(p,f,ref)=>f===CAMPO?R.ultimaVezCampo(campo,p.id,ref):R.ultimaVez(reunioes,p.id,f,ref);
 const hojeISO=()=>R.iso(new Date());
 const nomePessoa=id=>pessoas.find(p=>p.id===id)?.nome||'(pessoa removida)';
 const reuniaoSalva=data=>reunioes.find(r=>r.data===data);
@@ -76,11 +74,11 @@ const reuniaoSalva=data=>reunioes.find(r=>r.data===data);
 // ── Navegação ──
 function irAba(){
   const aba=['#pessoas','#config','#historico','#campo'].includes(location.hash)?location.hash.slice(1):'programacao';
-  if(aba==='config'){location.href='/#configuracoes';return;}
+  // O que cada pessoa pode fazer agora fica em Configurações → Funções.
+  if(aba==='config'||aba==='pessoas'){location.href='/#configuracoes';return;}
   document.querySelectorAll('.secao').forEach(s=>s.hidden=s.id!=='sec-'+aba);
   document.querySelectorAll('[data-aba]').forEach(a=>a.classList.toggle('active',a.dataset.aba===aba));
   if(aba==='programacao')renderProgramacao();
-  if(aba==='pessoas')renderPessoas();
   if(aba==='campo')renderCampo();
   if(aba==='config')renderConfig();
   if(aba==='historico')renderHistorico();
@@ -201,7 +199,7 @@ function renderEdicao(){
         const t=document.createElement('span');t.textContent=p.nome+': '+a;av.appendChild(t);bloco.appendChild(av);
       });
     });
-    if(!cands.length){const v=document.createElement('div');v.className='hint';v.style.margin='6px 0 0';v.textContent='Ninguém marcado para esta função. Marque em Pessoas.';bloco.appendChild(v);}
+    if(!cands.length){const v=document.createElement('div');v.className='hint';v.style.margin='6px 0 0';v.textContent='Ninguém marcado para esta função. Marque em Início → Configurações → Funções.';bloco.appendChild(v);}
     div.appendChild(bloco);
   });
   DesignaUI.desenharIcones();
@@ -317,89 +315,6 @@ async function baixarPdf(enviar=false){
   finally{b.disabled=false;}
 }
 
-// ── Pessoas ──
-function renderPessoas(){
-  const div=$('listaPessoas');div.innerHTML='';
-  const busca=R.normalizar($('busca').value);
-  const lista=pessoas.filter(p=>!busca||R.normalizar(p.nome).includes(busca));
-  if(!pessoas.length){div.innerHTML='<div class="vazio">Nenhuma pessoa cadastrada ainda. Use <strong>Nova pessoa</strong>'+(Conta.podeVer(vinc,'oradores')?' ou <strong>Trazer do Oradores</strong>':'')+'.</div>';return;}
-  const hoje=hojeISO();
-  const funcoes=colunasPessoas();
-  div.style.setProperty('--n',Math.max(funcoes.length,1));
-  const grupos=[...Object.keys(R.GRUPOS).map(g=>[g,R.GRUPOS[g],lista.filter(p=>p.ativo!==false&&(p.grupo||'')===g)]),['inativos','Inativos',lista.filter(p=>p.ativo===false)]];
-  grupos.forEach(([chave,titulo,ps])=>{
-    if(!ps.length)return;
-    const sec=document.createElement('div');sec.className='grupo';
-    const h=document.createElement('h3');h.textContent=titulo+' ';const c=document.createElement('small');c.textContent=ps.length;h.appendChild(c);sec.appendChild(h);
-    const cab=document.createElement('div');cab.className='cabec-funcoes';cab.innerHTML='<span>Nome</span>'+funcoes.map(f=>'<span></span>').join('');
-    funcoes.forEach((f,i)=>cab.children[i+1].textContent=infoFuncao(f).curto||infoFuncao(f).nome);sec.appendChild(cab);
-    ps.forEach(p=>{
-      const row=document.createElement('div');row.className='pessoa'+(p.ativo===false?' inativa':'');
-      const nome=document.createElement('button');nome.type='button';nome.className='pessoa-nome';nome.onclick=()=>abrirPessoa(p.id);
-      const av=document.createElement('span');av.className='av';av.textContent=(p.nome||'?').trim().charAt(0).toUpperCase();
-      const tx=document.createElement('span');const st=document.createElement('strong');st.textContent=p.nome;const sm=document.createElement('small');
-      // O grupo já aparece no título da seção; embaixo do nome só a observação (ou o grupo, para inativos).
-      sm.textContent=p.obs||(chave==='inativos'?R.GRUPOS[p.grupo||'']:'');tx.append(st,sm);nome.append(av,tx);row.appendChild(nome);
-      funcoes.forEach(f=>{
-        const chip=document.createElement('button');chip.type='button';
-        const on=!!p.funcoes?.[f];
-        chip.className='chip'+(on?' on':'');chip.disabled=!pode;
-        const lbl=document.createElement('span');lbl.className='lbl';lbl.textContent=infoFuncao(f).curto||infoFuncao(f).nome;
-        const estado=document.createElement('span');
-        const ult=ultimaDe(p,f,hoje);
-        estado.textContent=on?'✓ pode':'—';
-        const quando=document.createElement('small');quando.textContent=on?R.tempoSem(ult,hoje):(ult?'fez '+R.tempoSem(ult,hoje):'não faz');
-        chip.append(lbl,estado,quando);
-        chip.title=(on?'Clique para tirar ':'Clique para liberar ')+infoFuncao(f).nome;
-        chip.onclick=()=>alternarFuncao(p,f);
-        row.appendChild(chip);
-      });
-      sec.appendChild(row);
-    });
-    div.appendChild(sec);
-  });
-  DesignaUI.desenharIcones();
-}
-async function alternarFuncao(p,f){
-  try{
-    const funcoes={...(p.funcoes||{}),[f]:!p.funcoes?.[f]};
-    await salvar('desig_pessoas',p.id,{funcoes});
-    p.funcoes=funcoes;renderPessoas();
-  }catch(e){if(e.message!=='Somente leitura')toast('Não foi possível salvar: '+e.message,6000);}
-}
-function abrirPessoa(id){
-  pessoaEditando=id?pessoas.find(p=>p.id===id):null;
-  const p=pessoaEditando||{nome:'',grupo:'publicador',funcoes:{},ativo:true,obs:''};
-  $('pTitulo').textContent=pessoaEditando?p.nome:'Nova pessoa';
-  $('pNome').value=p.nome||'';$('pGrupo').value=p.grupo||'';$('pTel').value=p.telefone||'';$('pObs').value=p.obs||'';$('pAtivo').checked=p.ativo!==false;
-  $('pExcluir').hidden=!pessoaEditando||!pode;
-  const box=$('pFuncoes');box.innerHTML='';
-  colunasPessoas().forEach(f=>{
-    const l=document.createElement('label');l.className='check';l.style.margin='4px 12px 4px 0';
-    const cb=document.createElement('input');cb.type='checkbox';cb.dataset.f=f;cb.checked=!!p.funcoes?.[f];cb.disabled=!pode;
-    l.append(cb,document.createTextNode(infoFuncao(f).nome));box.appendChild(l);
-  });
-  ['pNome','pGrupo','pTel','pObs','pAtivo'].forEach(i=>$(i).disabled=!pode);
-  abrirJanela('janPessoa');setTimeout(()=>pode&&$('pNome').focus(),50);
-}
-async function salvarPessoa(){
-  const nome=$('pNome').value.trim();if(nome.length<2)return toast('Informe o nome.');
-  const repetido=pessoas.find(p=>R.normalizar(p.nome)===R.normalizar(nome)&&p.id!==pessoaEditando?.id);
-  if(repetido)return toast('Já existe uma pessoa com esse nome.');
-  // Mantém as marcações de funções que estão desligadas no momento (se forem religadas, voltam como estavam).
-  const funcoes={};[...Object.keys(R.FUNCOES),CAMPO].forEach(f=>{if(pessoaEditando?.funcoes?.[f])funcoes[f]=true;});
-  $('pFuncoes').querySelectorAll('input').forEach(cb=>{if(cb.checked)funcoes[cb.dataset.f]=true;else delete funcoes[cb.dataset.f];});
-  const id=pessoaEditando?.id||novoId();
-  const cadastro={nome,grupo:$('pGrupo').value,telefone:$('pTel').value.trim(),obs:$('pObs').value.trim(),ativo:$('pAtivo').checked};
-  try{
-    exigirEdicao();
-    // Dados da pessoa vão para a lista única; as funções ficam nas Designações.
-    await Congregacao.salvar(sb,vinc.workspaceId,user.id,'cong_pessoas',id,cadastro);
-    await salvar('desig_pessoas',id,{funcoes});
-    pessoas=[...pessoas.filter(p=>p.id!==id),{...cadastro,funcoes,id}].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-    fecharJanela('janPessoa');renderPessoas();toast('✓ Salvo.');return true;
-  }catch(e){if(e.message!=='Somente leitura')toast('Não foi possível salvar: '+e.message,6000);}
-}
 // ── Configurações ──
 function renderConfig(){
   const sel=$('cfgDiaMeio');sel.innerHTML='';
@@ -492,7 +407,7 @@ function renderCampo(){
     return;
   }
   if(!pessoas.some(p=>p.ativo!==false&&p.funcoes?.[CAMPO])){
-    const v=document.createElement('div');v.className='aviso';v.style.marginBottom='12px';v.innerHTML=icone('triangle-alert')+'<span>Ninguém está marcado como dirigente de campo. Marque na aba <a href="#pessoas">Pessoas</a>, coluna "Campo".</span>';div.appendChild(v);
+    const v=document.createElement('div');v.className='aviso';v.style.marginBottom='12px';v.innerHTML=icone('triangle-alert')+'<span>Ninguém está marcado como dirigente de campo. Marque em <a href="/#configuracoes">Configurações → Funções</a>, coluna "Campo".</span>';div.appendChild(v);
   }
   const lista=campoDoMesAtual(),hoje=hojeISO();
   const porData=new Map();lista.forEach(c=>{if(!porData.has(c.data))porData.set(c.data,[]);porData.get(c.data).push(c);});
@@ -564,7 +479,7 @@ function renderEdCampo(){
   if(!sem&&edCampo.dirigente)R.conflitosCampo({item:edCampo,pessoaId:edCampo.dirigente,campo:campoDoMesAtual(),reunioes}).forEach(a=>{
     const d=document.createElement('div');d.className='aviso';d.innerHTML=icone('triangle-alert');const t=document.createElement('span');t.textContent=a;d.appendChild(t);av.appendChild(d);
   });
-  if(!cands.length){const v=document.createElement('div');v.className='hint';v.style.margin='6px 0 0';v.textContent='Ninguém marcado como dirigente de campo. Marque em Pessoas, coluna "Campo".';av.appendChild(v);}
+  if(!cands.length){const v=document.createElement('div');v.className='hint';v.style.margin='6px 0 0';v.textContent='Ninguém marcado como dirigente de campo. Marque em Início → Configurações → Funções, coluna "Campo".';av.appendChild(v);}
   DesignaUI.desenharIcones();
 }
 function escolherDirigente(){edCampo.dirigente=$('cDirigente').value||null;renderEdCampo();}

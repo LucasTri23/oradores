@@ -15,17 +15,17 @@ async function loadConfig(){
   } else {
     // migração única do localStorage
     const lc=localStorage.getItem('bj_cfg');
-    if(lc){cfg=JSON.parse(lc);FF.set(FF.doc(db,'config','app'),cfg);}
+    if(lc){cfg=JSON.parse(lc);if(!window.SOMENTE_LEITURA)FF.set(FF.doc(db,'config','app'),cfg).catch(()=>{});}
   }
   // Mensagens
   const msgsDoc=await FF.get(FF.doc(db,'config','mensagens'));
   if(msgsDoc.exists&&msgsDoc.data().lista){
     const mensagensSalvas=msgsDoc.data().lista;
     mensagens=mensagensSalvas.map(m=>({...m,texto:repararEmojisMensagem(m.texto),tipo:m.tipo||(String(m.titulo||'').toLowerCase().includes('convite')?'convite':'geral')}));
-    if(mensagens.some((m,i)=>m.texto!==mensagensSalvas[i]?.texto))await FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});
+    if(!window.SOMENTE_LEITURA&&mensagens.some((m,i)=>m.texto!==mensagensSalvas[i]?.texto))await FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});
   } else {
     const lm=localStorage.getItem('bj_msgs');
-    if(lm){mensagens=JSON.parse(lm).map(m=>({...m,texto:repararEmojisMensagem(m.texto),tipo:m.tipo||(String(m.titulo||'').toLowerCase().includes('convite')?'convite':'geral')}));FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens});}
+    if(lm){mensagens=JSON.parse(lm).map(m=>({...m,texto:repararEmojisMensagem(m.texto),tipo:m.tipo||(String(m.titulo||'').toLowerCase().includes('convite')?'convite':'geral')}));if(!window.SOMENTE_LEITURA)FF.set(FF.doc(db,'config','mensagens'),{lista:mensagens}).catch(()=>{});}
   }
   // Temas (overrides + bloqueados)
   const temasDoc=await FF.get(FF.doc(db,'config','temas'));
@@ -70,7 +70,7 @@ async function saveConfig(){
 }
 
 function perguntarDiaReuniao2027(){
-  if(!db||cfg.dia2027===0||cfg.dia2027===6||document.getElementById('perguntaDia2027'))return;
+  if(!db||window.SOMENTE_LEITURA||cfg.dia2027===0||cfg.dia2027===6||document.getElementById('perguntaDia2027'))return;
   const overlay=document.createElement('div');overlay.id='perguntaDia2027';overlay.className='choice-overlay';
   const modal=document.createElement('div');modal.className='choice-modal';
   modal.innerHTML='<div class="choice-title">Programação de 2027</div><p class="choice-hint">Em qual dia será a reunião no próximo ano? Esta escolha muda somente as datas de 2027; a programação de 2026 continua como está.</p>';

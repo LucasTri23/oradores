@@ -31,7 +31,9 @@ test('rota independente mantém os controles sem carregar o aplicativo Oradores'
 function runtime({sessao=true,oradores=false,designacoes=true}={}){
   const elements={},el=id=>elements[id]??={hidden:true,textContent:'',value:'oradores',options:[{value:'oradores'},{value:'indicadores'},{value:'completo'}],get selectedOptions(){return this.options.filter(o=>o.value===this.value);}};
   const {sb,consultas}=banco(),redirecionamentos=[];
-  const c={TEMAS:{},Regras,QuadroFonte,window:{addEventListener(){}},document:{getElementById:el,querySelectorAll:()=>[]},
+  el('quadroConteudo').querySelector=()=>el('quadroConteudo').options.find(o=>o.value==='campo');
+  el('quadroConteudo').appendChild=o=>el('quadroConteudo').options.push(o);
+  const c={TEMAS:{},Regras,QuadroFonte,window:{addEventListener(){}},document:{getElementById:el,querySelectorAll:()=>[],createElement:()=>({})},
     location:{replace:u=>redirecionamentos.push(u)},Conta:{usuario:async()=>sessao?{id:'usuario'}:null,vinculo:async()=>({workspaceId:'equipe',nome:'Central'}),supabase:async()=>sb,...conta(oradores,designacoes)},
     DesignaUI:{aplicarTema(){},registrarApp(){},montarSeletor(){},montarConta(){},desenharIcones(){}},responsaveisDesignacoes:null,alterarConteudoQuadro(){},atualizarPreviaQuadro:async()=>{}};
   vm.createContext(c);vm.runInContext(fs.readFileSync('quadro/app.js','utf8'),c);return {c,el,consultas,redirecionamentos};
@@ -39,6 +41,7 @@ function runtime({sessao=true,oradores=false,designacoes=true}={}){
 test('inicialização independente atende quem só acessa Designações',async()=>{
   const {c,el,consultas,redirecionamentos}=runtime();await c.iniciarQuadro();
   assert.equal(el('quadroApp').hidden,false);assert.equal(el('quadroConteudo').value,'indicadores');assert.equal(el('quadroLinkOradores').hidden,true);assert.equal(consultas.length,0);assert.equal(redirecionamentos.length,0);
+  assert.equal(el('quadroConteudo').options.find(o=>o.value==='campo').disabled,false);
 });
 test('sem sessão retorna ao login com destino /quadro; sem acesso volta ao Início',async()=>{
   const login=runtime({sessao:false});await login.c.iniciarQuadro();assert.deepEqual(login.redirecionamentos,['/?voltar=/quadro']);

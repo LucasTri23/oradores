@@ -141,11 +141,13 @@ async function loadSentinelas(){
   const s=await FF.gets(FF.col(db,'sentinela')),todos=s.docs.map(d=>({id:d.id,...d.data()}));
   const porData=new Map();
   todos.forEach(item=>{const atual=porData.get(item.data);if(!atual||String(item.criadoEm||'')>String(atual.criadoEm||''))porData.set(item.data,item);});
+  // Padroniza os registros (um por data, id "data-AAAA-MM-DD") só quando precisa e só para quem pode editar.
   for(const [data,item] of porData){
     if(!data)continue;
-    const id='data-'+data;
+    const id='data-'+data,antigos=todos.filter(x=>x.data===data&&x.id!==id);
+    if(window.SOMENTE_LEITURA||(item.id===id&&!antigos.length))continue;
     await FF.set(FF.doc(db,'sentinela',id),{tema:item.tema,data,origem:item.origem||'legado',criadoEm:item.criadoEm||FF.ts()});
-    for(const antigo of todos.filter(x=>x.data===data&&x.id!==id))await FF.del(FF.doc(db,'sentinela',antigo.id));
+    for(const antigo of antigos)await FF.del(FF.doc(db,'sentinela',antigo.id));
     item.id=id;
   }
   sentinelas=[...porData.values()].sort((a,b)=>b.data>a.data?1:-1);renderSentinelas();
@@ -154,7 +156,7 @@ async function loadSentinelas(){
 // sem duplicar se essa data já estiver registrada (manual ou automático).
 let _salvandoSentinela=new Set();
 async function registrarSentinelaAuto(data,tema){
-  if(!db||sentinelas.find(s=>s.data===data)||_salvandoSentinela.has(data))return;
+  if(!db||window.SOMENTE_LEITURA||sentinelas.find(s=>s.data===data)||_salvandoSentinela.has(data))return;
   _salvandoSentinela.add(data);
   try{
     const id='data-'+data;

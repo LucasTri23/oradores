@@ -54,6 +54,7 @@
           ['meio','fim'].forEach(tipo=>{const c=el('td');if(Regras.FUNCOES_POR_TIPO[tipo].includes(key)){const i=el('input');i.type='number';i.min=0;i.max=6;i.value=q[tipo][key];i.dataset.tipo=tipo;i.dataset.funcao=key;i.disabled=!usar.checked;i.setAttribute('aria-label',funcao.nome+' — '+(tipo==='meio'?'meio de semana':'fim de semana'));campos.push(i);inputs.push(i);c.appendChild(i);}else c.textContent='—';tr.appendChild(c);});
           usar.onchange=()=>campos.forEach(i=>{i.disabled=!usar.checked;i.value=usar.checked?(Regras.QTD_PADRAO[i.dataset.tipo][key]||1):0;});tbody.appendChild(tr);
         });zoom=campo(f.body,'Zoom semanal: a mesma pessoa nas duas reuniões',Regras.zoomSemanal(d),'checkbox');
+        await funcoesDasPessoas(paineis.funcoes,d,editar('designacoes'),sb,vinc,user);
         saidasCampo(paineis.campo,d,editar('designacoes'),store);
       }else{botoes.funcoes.hidden=true;botoes.campo.hidden=true;}
       if(ver('territorios')){
@@ -67,6 +68,45 @@
       if(!ver('oradores')&&!ver('designacoes'))botoes.reunioes.hidden=true;
       abrir('congregacao');montado=vinc.workspaceId;
     }catch(error){container.replaceChildren(el('p','save-status',error.message));const retry=el('button','dz-btn','Tentar novamente');retry.onclick=()=>montar({container,vinc,user});container.appendChild(retry);}
+  }
+  // Quem pode fazer cada função (desig_pessoas → funcoes), com os nomes da lista da congregação.
+  async function funcoesDasPessoas(pai,d,pode,sb,vinc,user){
+    const C=Congregacao,ws=vinc.workspaceId;
+    const [central,desig]=await Promise.all([C.listar(sb,ws,'cong_pessoas').catch(()=>[]),C.listar(sb,ws,'desig_pessoas')]);
+    const porId=new Map(desig.map(p=>[p.id,p]));
+    // Lista da congregação + quem só existe nas Designações (cadastros antigos).
+    const pessoas=[...central,...desig.filter(p=>p.nome&&!central.some(c=>c.id===p.id||C.normalizar(c.nome)===C.normalizar(p.nome)))]
+      .filter(p=>p.nome&&p.ativo!==false).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    const q=Regras.quantidades(d);
+    const colunas=[...Object.keys(Regras.FUNCOES).filter(f=>(q.meio[f]||0)+(q.fim[f]||0)>0).map(f=>[f,Regras.FUNCOES[f]]),[Regras.FUNCAO_CAMPO.chave,Regras.FUNCAO_CAMPO]];
+    const linhas=[];
+    const f=formulario(pai,'Quem pode fazer cada função',pode,async()=>{
+      const mudaram=linhas.filter(l=>l.caixas.some(([k,cb])=>cb.checked!==!!l.funcoes[k]));
+      for(const l of mudaram){
+        const funcoes={...l.funcoes};l.caixas.forEach(([k,cb])=>{if(cb.checked)funcoes[k]=true;else delete funcoes[k];});
+        await C.salvar(sb,ws,user.id,'desig_pessoas',l.id,{...(porId.get(l.id)||{}),funcoes});
+        l.funcoes=funcoes;porId.set(l.id,{...(porId.get(l.id)||{}),funcoes});
+      }
+    });
+    f.body.appendChild(el('p','hint','Marque o que cada pessoa pode fazer. Só aparecem nas listas das Designações (e nas sugestões) as pessoas marcadas. As pessoas vêm de Início → Pessoas; inativas não aparecem aqui.'));
+    if(!pessoas.length){f.body.appendChild(el('p','hint','Nenhuma pessoa cadastrada ainda. Cadastre em Início → Pessoas.'));f.button.hidden=true;return;}
+    const busca=el('input','pf-busca');busca.type='search';busca.placeholder='Buscar nome…';busca.setAttribute('aria-label','Buscar pessoa');
+    // A busca não conta como alteração do formulário.
+    ['input','change'].forEach(ev=>busca.addEventListener(ev,e=>e.stopPropagation()));
+    f.body.appendChild(busca);
+    const tabela=el('table','pf-tabela'),thead=el('thead'),trh=el('tr'),tbody=el('tbody');
+    trh.appendChild(el('th','pf-nome','Nome'));
+    colunas.forEach(([,info])=>{const th=el('th','',info.curto||info.nome);th.title=info.nome;th.scope='col';trh.appendChild(th);});
+    thead.appendChild(trh);tabela.append(thead,tbody);
+    pessoas.forEach(p=>{
+      const tr=el('tr'),th=el('th','pf-nome');th.scope='row';
+      th.appendChild(el('strong','',p.nome));th.appendChild(el('small','',C.GRUPOS?.[p.grupo||'']||''));tr.appendChild(th);
+      const funcoes={...(porId.get(p.id)?.funcoes||{})},caixas=[];
+      colunas.forEach(([k,info])=>{const td=el('td'),cb=el('input');cb.type='checkbox';cb.checked=!!funcoes[k];cb.setAttribute('aria-label',p.nome+' — '+info.nome);td.appendChild(cb);tr.appendChild(td);caixas.push([k,cb]);});
+      tbody.appendChild(tr);linhas.push({id:p.id,nome:p.nome,funcoes,caixas,tr});
+    });
+    busca.oninput=()=>{const t=C.normalizar(busca.value);linhas.forEach(l=>l.tr.hidden=!!t&&!C.normalizar(l.nome).includes(t));};
+    const wrap=el('div','table-scroll pf-wrap');wrap.appendChild(tabela);f.body.appendChild(wrap);
   }
   // Locais e dias da semana das saídas de campo (desig_config → campo:{locais,saidas}).
   function saidasCampo(pai,d,pode,store){

@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261124-1">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261124-2">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
@@ -59,24 +59,6 @@ button.campo-linha:hover{background:var(--pur-dim2)}
 .legenda{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--whi3);margin:-6px 0 14px}
 .legenda span{display:inline-flex;align-items:center;gap:5px}.legenda svg{width:13px;height:13px;color:var(--amber)}
 
-/* Pessoas */
-.grupo{margin-bottom:22px}
-.grupo h3{display:flex;align-items:center;gap:8px;font:700 14px 'Space Grotesk',sans-serif;margin:0 0 8px}
-.grupo h3 small{font:600 11px Inter,sans-serif;color:var(--whi3)}
-.cabec-funcoes{display:grid;grid-template-columns:minmax(170px,1.2fr) repeat(var(--n,5),minmax(96px,1fr));gap:6px;padding:0 12px 6px;font:700 10px Inter,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--whi3)}
-.pessoa{display:grid;grid-template-columns:minmax(170px,1.2fr) repeat(var(--n,5),minmax(96px,1fr));gap:6px;align-items:center;background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:9px 12px;margin-bottom:6px}
-.pessoa.inativa{opacity:.55}
-.pessoa-nome{min-width:0;display:flex;align-items:center;gap:9px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:0}
-.pessoa-nome .av{flex:0 0 auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--pur-dim);color:var(--pur);font:700 13px Inter,sans-serif}
-.pessoa-nome strong{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pessoa-nome small{display:block;font-size:11px;color:var(--whi3)}
-.chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 9px;border-radius:9px;border:1px solid var(--border);background:var(--surf2);color:var(--whi3);font:600 11px Inter,sans-serif;cursor:pointer;text-align:left;min-height:42px;justify-content:center}
-.chip small{font:500 10px Inter,sans-serif;opacity:.85}
-.chip.on{background:var(--pur-dim);border-color:color-mix(in srgb,var(--pur) 40%,transparent);color:var(--pur3)}
-.chip.na{visibility:hidden}
-.chip:disabled{cursor:default}
-.chip .lbl{display:none}
-
 /* Configurações */
 .cfg-grid{display:grid;gap:14px;max-width:760px}
 .cfg-grid h2{font:700 15px 'Space Grotesk',sans-serif;margin:0 0 4px}
@@ -122,11 +104,6 @@ button.campo-linha:hover{background:var(--pur-dim2)}
 .evento-nota{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--whi2);background:var(--pur-dim);border-radius:8px;padding:7px 10px;margin-top:10px}
 .evento-nota svg{width:14px;height:14px;color:var(--pur)}
 @media(max-width:899px){
-  .cabec-funcoes{display:none}
-  .pessoa{grid-template-columns:repeat(2,1fr)}
-  .pessoa-nome{grid-column:1/-1;margin-bottom:4px}
-  .chip .lbl{display:block}
-  .chip.na{display:none}
   .reunioes{grid-template-columns:1fr}
 }
 </style>
@@ -145,7 +122,6 @@ button.campo-linha:hover{background:var(--pur-dim2)}
   <a class="dz-brand" href="/"><img src="/assets/images/designa-icon-v1.png" alt=""><span><span class="nomeApp">Designa</span><small class="nomeCong"></small></span></a>
   <a class="dz-tab active" data-aba="programacao" href="#programacao"><i data-lucide="calendar-days"></i><span>Programação</span></a>
   <a class="dz-tab" data-aba="campo" href="#campo"><i data-lucide="map-pinned"></i><span>Campo</span></a>
-  <a class="dz-tab" data-aba="pessoas" href="#pessoas"><i data-lucide="users"></i><span>Pessoas</span></a>
   <a class="dz-tab" data-aba="historico" href="#historico"><i data-lucide="history"></i><span>Histórico</span></a>
 </nav>
 
@@ -186,21 +162,6 @@ button.campo-linha:hover{background:var(--pur-dim2)}
     </div>
     <p class="sub-sec">Toque numa saída para escolher o dirigente. Dá para designar até 4 meses para frente. <i data-lucide="repeat" style="width:12px;height:12px;vertical-align:-2px"></i> = designação recorrente no mês.</p>
     <div id="listaCampo"></div>
-  </section>
-
-  <!-- PESSOAS -->
-  <section class="secao" id="sec-pessoas" hidden>
-    <div class="barra">
-      <div>
-        <h1 class="titulo-sec">Pessoas</h1>
-        <p class="sub-sec" style="margin:0">Toque numa função para liberar ou tirar. Embaixo aparece há quanto tempo a pessoa não faz.</p>
-      </div>
-      <div class="esp"></div>
-      <input class="campo-busca" id="busca" placeholder="Buscar nome…" oninput="renderPessoas()">
-      <a class="dz-btn" href="/#pessoas"><i data-lucide="users"></i> Lista da congregação</a>
-      <button class="dz-btn pri so-edicao" onclick="abrirPessoa()"><i data-lucide="user-plus"></i> Nova pessoa</button>
-    </div>
-    <div id="listaPessoas"></div>
   </section>
 
   <!-- CONFIGURAÇÕES -->
@@ -279,27 +240,6 @@ button.campo-linha:hover{background:var(--pur-dim2)}
   </div>
 </div>
 
-<!-- Janela: pessoa -->
-<div class="fundo" id="janPessoa" hidden onclick="if(event.target===this)fecharJanela('janPessoa')">
-  <div class="janela">
-    <h2 id="pTitulo">Nova pessoa</h2>
-    <label class="campo" for="pNome">Nome</label><input type="text" id="pNome" maxlength="80" placeholder="Nome e sobrenome">
-    <label class="campo" for="pGrupo">Grupo</label>
-    <select id="pGrupo"><option value="anciao">Ancião</option><option value="servo">Servo ministerial</option><option value="publicador">Publicador</option><option value="">Sem grupo definido</option></select>
-    <label class="campo">Pode fazer</label>
-    <div id="pFuncoes" class="nomes"></div>
-    <label class="campo" for="pTel">Telefone (WhatsApp)</label><input type="text" id="pTel" maxlength="20" inputmode="tel" placeholder="(31) 99999-8888">
-    <label class="campo" for="pObs">Observação</label><textarea id="pObs" rows="2" maxlength="200" placeholder="Opcional"></textarea>
-    <label class="check"><input type="checkbox" id="pAtivo" checked> Ativo (aparece nas designações e sugestões)</label>
-    <div class="acoes">
-      <a class="dz-btn" id="pExcluir" href="/#pessoas" title="Para excluir alguém, use a lista da congregação">Excluir na lista da congregação</a>
-      <div class="esp"></div>
-      <button class="dz-btn" onclick="fecharJanela('janPessoa')">Cancelar</button>
-      <button class="dz-btn pri so-edicao" onclick="salvarPessoa()">Salvar</button>
-    </div>
-  </div>
-</div>
-
 <!-- Janela: PDF -->
 <div class="fundo" id="janPdf" hidden onclick="if(event.target===this)fecharJanela('janPdf')">
   <div class="janela" style="max-width:420px">
@@ -346,9 +286,9 @@ button.campo-linha:hover{background:var(--pur-dim2)}
 <script src="/assets/shared/pdf-paleta.js?v=20261110-7"></script>
 <script src="/designacoes/pdf.js?v=20261110-7"></script>
 <script src="/assets/shared/quadro-dados.js?v=20261124-1"></script>
-<script src="/designacoes/app.js?v=20261124-1"></script>
+<script src="/designacoes/app.js?v=20261124-3"></script>
 <script src="/assets/shared/module-flow.js?v=20261110-7"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script>
-<script src="/assets/shared/ajuda.js?v=20261124-1" data-modulo="designacoes"></script>
+<script src="/assets/shared/ajuda.js?v=20261124-5" data-modulo="designacoes"></script>
 </body>
 </html>

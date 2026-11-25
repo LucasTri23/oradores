@@ -77,7 +77,7 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
       // Congregação
       const cEl=document.createElement('div');
       cEl.style.cssText='font-size:'+(isLarge?'13px':'11px')+';color:var(--whi3);margin-bottom:'+(isLarge?'12px':'8px');
-      cEl.textContent=(congregacao||'—')+(tel?' · '+tel:'');
+      cEl.textContent=(congregacao||'—')+(tel&&!window.SOMENTE_LEITURA?' · '+tel:'');
       el.appendChild(cEl);
       // Tema — destaque mas menor que o nome
       if(nT||nomeT){
@@ -95,6 +95,8 @@ function mkWeekCard(sem,isCurrent,isPast,isFirst){
       if(sem.canticoNum){
         const song=document.createElement('div');song.className='week-song';song.innerHTML='<i data-lucide="music-2"></i><span><strong>Cântico '+sem.canticoNum+'</strong>'+(sem.cantico?' — '+sem.cantico:'')+'</span>';el.appendChild(song);
       }
+      // Arquivos do discurso (.jwpub / .jwlplaylist): só no cartão do discurso desta semana.
+      if(isLarge&&window.ArquivosDiscurso&&supabase&&activeWorkspaceId&&ArquivosDiscurso.naSemana(sem.data))ArquivosDiscurso.montar(el,sem.data);
       // Botão WA — abre direto no WhatsApp já com a mensagem pronta
       if(isLarge){
         const btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
@@ -313,7 +315,7 @@ function renderCalendar(byDate){
     if(semDiscurso){const speaker=document.createElement('div');speaker.className='agenda-speaker';speaker.textContent=registro.motivo||'Sem discurso nesta data';const meta=document.createElement('div');meta.className='agenda-meta';meta.textContent='Evento especial';info.appendChild(speaker);info.appendChild(meta);}
     else{
       const speaker=document.createElement('div');speaker.className='agenda-speaker'+(!registro.nome?' missing':'');speaker.textContent=registro.nome||'Orador ainda não definido';
-      const meta=document.createElement('div');meta.className='agenda-meta';meta.textContent=registro.nome?[registro.congregacao||'Congregação não informada',registro.telefone||'Telefone não informado'].join(' · '):'Clique para preencher a programação';
+      const meta=document.createElement('div');meta.className='agenda-meta';meta.textContent=registro.nome?(window.SOMENTE_LEITURA?(registro.congregacao||''):[registro.congregacao||'Congregação não informada',registro.telefone||'Telefone não informado'].join(' · ')):(window.SOMENTE_LEITURA?'A definir':'Clique para preencher a programação');
       info.appendChild(speaker);info.appendChild(meta);
     }
 

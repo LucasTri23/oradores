@@ -36,6 +36,8 @@ async function loadAll(){
 
 // NAV
 function irTab(p){
+  // Acesso "só ver": somente a Programação.
+  if(window.SOMENTE_LEITURA&&p!=='home')p='home';
   if(p==='quadro'){location.href='/quadro';return;}
   if(p==='config'&&!new URLSearchParams(location.search).has('ferramentas')){location.href='/#configuracoes';return;}
   if(!document.getElementById('page-'+p))return;
@@ -56,7 +58,7 @@ function irTab(p){
   if(p==='config')renderTrash();
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>irTab(t.dataset.p)));
-window.addEventListener('popstate',()=>{const p=location.hash.slice(1)||'home';if(document.getElementById('page-'+p))irTab(p);});
+window.addEventListener('popstate',()=>{const p=location.hash.slice(1)||'home';if(document.getElementById('page-'+p)||window.SOMENTE_LEITURA)irTab(p);});
 document.querySelectorAll('.tab').forEach(t=>{t.tabIndex=0;t.setAttribute('role','button');t.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();irTab(t.dataset.p);}});});
 
 // UTILS

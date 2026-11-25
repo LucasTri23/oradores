@@ -32,7 +32,8 @@ async function iniciarQuadro(){
     document.getElementById('quadroLinkOradores').hidden=!podeOradores;
     document.getElementById('quadroLinkDesignacoes').hidden=!podeDesignacoes;
     const select=document.getElementById('quadroConteudo');
-    [...select.options].forEach(o=>o.disabled=o.value==='oradores'?!podeOradores:o.value==='indicadores'?!podeDesignacoes:!podeOradores||!podeDesignacoes);
+    if(!select.querySelector('option[value="campo"]')){const option=document.createElement('option');option.value='campo';option.textContent='Serviço de campo';select.appendChild(option);}
+    [...select.options].forEach(o=>o.disabled=o.value==='oradores'?!podeOradores:['indicadores','campo'].includes(o.value)?!podeDesignacoes:!podeOradores||!podeDesignacoes);
     if(select.selectedOptions[0].disabled)select.value=podeOradores?'oradores':'indicadores';
     responsaveisDesignacoes=null;
     alterarConteudoQuadro(false);

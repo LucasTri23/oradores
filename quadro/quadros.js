@@ -240,10 +240,11 @@ function alterarConteudoQuadro(atualizar=true){
   if(completo)document.querySelector('input[name="quadroModelo"][value="word"]').checked=true;
   sincronizarCoresQuadro();
   document.getElementById('quadroConteudoHint').textContent=completo?'Reúne discursos, presidente/leitor, indicadores, microfones, áudio/vídeo e Zoom no modelo do Word.':conteudo==='indicadores'?'Usa as datas e os nomes cadastrados em Designações, incluindo meio e fim de semana.':'Usa a programação de discursos públicos.';
+  if(conteudo==='campo')document.getElementById('quadroConteudoHint').textContent='Usa as saídas das Designações. Recorrências aparecem uma vez por mês, com todas as datas; alterações de local, horário, dirigente e cancelamentos ficam separados. Todos os modelos estão disponíveis.';
   if(atualizar)agendarPreviaQuadro();
 }
 
-async function carregarDadosIndicadores(){
+async function carregarDadosIndicadores(avisarDiaMeio=true){
   if(!window.quadroAcesso?.designacoes)throw new Error('Sua conta não tem acesso às Designações.');
   const ler=async collection=>{
     const{data,error}=await supabase.from('app_records').select('id,data').eq('workspace_id',activeWorkspaceId).eq('collection',collection);
@@ -251,13 +252,32 @@ async function carregarDadosIndicadores(){
     return (data||[]).map(r=>({...r.data,id:r.id}));
   };
   const[reunioes,pessoas,central,config]=await Promise.all([ler('desig_reunioes'),ler('desig_pessoas'),ler('cong_pessoas'),ler('desig_config')]);
-  if(config.find(c=>c.id==='app')?.diaMeio==null){const hint=document.getElementById('quadroConteudoHint');if(hint)hint.textContent='O dia da reunião do meio de semana ainda não foi configurado. Defina-o em Configurações → Designações para incluir essas datas.';}
+  if(avisarDiaMeio&&config.find(c=>c.id==='app')?.diaMeio==null){const hint=document.getElementById('quadroConteudoHint');if(hint)hint.textContent='O dia da reunião do meio de semana ainda não foi configurado. Defina-o em Configurações → Designações para incluir essas datas.';}
   const nomes=new Map(pessoas.map(p=>[p.id,p]));central.forEach(p=>nomes.set(p.id,{...nomes.get(p.id),...p}));
   return {reunioes,pessoas:[...nomes.values()],cfg:config.find(c=>c.id==='app')||{}};
+}
+let bibliotecaCampoPromise;
+async function gerarPdfCampoQuadro(JsPDF,meses,congregacao,modelo,cores){
+  if(!window.quadroAcesso?.designacoes)throw new Error('Sua conta não tem acesso às Designações.');
+  if(!window.QuadroCampo){
+    if(!bibliotecaCampoPromise)bibliotecaCampoPromise=new Promise((resolve,reject)=>{
+      const script=document.createElement('script');script.src='/quadro/campo.js?v=20261124-1';
+      script.onload=()=>window.QuadroCampo?resolve():reject(new Error('Gerador de campo indisponível.'));
+      script.onerror=()=>{script.remove();reject(new Error('Não foi possível carregar o modelo de campo. Tente novamente.'));};document.head.appendChild(script);
+    }).catch(e=>{bibliotecaCampoPromise=null;throw e;});
+    await bibliotecaCampoPromise;
+  }
+  const dados=await carregarDadosIndicadores(false);
+  const {data,error}=await supabase.from('app_records').select('id,data').eq('workspace_id',activeWorkspaceId).eq('collection','desig_campo');
+  if(error)throw new Error('Não foi possível carregar o serviço de campo. Tente novamente.');
+  const salvas=(data||[]).map(r=>({...r.data,id:r.id}));
+  const grupos=meses.map(m=>window.QuadroCampo.montarMes(m.data,Regras,dados.cfg,salvas,dados.pessoas));
+  return window.QuadroCampo.criarPdf(JsPDF,grupos,congregacao,modelo,cores);
 }
 async function gerarPdfQuadroTela(JsPDF,meses,congregacao,incluir){
   const conteudo=conteudoQuadroAtual(),modelo=modeloQuadroAtual(),designacoes=conteudo!=='oradores';
   const cores=coresQuadroAtuais(conteudo==='completo'?'word':modelo);
+  if(conteudo==='campo')return gerarPdfCampoQuadro(JsPDF,meses,congregacao,modelo,cores);
   if(!designacoes&&window.quadroAcesso?.oradores===false)throw new Error('Sua conta não tem acesso aos Oradores.');
   if(!designacoes&&!['word','ilustrado'].includes(modelo))return criarPdfQuadro(JsPDF,meses,congregacao,incluir,modelo,cores);
   if(designacoes&&(!window.quadroAcesso?.designacoes||conteudo==='completo'&&!window.quadroAcesso?.oradores))throw new Error('Sua conta não tem acesso aos módulos deste quadro.');

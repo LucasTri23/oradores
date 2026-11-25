@@ -22,6 +22,7 @@ function tela(conteudo,modelo,acessos={oradores:true,designacoes:true}){
     completarDadosPrograma:r=>r,Regras:R,QuadroDados,PdfDesignacoes,
     supabase:{from:()=>({select:()=>({eq:()=>({eq:async(_,col)=>({data:(records[col]||[]).map((r,i)=>({id:r.id||String(i),data:r})),error:null})})})})}};
   vm.createContext(c);vm.runInContext(fs.readFileSync('quadro/quadros.js','utf8'),c);
+  vm.runInContext(fs.readFileSync('quadro/campo.js','utf8'),c);
   return c;
 }
 for(const conteudo of ['oradores','indicadores','completo'])for(const modelo of ['cartoes','word','ilustrado','editorial','compacto'])test(conteudo+' / '+modelo+' gera PDF com o conteúdo correto',async()=>{
@@ -36,4 +37,12 @@ test('acesso apenas a Designações gera indicadores e bloqueia quadro completo'
   const c=tela('indicadores','word',{oradores:false,designacoes:true}),meses=c.dadosQuadroAnuncios('2026-11',1);
   await c.gerarPdfQuadroTela(jsPDF,meses,'Central',false);
   c.document.getElementById('quadroConteudo').value='completo';await assert.rejects(()=>c.gerarPdfQuadroTela(jsPDF,meses,'Central',false),/acesso/);
+});
+
+test('campo funciona sem Oradores e bloqueia quem não acessa Designações',async()=>{
+  const c=tela('campo','cartoes',{oradores:false,designacoes:true});
+  const pdf=await c.gerarPdfQuadroTela(jsPDF,c.dadosQuadroAnuncios('2026-12',2),'Central',false);
+  assert.equal(pdf.getNumberOfPages(),2);assert(pdf.output().includes('Nenhuma'));
+  c.window.quadroAcesso.designacoes=false;
+  await assert.rejects(()=>c.gerarPdfQuadroTela(jsPDF,c.dadosQuadroAnuncios('2026-12',1),'Central',false),/acesso/);
 });

@@ -197,3 +197,16 @@ body.somente-leitura [onclick^="compartilharOradores"],body.somente-leitura #cre
 }
 @media print{.dz-ajuda-btn,.dz-tour-convite{display:none!important}}
 .native-form .sub-titulo{grid-column:1/-1;font:700 13px Inter,sans-serif;color:var(--whi);margin:10px 0 0}
+/* Configurações → Funções: quem pode fazer cada função */
+.native-form .pf-busca{grid-column:1/-1;width:100%;max-width:320px;padding:9px 11px;border:1px solid var(--border2);border-radius:8px;background:var(--surf);color:var(--whi);font:500 13px Inter,sans-serif}
+.pf-wrap{max-height:60vh;overflow:auto;border:1px solid var(--border);border-radius:10px}
+.pf-tabela{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.pf-tabela th,.pf-tabela td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;background:var(--surf)}
+.pf-tabela thead th{position:sticky;top:0;z-index:2;font:700 10px Inter,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:var(--whi3);white-space:nowrap}
+.pf-tabela .pf-nome{position:sticky;left:0;z-index:1;text-align:left;min-width:150px;max-width:220px}
+.pf-tabela thead .pf-nome{z-index:3}
+.pf-tabela tbody .pf-nome strong{display:block;font-weight:600;color:var(--whi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-tabela tbody .pf-nome small{display:block;font-size:10px;color:var(--whi3);font-weight:500}
+.pf-tabela input[type=checkbox]{width:20px;height:20px;accent-color:var(--pur);cursor:pointer}
+.pf-tabela tbody tr:hover th,.pf-tabela tbody tr:hover td{background:var(--pur-dim2)}
+@media(max-width:600px){.pf-tabela .pf-nome{min-width:120px;max-width:140px}.pf-tabela th,.pf-tabela td{padding:8px 6px}}
