@@ -223,3 +223,95 @@ body.somente-leitura [onclick^="compartilharOradores"],body.somente-leitura #cre
   .pf-tabela td{border:0;background:none}.pf-escolha{justify-content:flex-start;min-height:48px;padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--surf2)}
   .pf-escolha:has(input:checked){border-color:var(--pur);background:var(--pur-dim)}.pf-funcao{display:block;font:600 11px Inter,sans-serif;color:var(--whi2)}
 }
+/* Configurações → Campo: locais compactos e horários por dia. */
+.cfg-campo-form>fieldset{display:block!important;min-width:0}
+.cfg-campo-locais{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:14px 0}
+.cfg-campo-local{min-width:0;border:1px solid var(--border);border-radius:12px;background:var(--surf2)}
+.cfg-campo-local summary{padding:16px;cursor:pointer;font-weight:600;font-size:13px;overflow-wrap:anywhere}
+.cfg-campo-local[open] summary{border-bottom:1px solid var(--border)}
+.cfg-campo-form .cfg-campo-local .settings-item{border:0;margin:0;padding:14px}
+.cfg-campo-form .sub-titulo{margin:24px 0 12px;font-size:15px}
+.cfg-campo-nav{display:flex;gap:6px;overflow-x:auto;margin:12px 0;padding-bottom:6px}
+.cfg-campo-nav .dz-btn{white-space:nowrap;border-radius:20px;font-size:11px;flex-shrink:0}
+.cfg-campo-board{display:flex;align-items:flex-start;gap:14px;overflow-x:auto;padding:2px 2px 18px;scroll-snap-type:x proximity}
+.cfg-campo-col{flex:0 0 280px;min-width:0;max-height:570px;overflow-y:auto;padding:14px;background:var(--surf2);border:1px solid var(--border);border-radius:16px;scroll-snap-align:start;box-sizing:border-box}
+.cfg-campo-form .save-bar{position:sticky;bottom:0;z-index:4;padding:14px 0;background:var(--surf);border-top:1px solid var(--border)}
+.cfg-campo-col[hidden]{display:none}
+.cfg-campo-head{display:grid;grid-template-columns:1fr auto;gap:6px;margin-bottom:14px}
+.cfg-campo-head h4{font:700 13px Inter,sans-serif;margin:0;color:var(--whi)}
+.cfg-campo-head small{grid-row:2;color:var(--whi3);font-size:11px}
+.cfg-campo-hide{grid-row:1/3;grid-column:2;border:0;background:transparent;color:var(--whi3);cursor:pointer;font:500 11px Inter,sans-serif}
+.cfg-campo-add{width:100%;justify-content:center;border-style:dashed;margin-bottom:10px;color:var(--pur3)}
+.cfg-campo-form .cfg-campo-saidas .settings-item{display:flex;flex-direction:column;gap:10px;min-width:0;padding:12px;margin:10px 0;border-radius:12px;background:var(--surf)}
+.cfg-campo-saidas .native-field{min-width:0}.cfg-campo-saidas input,.cfg-campo-saidas select{width:100%;min-width:0;box-sizing:border-box}
+.cfg-campo-ocultos{margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:10px}
+.cfg-campo-ocultos summary{cursor:pointer;color:var(--pur3);font-size:13px;font-weight:600}
+.cfg-campo-ocultos button{margin:6px 6px 0 0}
+@media(max-width:600px){.cfg-campo-locais{grid-template-columns:1fr}.cfg-campo-col{flex-basis:85%;min-width:235px}.cfg-campo-nav .dz-btn{min-height:42px}.cfg-campo-hide{padding:8px}}
+
+.settings-list-form>fieldset{display:block;min-width:0}
+.settings-list-description{color:#9aacc5;font-size:13px;margin:0 0 16px;line-height:1.5}
+.settings-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;font-size:12px;color:#9aacc5}
+.settings-list-empty{padding:24px;text-align:center;border:1px dashed #304761;border-radius:12px;color:#9aacc5;font-size:13px}
+.settings-list-items{display:grid;gap:10px}
+.settings-list-item{border:1px solid #304761;border-radius:10px;min-width:0;overflow:hidden}
+.settings-list-item summary{cursor:pointer;padding:14px;display:flex;gap:12px;align-items:center}
+.settings-list-item summary:before{content:'›';font-size:20px;color:#74a7ff}
+.settings-list-item[open] summary:before{transform:rotate(90deg)}
+.settings-list-item summary strong{font-size:14px;overflow-wrap:anywhere}
+.settings-list-item summary span{margin-left:auto;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#9aacc5}
+.settings-list-fields{padding:14px;border-top:1px solid #304761;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.settings-list-fields .native-field:has(textarea){grid-column:1/-1}
+.settings-list-fields>button{justify-self:start;grid-column:1/-1}
+.settings-list-item summary:focus-visible{outline:2px solid #74a7ff;outline-offset:-3px}
+@media(max-width:600px){.settings-list-fields{grid-template-columns:1fr}.settings-list-item summary{flex-wrap:wrap}.settings-list-item summary span{margin-left:24px;max-width:100%;width:100%}}
+
+/* Shared presentation for every central settings tab, including legacy cards. */
+.settings-center{max-width:1120px;margin-inline:auto;min-width:0}
+.settings-center .config-tabs{padding:6px;border:1px solid var(--border);border-radius:12px;background:var(--surf);gap:6px}
+.settings-center .config-tabs .dz-btn{min-height:44px;flex:1;justify-content:center;border-color:transparent}
+.settings-panel-heading{margin:24px 0 18px}
+.settings-panel-heading h2{font-size:20px;margin:0 0 6px;color:var(--whi)}
+.settings-panel-heading p{margin:0;font-size:13px;line-height:1.6;color:var(--whi3)}
+.settings-center .config-panel>.dz-card{padding:24px;border-radius:14px;margin-bottom:18px;min-width:0}
+.settings-center .config-panel>.dz-card>h2{font-size:16px;line-height:1.4;margin:0 0 14px}
+.settings-center .config-panel>.dz-card>h2:not(:first-child){margin-top:28px;padding-top:22px;border-top:1px solid var(--border)}
+.settings-center .hint,.settings-center .settings-list-description{font-size:13px;line-height:1.6;color:var(--whi3)}
+.settings-center .native-form>fieldset{gap:18px}
+.settings-center .native-field:has(textarea){grid-column:1/-1}
+.settings-center .native-field label{font-size:13px;font-weight:600;line-height:1.5}
+.settings-center input:not([type=checkbox]),.settings-center select{min-height:44px}
+.settings-center .native-field input,.settings-center .native-field select,.settings-center .native-field textarea,.settings-center .acesso select{border-radius:9px;background:var(--bg);border-color:var(--border2);font-size:14px}
+.settings-center .dz-btn{min-height:42px;padding:10px 14px;border-radius:9px;font-size:12px}
+.settings-center .save-bar{margin-top:22px;padding-top:18px;border-top:1px solid var(--border);gap:12px}
+.settings-center .save-bar .save-status{margin:0}
+.settings-center .settings-check{grid-column:1/-1;display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:center;gap:12px;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--surf2)}
+.settings-center input[type=checkbox]{accent-color:var(--pur);flex-shrink:0;cursor:pointer}
+.settings-center .settings-check label{cursor:pointer}
+.settings-center .settings-check input{margin:0}
+.settings-center .native-quantidades input[type=number]{border:1px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--whi);padding:8px}
+.settings-center .table-scroll{max-width:100%;border:1px solid var(--border);border-radius:10px}
+.settings-center .native-quantidades th{font-size:12px;color:var(--whi3)}
+.settings-center .settings-list-item,.settings-center .cfg-campo-local{border-color:var(--border);background:var(--surf)}
+.settings-center .settings-list-item summary,.settings-center .cfg-campo-local summary{min-height:48px;padding:14px;font-size:14px}
+.settings-center .settings-list-empty{color:var(--whi3);border-color:var(--border2);line-height:1.6}
+.settings-center .settings-list-toolbar,.settings-center .settings-list-item summary span{color:var(--whi3)}
+.settings-center .settings-list-fields{border-color:var(--border)}
+.settings-center .membro{padding:16px 0;gap:12px}
+.settings-center .acesso{font-size:11px;gap:7px;text-transform:none;letter-spacing:0}
+.settings-center .convite{margin-top:18px;padding-top:18px;gap:14px}
+.settings-center details.dz-card>summary{cursor:pointer;font-size:14px;font-weight:600;min-height:24px}
+.settings-center details.dz-card[open]>summary{margin-bottom:16px}
+.settings-center details.dz-card>a{margin:4px 8px 4px 0;white-space:normal}
+@media(max-width:600px){
+ .settings-center .config-tabs .dz-btn{flex:0 0 auto}
+ .settings-center .config-panel>.dz-card{padding:16px}
+ .settings-panel-heading{margin-top:18px}
+ .settings-center .native-form>fieldset{grid-template-columns:minmax(0,1fr)}
+ .settings-center .save-bar{align-items:stretch;flex-direction:column}
+ .settings-center .save-bar .dz-btn{width:100%;justify-content:center}
+ .settings-center .membro .email{flex-basis:100%}
+ .settings-center .acesso{flex:1;min-width:130px}
+ .settings-center .convite>.dz-btn{width:100%;justify-content:center}
+ .settings-center .settings-list-toolbar{flex-wrap:wrap}
+}

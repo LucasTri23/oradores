@@ -5,7 +5,7 @@
     const box=el('div','native-field'),label=el('label','',titulo),input=el(opcoes?'select':tipo==='textarea'?'textarea':'input');
     input.id='preferencia-'+(++sequencia);label.htmlFor=input.id;
     if(opcoes)opcoes.forEach(([v,t])=>input.add(new Option(t,String(v))));else if(tipo!=='textarea')input.type=tipo;
-    if(tipo==='checkbox')input.checked=!!valor;else input.value=valor??'';
+    if(tipo==='checkbox'){input.checked=!!valor;box.classList.add('settings-check');}else input.value=valor??'';
     if(tipo==='textarea')input.rows=4;box.append(label,input);pai.appendChild(box);return input;
   }
   function formulario(pai,titulo,pode,gravar){
@@ -21,14 +21,17 @@
       const [o,d]=await Promise.all([store.ler('config','app'),store.ler('desig_config','app')]);
       const extras=ver('territorios')?await Promise.all(['contatos','mensagens','campanhas'].map(id=>store.ler('terr_tj_config',id))):[];
       const mensagens=ver('oradores')?await store.ler('config','mensagens'):{};
-      container.replaceChildren();const nav=el('nav','config-tabs');nav.setAttribute('aria-label','Seções das configurações');container.appendChild(nav);
+      container.replaceChildren();container.classList.add('settings-center');const nav=el('nav','config-tabs');nav.setAttribute('aria-label','Seções das configurações');container.appendChild(nav);
       const paineis={},botoes={};
+      const descricoes={congregacao:'Identificação da congregação e acesso ao aplicativo.',reunioes:'Defina os dias e horários usados nas programações.',funcoes:'Escolha as funções usadas e quem pode realizá-las.',campo:'Organize os locais e os horários semanais de saída.',equipe:'Gerencie os módulos, os convites e as permissões de acesso.',preferencias:'Prepare mensagens e mantenha os cadastros de territórios organizados.'};
       for(const [key,nome] of [['congregacao','Congregação'],['reunioes','Reuniões'],['funcoes','Funções'],['campo','Campo'],['equipe','Equipe'],['preferencias','Mensagens e territórios']]){
         const painel=el('section','config-panel'),b=el('button','dz-btn',nome);painel.id='preferencias-'+key;b.type='button';b.setAttribute('aria-controls',painel.id);b.onclick=()=>abrir(key);botoes[key]=b;paineis[key]=painel;nav.appendChild(b);container.appendChild(painel);
+        const intro=el('header','settings-panel-heading'),titulo=el('h2','',nome);titulo.id=painel.id+'-titulo';intro.append(titulo,el('p','',descricoes[key]));painel.setAttribute('aria-labelledby',titulo.id);painel.appendChild(intro);
       }
       function abrir(key){Object.entries(paineis).forEach(([k,p])=>{p.hidden=k!==key;botoes[k].setAttribute('aria-pressed',String(k===key));});}
       for(const [id,key] of [['configNomeCard','congregacao'],['configInstalarCard','congregacao'],['configAcessoCard','equipe'],['painelDono','equipe']]){const card=document.getElementById(id);if(card)paineis[key].appendChild(card);}
-      const nomeCard=document.getElementById('configNomeCard'),nomeBtn=document.getElementById('cfgNomeBtn'),nomeStatus=el('p','save-status');nomeStatus.id='cfgNomeStatus';nomeStatus.setAttribute('role','status');nomeCard.appendChild(nomeStatus);FormUX.rastrear(nomeCard,nomeBtn,nomeStatus);
+      const nomeCard=document.getElementById('configNomeCard'),nomeBtn=document.getElementById('cfgNomeBtn'),nomeStatus=el('p','save-status');nomeStatus.id='cfgNomeStatus';nomeStatus.setAttribute('role','status');nomeStatus.setAttribute('aria-live','polite');
+      const nomeFooter=el('div','save-bar');nomeBtn.textContent='Salvar alterações';nomeFooter.append(nomeBtn,nomeStatus);nomeCard.appendChild(nomeFooter);FormUX.rastrear(nomeCard,nomeBtn,nomeStatus);
       if(ver('oradores')){
         let endereco,horario,dia,dia2027=null,sentinela;
         // Antes de 2027: campo extra para o dia de 2027. Depois: o dia de 2027 vira o padrão (e o campo some).
@@ -71,7 +74,7 @@
           usar.onchange=()=>campos.forEach(i=>{i.disabled=!usar.checked;i.value=usar.checked?(Regras.QTD_PADRAO[i.dataset.tipo][key]||1):0;});tbody.appendChild(tr);
         });zoom=campo(f.body,'Zoom semanal: a mesma pessoa nas duas reuniões',Regras.zoomSemanal(d),'checkbox');
         await funcoesDasPessoas(paineis.funcoes,d,editar('designacoes'),sb,vinc,user);
-        saidasCampo(paineis.campo,d,editar('designacoes'),store);
+        await saidasCampo(paineis.campo,d,editar('designacoes'),store);
       }else{botoes.funcoes.hidden=true;botoes.campo.hidden=true;}
       if(ver('territorios')){
         listaEditavel(paineis.preferencias,'Dirigentes — Territórios',extras[0].lista||[],[['nome','Nome'],['num','WhatsApp com país e DDD']],editar('territorios'),lista=>store.salvar('terr_tj_config','contatos',{lista,updatedAt:new Date().toISOString()}));
@@ -130,8 +133,11 @@
     const wrap=el('div','table-scroll pf-wrap');wrap.appendChild(tabela);f.body.appendChild(wrap);
   }
   // Locais e dias da semana das saídas de campo (desig_config → campo:{locais,saidas}).
-  function saidasCampo(pai,d,pode,store){
+  async function saidasCampo(pai,d,pode,store){
     const novoId=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    const prefs=await store.ler('desig_config','campo_quadro');
+    let ocultos=new Set((prefs.diasOcultos||[]).filter(d=>Number.isInteger(d)&&d>=0&&d<=6)),salvandoDia=false;
+    const ordem=[1,2,3,4,5,6,0],dias=Regras.DIAS.map(n=>n.toLocaleUpperCase('pt-BR')),colunas=new Map();
     let locais=[],saidas=[];
     const f=formulario(pai,'Saídas de campo',pode,()=>{
       const ls=locais.map(l=>({id:l.id,nome:l.nome.value.trim(),endereco:l.endereco.value.trim()}));
@@ -141,53 +147,101 @@
       if(ls.length&&ss.some(x=>!x.localId))throw new Error('Escolha o local de cada saída.');
       return store.salvar('desig_config','app',{campo:{locais:ls,saidas:ss}});
     });
-    f.body.appendChild(el('p','hint','Cadastre os locais e depois os dias da semana em que a congregação sai para o campo. Um mesmo dia pode ter várias saídas (horários ou locais diferentes). As designações dos dirigentes são feitas em Designações → Campo.'));
-    const tituloL=el('h3','sub-titulo','Locais'),boxL=el('div'),addL=el('button','dz-btn','Adicionar local');addL.type='button';
-    const tituloS=el('h3','sub-titulo','Dias e horários'),boxS=el('div'),addS=el('button','dz-btn','Adicionar saída');addS.type='button';
-    f.body.append(tituloL,boxL,addL,tituloS,boxS,addS);
+    f.form.classList.add('cfg-campo-form');
+    f.body.appendChild(el('p','hint','Organize os horários em cada dia da semana. Toque em um local para editar seus dados. Salve as alterações ao terminar. Os dirigentes são escolhidos em Designações → Campo.'));
+    const tituloL=el('h3','sub-titulo','Locais de encontro'),boxL=el('div','cfg-campo-locais'),addL=el('button','dz-btn','+ Adicionar local');addL.type='button';
+    const tituloS=el('h3','sub-titulo','Dias e horários'),boxS=el('div','cfg-campo-board'),ocultosBox=el('details','cfg-campo-ocultos');
+    f.body.append(tituloL,boxL,addL,tituloS,ocultosBox,boxS);
+    const avisoDia=el('p','save-status');avisoDia.setAttribute('role','status');f.body.appendChild(avisoDia);
+    const atalhos=el('nav','cfg-campo-nav');atalhos.setAttribute('aria-label','Dias de campo');boxS.before(atalhos);
+    async function mudarDia(dia,ocultar){
+      if(!pode||salvandoDia)return;
+      if(ocultar&&!confirm('Ocultar '+dias[dia]+' nas telas de Campo? Nenhuma saída será cancelada ou apagada. Reative em Dias ocultos.'))return;
+      salvandoDia=true;avisoDia.textContent='Salvando visibilidade do dia…';
+      try{
+        const atual=await store.ler('desig_config','campo_quadro'),next=new Set(atual.diasOcultos||[]);
+        if(ocultar)next.add(dia);else next.delete(dia);
+        await store.salvar('desig_config','campo_quadro',{diasOcultos:[...next]});ocultos=next;atualizarDias();
+        avisoDia.textContent=ocultar?'Dia ocultado. Os agendamentos foram preservados.':'Dia reativado.';
+      }catch(e){avisoDia.textContent='Não foi possível alterar o dia: '+e.message;}finally{salvandoDia=false;}
+    }
+    function atualizarDias(){
+      atalhos.replaceChildren();ocultosBox.replaceChildren(el('summary','','Dias ocultos ('+ocultos.size+')'));
+      ocultosBox.hidden=!ocultos.size;
+      ocultosBox.appendChild(el('p','hint','Ocultar só esconde a coluna; não cancela saídas. A visibilidade é salva automaticamente para a congregação.'));
+      ordem.forEach(dia=>{
+        const c=colunas.get(dia);c.col.hidden=ocultos.has(dia);
+        c.total.textContent=saidas.filter(s=>Number(s.dia.value)===dia).length+' horário(s)';
+        c.vazio.hidden=saidas.some(s=>Number(s.dia.value)===dia);
+        if(ocultos.has(dia)){const b=el('button','dz-btn','Reativar '+dias[dia]);b.type='button';b.disabled=!pode;b.onclick=()=>mudarDia(dia,false);ocultosBox.appendChild(b);}
+        else{const b=el('button','dz-btn',dias[dia]);b.type='button';b.onclick=()=>c.col.scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});atalhos.appendChild(b);}
+      });
+    }
+    ordem.forEach(dia=>{
+      const col=el('section','cfg-campo-col'),head=el('div','cfg-campo-head'),total=el('small'),vazio=el('p','hint','Nenhum horário. Adicione uma saída neste dia.'),lista=el('div','cfg-campo-saidas');
+      head.append(el('h4','',dias[dia]),total);
+      const hide=el('button','cfg-campo-hide','Ocultar');hide.type='button';hide.hidden=!pode;hide.setAttribute('aria-label','Ocultar '+dias[dia]);hide.onclick=()=>mudarDia(dia,true);head.appendChild(hide);
+      const add=el('button','dz-btn cfg-campo-add','+ Adicionar saída');add.type='button';add.hidden=!pode;add.onclick=()=>{addSaida({dia});marcar();};
+      col.append(head,add,vazio,lista);boxS.appendChild(col);colunas.set(dia,{col,total,vazio,lista});
+    });
     const marcar=()=>FormUX.rastrear(f.form,f.button,f.status).marcar();
     function atualizarLocais(){
       const opcoes=locais.map(l=>[l.id,l.nome.value.trim()||'(sem nome)']);
       saidas.forEach(x=>{const v=x.local.value;x.local.replaceChildren(new Option(opcoes.length?'Escolha o local…':'Cadastre um local acima',''));opcoes.forEach(([id,n])=>x.local.add(new Option(n,id)));x.local.value=opcoes.some(([id])=>id===v)?v:'';});
     }
     function addLocal(l={}){
-      const row=el('fieldset','settings-item');row.appendChild(el('legend','','Local'));
+      const card=el('details','cfg-campo-local'),summary=el('summary','',l.nome||'Novo local');card.open=!l.id;card.appendChild(summary);
+      const row=el('fieldset','settings-item');card.appendChild(row);
       const item={id:l.id||novoId('l'),row};
       item.nome=campo(row,'Nome do local',l.nome||'');item.nome.placeholder='Ex.: Salão do Reino, casa da família Souza';
       item.endereco=campo(row,'Endereço (opcional)',l.endereco||'');
-      item.nome.addEventListener('input',atualizarLocais);
+      item.nome.addEventListener('input',()=>{summary.textContent=item.nome.value.trim()||'Novo local';atualizarLocais();});
       const rm=el('button','dz-btn danger','Remover local');rm.type='button';
-      rm.onclick=()=>{if(!confirm('Remover este local? As saídas que usam este local vão pedir outro local.'))return;row.remove();locais=locais.filter(x=>x!==item);atualizarLocais();marcar();};
-      row.appendChild(rm);boxL.appendChild(row);locais.push(item);
+      rm.onclick=()=>{if(!confirm('Remover este local? As saídas que usam este local vão pedir outro local.'))return;card.remove();locais=locais.filter(x=>x!==item);atualizarLocais();marcar();};
+      row.appendChild(rm);boxL.appendChild(card);locais.push(item);
     }
     function addSaida(x={}){
       const row=el('fieldset','settings-item');row.appendChild(el('legend','','Saída'));
       const item={id:x.id||novoId('s'),row};
-      item.dia=campo(row,'Dia da semana',x.dia??6,'select',Regras.DIAS.map((n,i)=>[i,n]));
+      item.dia=campo(row,'Mover para outro dia',x.dia??6,'select',dias.map((n,i)=>[i,n]));
+      item.dia.onchange=()=>{colunas.get(Number(item.dia.value)).lista.appendChild(row);atualizarDias();if(ocultos.has(Number(item.dia.value)))avisoDia.textContent='A saída foi movida para um dia oculto. Reative-o em Dias ocultos para editar.';};
       item.hora=campo(row,'Horário',x.hora||'09:00','time');
       item.local=campo(row,'Local',x.localId||'','select',[['','']]);
       const rm=el('button','dz-btn danger','Remover saída');rm.type='button';
-      rm.onclick=()=>{if(!confirm('Remover esta saída? As designações já feitas continuam no histórico.'))return;row.remove();saidas=saidas.filter(s=>s!==item);marcar();};
-      row.appendChild(rm);boxS.appendChild(row);saidas.push(item);
+      rm.onclick=()=>{if(!confirm('Remover esta saída? As designações já feitas continuam no histórico.'))return;row.remove();saidas=saidas.filter(s=>s!==item);atualizarDias();marcar();};
+      row.appendChild(rm);colunas.get(Number(item.dia.value)).lista.appendChild(row);saidas.push(item);
       atualizarLocais();item.local.value=x.localId||'';
+      atualizarDias();
     }
     Regras.locaisCampo(d).forEach(addLocal);
     Regras.saidasCampo(d).forEach(addSaida);
     addL.onclick=()=>{addLocal();atualizarLocais();marcar();};
-    addS.onclick=()=>{addSaida();marcar();};
-    if(!pode){addL.hidden=true;addS.hidden=true;}
+    atualizarDias();
+    if(!pode)addL.hidden=true;
   }
   function listaEditavel(pai,titulo,lista,campos,pode,salvar){
+    const tipo=titulo.startsWith('Dirigentes')?'dirigente':titulo==='Campanhas'?'campanha':'mensagem';
+    const descricao=tipo==='dirigente'?'Contatos para compartilhar as designações de territórios.':tipo==='campanha'?'Organize cada campanha com uma sigla e um nome.':'Textos para reutilizar nos compartilhamentos. Emojis são opcionais.';
     let linhas=[];const f=formulario(pai,titulo,pode,()=>{
       const valores=linhas.map(r=>({...r.original,...Object.fromEntries(campos.map(([k])=>[k,r.inputs[k].value.trim()]))}));
-      if(valores.some(r=>campos.some(([k])=>!r[k])))throw new Error('Preencha todos os campos dos itens ou remova os itens vazios.');
+      if(valores.some(r=>campos.some(([k])=>!r[k])))throw new Error('Preencha os campos dos itens ou remova os itens vazios.');
       return salvar(valores);
-    });const box=el('div');f.body.appendChild(box);
-    function adicionar(original={}){
-      const row=el('fieldset','settings-item'),inputs={};row.appendChild(el('legend','','Item da lista'));campos.forEach(([key,label,tipo])=>inputs[key]=campo(row,label,original[key]||(key==='tipo'?'geral':''),tipo||'text',key==='tipo'?[['convite','Convite'],['geral','Geral']]:undefined));
-      const remove=el('button','dz-btn danger','Remover item');remove.type='button';remove.onclick=()=>{if(!confirm('Remover este item? A remoção será aplicada ao salvar a lista.'))return;row.remove();linhas=linhas.filter(l=>l.row!==row);FormUX.rastrear(f.form,f.button,f.status).marcar();};row.appendChild(remove);box.appendChild(row);linhas.push({row,inputs,original});
+    });f.form.classList.add('settings-list-form');
+    const toolbar=el('div','settings-list-toolbar'),count=el('span'),empty=el('p','settings-list-empty','Nenhum item cadastrado. Use o botão acima para começar.'),box=el('div','settings-list-items');
+    const add=el('button','dz-btn pri','+ Adicionar '+tipo);add.type='button';add.hidden=!pode;
+    toolbar.append(count,add);f.body.append(el('p','settings-list-description',descricao),toolbar,empty,box);
+    const atualizar=()=>{count.textContent=linhas.length+' cadastrado(s)';empty.hidden=linhas.length>0;};
+    function adicionar(original={},abrir=false){
+      const row=el('details','settings-list-item'),summary=el('summary'),heading=el('strong'),preview=el('span'),body=el('div','settings-list-fields'),inputs={};
+      summary.append(heading,preview);row.append(summary,body);row.open=abrir;
+      campos.forEach(([key,label,tipoCampo])=>{inputs[key]=campo(body,label,original[key]||(key==='tipo'?'geral':''),tipoCampo||(key==='num'?'tel':'text'),key==='tipo'?[['convite','Convite'],['geral','Geral']]:undefined);inputs[key].required=true;});
+      const resumir=()=>{heading.textContent=inputs.nome?.value||inputs.titulo?.value||inputs.label?.value||'Novo cadastro';preview.textContent=inputs.num?.value||inputs.sigla?.value||inputs.texto?.value||'Preencha os dados';};
+      row.addEventListener('input',resumir);resumir();row.addEventListener('invalid',()=>row.open=true,true);
+      const remove=el('button','dz-btn danger','Remover '+tipo);remove.type='button';remove.hidden=!pode;
+      remove.onclick=()=>{if(!confirm('Remover este item? A remoção será aplicada ao salvar a lista.'))return;row.remove();linhas=linhas.filter(l=>l.row!==row);atualizar();FormUX.rastrear(f.form,f.button,f.status).marcar();};
+      body.appendChild(remove);box.appendChild(row);linhas.push({row,inputs,original});atualizar();if(abrir)inputs[campos[0][0]].focus();
     }
-    lista.forEach(adicionar);const add=el('button','dz-btn','Adicionar item');add.type='button';add.onclick=()=>{adicionar({id:Date.now()});FormUX.rastrear(f.form,f.button,f.status).marcar();};f.body.appendChild(add);
+    lista.forEach(item=>adicionar(item));atualizar();add.onclick=()=>{adicionar({id:Date.now()},true);FormUX.rastrear(f.form,f.button,f.status).marcar();};
   }
   root.ConfigCentral={montar};
 })(window);

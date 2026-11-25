@@ -16,34 +16,30 @@
       ocultos.forEach(d=>{if(o.pode)details.appendChild(botao('Reativar '+dias[d],()=>alterarDia(d,false,o)));else details.appendChild(el('span','campo-day-label',dias[d]));});ferramentas.appendChild(details);
     }
     pai.appendChild(ferramentas);
-    const atalhos=el('nav','campo-day-nav');atalhos.setAttribute('aria-label','Ir para um dia da semana');
-    const grade=el('div','campo-board');
-    colunas.forEach(({dia,itens})=>{
-      const coluna=el('section','campo-column');coluna.id='campo-dia-'+dia;
-      const topo=el('div','campo-column-head'),titulo=el('h2','',dias[dia]);
-      topo.append(titulo,el('small','',itens.length+' saídas no mês'));
-      if(o.pode){const ocultar=botao('Ocultar',()=>alterarDia(dia,true,o),'campo-hide');ocultar.setAttribute('aria-label','Ocultar '+dias[dia]);topo.appendChild(ocultar);}
-      coluna.appendChild(topo);
-      if(o.pode)coluna.appendChild(botao('+ Adicionar saída',()=>adicionar(dia,o),'dz-btn campo-add'));
-      if(!itens.length)coluna.appendChild(el('p','campo-empty',o.pode?'Sem saídas. Adicione um horário para este dia.':'Nenhuma saída neste dia.'));
-      let data='';
+    const grade=el('div','reunioes');
+    const lista=o.lista.filter(c=>!ocultos.includes(new Date(c.data+'T12:00:00').getDay())).slice().sort((a,b)=>a.data.localeCompare(b.data)||String(a.hora).localeCompare(String(b.hora)));
+    [...new Set(lista.map(c=>c.data))].forEach(data=>{
+      const itens=lista.filter(c=>c.data===data),date=new Date(data+'T12:00:00');
+      const card=el('article','reuniao'+(data<o.hoje?' passada':'')+(!o.pode?' leitura':''));
+      const topo=el('div','reuniao-topo'),dia=el('div','dia'),tx=el('div','tx');
+      dia.append(el('b','',data.slice(8,10)),el('small','',date.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')));
+      tx.append(el('strong','',dias[date.getDay()]),el('span','',itens.length+' saídas'+(data===o.hoje?' · Hoje':'')));
+      topo.append(dia,tx);card.appendChild(topo);
       itens.forEach(c=>{
-        if(c.data!==data){data=c.data;coluna.appendChild(el('h3','campo-date',c.data.slice(8,10)+'/'+c.data.slice(5,7)+(c.data===o.hoje?' · Hoje':'')));}
-        const card=el(o.pode?'button':'article','campo-slot'+(c.data<o.hoje?' is-past':'')+(c.semSaida?' is-cancelled':!c.dirigente?' is-open':''));
-        if(o.pode){card.type='button';card.onclick=()=>o.abrir(c.id);card.setAttribute('aria-label','Editar saída de '+c.data.slice(8,10)+'/'+c.data.slice(5,7)+' às '+(c.hora||'horário a definir'));}
-        card.append(el('strong','campo-slot-time',c.hora||'Horário a definir'),el('span','campo-slot-place',o.local(c.localId)));
-        card.appendChild(el('span','campo-slot-person',c.semSaida?'Sem saída':c.dirigente?o.nome(c.dirigente):'+ Escolher dirigente'));
-        if(c.recorrente)card.appendChild(el('small','campo-slot-meta','Recorrente no mês'));
-        if(c.removida)card.appendChild(el('small','campo-slot-meta','Horário removido da configuração'));
+        const row=el(o.pode?'button':'div','campo-linha'),info=el('div','campo-info');
+        if(o.pode){row.type='button';row.onclick=()=>o.abrir(c.id);row.setAttribute('aria-label','Editar saída de '+data+' às '+c.hora);}
+        info.append(el('strong','',c.hora||'Horário a definir'),el('span','',o.local(c.localId)));
+        row.append(info,el('span','nome'+(!c.dirigente&&!c.semSaida?' vago':''),c.semSaida?'Sem saída':c.dirigente?o.nome(c.dirigente):'Escolher dirigente'));
         const avisos=c.dirigente&&!c.semSaida?o.conflitos(c):[];
-        if(avisos.length)card.appendChild(el('small','campo-slot-warning',avisos.join(' · ')));
-        coluna.appendChild(card);
-      });
-      grade.appendChild(coluna);atalhos.appendChild(botao(dias[dia].split('-')[0],()=>coluna.scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'}),'campo-day-tab'));
+        if(avisos.length){row.title=avisos.join(' · ');row.appendChild(el('small','campo-slot-warning',avisos.join(' · ')));}
+        if(c.recorrente)info.appendChild(el('small','','Recorrente no mês'));
+        card.appendChild(row);
+      });grade.appendChild(card);
     });
-    if(!colunas.length)pai.appendChild(el('p','campo-empty','Todos os dias estão ocultos. Use “Dias ocultos” para reativar.'));
-    pai.append(atalhos,grade);
+    if(!lista.length)grade.appendChild(el('p','campo-empty','Nenhuma saída visível neste mês. Confira os dias ocultos ou cadastre horários em Locais e dias.'));
+    pai.appendChild(grade);
   }
+
   let salvandoDia=false;
   async function alterarDia(dia,ocultar,o){
     if(!o.pode||salvandoDia)return;
