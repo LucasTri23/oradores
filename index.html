@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/shared/designa.css?v=20261125-6">
+<link rel="stylesheet" href="/assets/shared/saida.css?v=20261125-s1">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
@@ -103,6 +104,20 @@ body.sem-cong .so-cong{display:none!important}
 .pr-l span{color:var(--whi2);min-width:0}.pr-l b{font-weight:600;text-align:right}.pr-l b.vago{color:var(--whi3);font-weight:400}
 .pr-secao{grid-column:1/-1;margin:10px 0 2px;padding:4px 8px;border-radius:5px;color:#fff;font:700 10.5px Inter,sans-serif;letter-spacing:.03em}
 .pr-secao.tesouros{background:#575a5d}.pr-secao.ministerio{background:#be8900}.pr-secao.vida{background:#7e0024}
+.bv{width:min(560px,100%);text-align:left}
+.bv .bv-topo{display:flex;align-items:center;gap:12px;margin-bottom:6px}.bv .bv-topo img{width:44px;height:44px;margin:0}
+.bv .bv-passos{display:flex;gap:6px;margin:14px 0 18px}.bv .bv-passos span{flex:1;height:4px;border-radius:4px;background:var(--border2)}.bv .bv-passos span.on{background:var(--pur)}
+.bv h2{font-size:19px;margin:0 0 4px}.bv .bv-sub{color:var(--whi3);font-size:13px;margin:0 0 16px;line-height:1.5}
+.bv label.bv-campo{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;margin:0 0 14px}
+.bv input[type=text],.bv input[type=time],.bv select{min-height:42px;border:1px solid var(--border2);border-radius:8px;background:var(--surf);color:var(--whi);padding:0 10px;font:inherit;font-weight:400}
+.bv .bv-linha{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bv .bv-mod{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer}
+.bv .bv-mod input{width:18px;height:18px;margin-top:2px;accent-color:var(--pur)}.bv .bv-mod strong{display:block;font-size:14px}.bv .bv-mod small{color:var(--whi3);font-size:12px;line-height:1.4}
+.bv .bv-acoes{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:18px}
+.bv .bv-erro{color:var(--red);font-size:13px;margin:8px 0 0}
+.bv .bv-prox a{display:flex;gap:10px;align-items:center;padding:11px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;color:inherit;text-decoration:none;font-size:13.5px}
+.bv .bv-prox a:hover{border-color:var(--pur)}.bv .bv-prox svg{width:18px;height:18px;color:var(--pur);flex:0 0 auto}
+@media(max-width:520px){.bv .bv-linha{grid-template-columns:1fr}}
 </style>
 </head>
 <body class="dz-shell">
@@ -112,7 +127,7 @@ body.sem-cong .so-cong{display:none!important}
   <div class="dz-card">
     <img src="/assets/images/designa-mascote-v1.png" alt="">
     <h1 class="nomeApp">Designa</h1>
-    <p>Oradores e territórios da congregação em um só lugar. Entre com sua conta Google.</p>
+    <p>Discursos, designações, territórios e publicações da congregação em um só lugar. Entre com sua conta Google.</p>
     <button class="dz-btn pri" onclick="entrar()">Entrar com Google</button>
     <div class="err" id="loginErr" hidden></div>
   </div>
@@ -124,6 +139,77 @@ body.sem-cong .so-cong{display:none!important}
     <p>Você ainda não faz parte de uma congregação. Abra o convite enviado pelo responsável da sua congregação, ou crie a sua.</p>
     <button class="dz-btn pri" id="criarBtn" onclick="criarCongregacao()">Criar minha congregação</button>
     <p style="margin:14px 0 0"><button class="dz-btn" onclick="sair()">Sair da conta</button></p>
+  </div>
+</div>
+<div id="vSaiu" class="exit-screen" hidden>
+  <header class="exit-header">
+    <a class="exit-brand" href="/" aria-label="Designa — página de entrada"><img src="/assets/images/designa-icon-v1.png" alt=""><span class="nomeApp">Designa</span></a>
+    <span>Organização da congregação</span>
+  </header>
+  <main class="exit-main" aria-labelledby="saidaTitulo">
+    <section class="exit-copy">
+      <div class="exit-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4M14 8l4 4-4 4M8 12h10"/></svg></div>
+      <p class="exit-eyebrow">Sessão encerrada</p>
+      <h1 id="saidaTitulo">Você saiu da sua conta.</h1>
+      <p>Até logo. Para voltar, entre novamente com sua conta Google.</p>
+    </section>
+    <div class="exit-aside">
+      <section class="exit-return" aria-labelledby="saidaVoltar">
+        <span class="exit-return-label">Seu acesso ao Designa</span>
+        <h2 id="saidaVoltar">Voltar ao Designa</h2>
+        <p>Entre para acessar as programações e os dados da sua congregação.</p>
+        <button type="button" class="exit-login" id="saiuEntrar" onclick="entrar(this)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.23c1.89-1.74 2.99-4.3 2.99-7.36Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.41l-3.23-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.41 13.92A6 6 0 0 1 6.1 12c0-.67.11-1.32.31-1.92V7.49H3.07A10 10 0 0 0 2 12c0 1.61.39 3.14 1.07 4.51l3.34-2.59Z"/><path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.82 1.49l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.59C7.2 7.72 9.4 5.96 12 5.96Z"/></svg>
+          <span>Entrar novamente</span>
+        </button>
+        <p id="saiuErr" class="exit-error" role="alert" hidden></p>
+      </section>
+      <aside class="exit-security" aria-labelledby="saidaSeguranca">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+        <div><h2 id="saidaSeguranca">Este aparelho é compartilhado?</h2><p>Sair do Designa não encerra a sessão do Google. Feche também a sessão da sua conta Google no navegador antes de deixar o aparelho.</p></div>
+      </aside>
+    </div>
+  </main>
+  <footer class="exit-footer"><span>Designa · Organização da congregação</span><span>Você já pode fechar esta página.</span></footer>
+</div>
+<div id="vBoasVindas" class="center" hidden>
+  <div class="dz-card bv">
+    <div class="bv-topo"><img src="/assets/images/designa-mascote-v1.png" alt=""><div><strong class="nomeApp">Designa</strong><div class="hint" style="margin:0" id="bvPassoTxt"></div></div></div>
+    <div class="bv-passos" aria-hidden="true"><span></span><span></span><span></span></div>
+    <section data-bv="0">
+      <h2>Bem-vindo! Vamos configurar sua congregação</h2>
+      <p class="bv-sub">Leva um minuto. Tudo pode ser alterado depois em Configurações.</p>
+      <label class="bv-campo">Nome da congregação<input type="text" id="bvNome" maxlength="80" placeholder="Ex.: Vera Cruz de Minas" autocomplete="off"></label>
+      <label class="bv-campo">Endereço do Salão do Reino (opcional)<input type="text" id="bvEnd" maxlength="160" placeholder="Rua, número – bairro, cidade"></label>
+    </section>
+    <section data-bv="1" hidden>
+      <h2>Quais módulos vocês vão usar?</h2>
+      <p class="bv-sub">Vale para toda a congregação. Desativar um módulo depois não apaga os dados.</p>
+      <div id="bvModulos"></div>
+    </section>
+    <section data-bv="2" hidden>
+      <h2>Dias e horários das reuniões</h2>
+      <p class="bv-sub">Usados para montar as datas das designações, dos discursos e dos horários do PDF.</p>
+      <div class="bv-linha">
+        <label class="bv-campo">Meio de semana<select id="bvMeioDia"><option value="1">Segunda-feira</option><option value="2">Terça-feira</option><option value="3" selected>Quarta-feira</option><option value="4">Quinta-feira</option><option value="5">Sexta-feira</option></select></label>
+        <label class="bv-campo">Horário<input type="time" id="bvMeioHora" value="19:30"></label>
+        <label class="bv-campo">Fim de semana<select id="bvFimDia"><option value="6">Sábado</option><option value="0" selected>Domingo</option></select></label>
+        <label class="bv-campo">Horário<input type="time" id="bvFimHora" value="09:00"></label>
+      </div>
+    </section>
+    <section data-bv="3" hidden>
+      <h2>Tudo pronto!</h2>
+      <p class="bv-sub">A congregação está configurada. Próximos passos sugeridos:</p>
+      <div class="bv-prox">
+        <a href="#pessoas" onclick="concluirBoasVindas('pessoas');return false"><i data-lucide="user-plus"></i><span><b>Cadastrar as pessoas</b> da congregação (com irmão ou irmã e grupo).</span></a>
+        <a href="#configuracoes" onclick="concluirBoasVindas('configuracoes');return false"><i data-lucide="settings"></i><span><b>Marcar as funções</b> de cada pessoa e convidar a equipe.</span></a>
+      </div>
+    </section>
+    <p class="bv-erro" id="bvErro" role="alert" hidden></p>
+    <div class="bv-acoes">
+      <button class="dz-btn" id="bvVoltar" onclick="passoBoasVindas(-1)">Voltar</button>
+      <button class="dz-btn pri" id="bvAvancar" onclick="passoBoasVindas(1)">Continuar</button>
+    </div>
   </div>
 </div>
 <div id="vCarregando" class="center"><p style="color:var(--whi3)">Carregando…</p></div>
@@ -301,7 +387,7 @@ body.sem-cong .so-cong{display:none!important}
 </div>
 
 <script src="/assets/js/data.js?v=20261110-7"></script>
-<script src="/assets/shared/conta.js?v=20261125-q1"></script>
+<script src="/assets/shared/conta.js?v=20261125-s1"></script>
 <script src="/designacoes/regras.js?v=20261125-v3"></script><script src="/designacoes/vmc.js?v=20261125-v2"></script>
 <script src="/assets/shared/congregacao.js?v=20261125-3"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script><script src="/assets/shared/config-store.js?v=20261110-7"></script><script src="/assets/shared/config-central.js?v=20261125-v4"></script>
@@ -314,14 +400,64 @@ const MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','
 const hojeISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const diasDesde=iso=>iso?Math.floor((new Date()-new Date(iso+'T00:00:00'))/864e5):null;
 
-function mostrar(id){['vCarregando','vLogin','vSemCong','vApp'].forEach(v=>$(v).hidden=v!==id);}
+function mostrar(id){['vCarregando','vLogin','vSemCong','vSaiu','vBoasVindas','vApp'].forEach(v=>$(v).hidden=v!==id);document.body.classList.toggle('is-signed-out',id==='vSaiu');}
 function erro(msg){mostrar('');$('erroGeral').textContent=msg;$('erroGeral').hidden=false;}
 
-async function entrar(){
+async function entrar(botao){
+  const tela=$('vSaiu').hidden?'vLogin':'vSaiu',status=$(tela==='vSaiu'?'saiuErr':'loginErr');
+  const b=botao||document.querySelector('#'+tela+' button[onclick^="entrar"]');if(b?.disabled)return;
+  const rotulo=b?.innerHTML;status.hidden=true;if(b){b.disabled=true;b.textContent='Abrindo Google…';b.setAttribute('aria-busy','true');}
   try{await Conta.entrar(location.origin+'/'+location.search);}
-  catch(e){$('loginErr').textContent='Não foi possível entrar: '+e.message;$('loginErr').hidden=false;}
+  catch(e){status.textContent='Não foi possível abrir o acesso com Google. Tente novamente.';status.hidden=false;}
+  finally{if(b){b.disabled=false;b.innerHTML=rotulo;b.removeAttribute('aria-busy');}}
 }
-async function sair(){await Conta.sair();location.replace('/');}
+async function sair(){try{await Conta.sair();location.replace('/?saiu=1');}catch(e){toast('Não foi possível sair da conta. Verifique a conexão e tente novamente.',6000);}}
+
+// ── Primeiro acesso do proprietário: nome, módulos e reuniões (Conta.vinculo espera terminar) ──
+let bv=null;
+window.DesignaPrimeiroAcesso=v=>new Promise(resolve=>{
+  bv={v,resolve,passo:0};
+  $('bvNome').value=v.nome&&v.nome!=='Minha Congregação'?v.nome:'';
+  const box=$('bvModulos');box.innerHTML='';
+  Object.entries(Conta.MODULOS).forEach(([k,m])=>{
+    const l=document.createElement('label');l.className='bv-mod';const i=document.createElement('input');i.type='checkbox';i.value=k;i.checked=(v.modulosAtivos||Object.keys(Conta.MODULOS)).includes(k);
+    const t=document.createElement('span'),st=document.createElement('strong'),sm=document.createElement('small');st.textContent=m.nome;sm.textContent=m.descricao;t.append(st,sm);l.append(i,t);box.appendChild(l);
+  });
+  mostrar('vBoasVindas');renderBoasVindas();setTimeout(()=>$('bvNome').focus(),50);
+});
+function renderBoasVindas(){
+  document.querySelectorAll('[data-bv]').forEach(s=>s.hidden=Number(s.dataset.bv)!==bv.passo);
+  document.querySelectorAll('.bv-passos span').forEach((s,i)=>s.classList.toggle('on',i<=Math.min(bv.passo,2)));
+  $('bvPassoTxt').textContent=bv.passo<3?'Passo '+(bv.passo+1)+' de 3':'Configuração concluída';
+  $('bvVoltar').hidden=bv.passo===0||bv.passo===3;$('bvAvancar').textContent=bv.passo===2?'Concluir':bv.passo===3?'Ir para o início':'Continuar';
+  $('bvErro').hidden=true;DesignaUI.desenharIcones?.();
+}
+async function passoBoasVindas(dir){
+  if(dir<0){bv.passo=Math.max(0,bv.passo-1);return renderBoasVindas();}
+  const falha=m=>{$('bvErro').textContent=m;$('bvErro').hidden=false;};
+  if(bv.passo===0&&$('bvNome').value.trim().length<2)return falha('Informe o nome da congregação.');
+  const modulos=[...document.querySelectorAll('#bvModulos input:checked')].map(i=>i.value);
+  if(bv.passo===1&&!modulos.length)return falha('Escolha pelo menos um módulo.');
+  if(bv.passo===3)return concluirBoasVindas('painel');
+  if(bv.passo<2){bv.passo++;return renderBoasVindas();}
+  const b=$('bvAvancar');b.disabled=true;b.textContent='Salvando…';
+  try{
+    const sb=await Conta.supabase(),v=bv.v,nome=$('bvNome').value.trim(),end=$('bvEnd').value.trim();
+    const meio=Number($('bvMeioDia').value),fim=Number($('bvFimDia').value),horaMeio=$('bvMeioHora').value||null,horaFim=$('bvFimHora').value||'';
+    const r=await sb.rpc('set_workspace_display_name',{target_workspace:v.workspaceId,new_name:nome});if(r.error)throw r.error;v.nome=nome;
+    // Dias e horários ficam salvos mesmo para módulos desligados agora (servem se forem ligados depois).
+    const store=ConfigStore.criar(sb,v,user,Conta);
+    await store.salvar('desig_config','app',{diaMeio:meio,horaMeio,diaFim:fim});
+    await store.salvar('config','app',{cong:nome,end,dia:fim,hor:horaFim});
+    await Conta.salvarModulos(v,modulos);
+    bv.passo=3;renderBoasVindas();
+  }catch(e){falha('Não foi possível salvar: '+(e.message||'tente novamente')+'.');}
+  finally{b.disabled=false;if(bv.passo===2)b.textContent='Concluir';}
+}
+function concluirBoasVindas(destino){
+  if(!bv)return;if(destino&&destino!=='painel')history.replaceState(null,'','#'+destino);
+  const r=bv.resolve;bv=null;mostrar('vCarregando');r(true);
+}
 
 async function criarCongregacao(){
   const b=$('criarBtn');if(b.disabled)return;b.disabled=true;
@@ -618,7 +754,7 @@ async function iniciar(){
   try{
     const params=new URLSearchParams(location.search);
     user=await Conta.usuario();
-    if(!user){mostrar('vLogin');return;}
+    if(!user){mostrar(params.get('saiu')?'vSaiu':'vLogin');if(params.get('saiu'))history.replaceState(null,'','/');return;}
     await aceitarConvite(params);
     vinc=await Conta.vinculo(user);
     if(!vinc){mostrar('vSemCong');return;}

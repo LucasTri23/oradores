@@ -10,7 +10,7 @@ function setup(role='owner',configured=true){
   vm.createContext(ctx);vm.runInContext(fs.readFileSync('assets/shared/conta.js','utf8'),ctx);
   const c=ctx.window.Conta;
   c.usarCliente({from(table){return {select(){return this;},eq(){return this;},async maybeSingle(){return {data:table==='workspace_members'?{workspace_id:'w',role,modules:['oradores','designacoes'],readonly:['designacoes']}:{name:'Central',enabled_modules:['designacoes'],modules_configured_at:configured?'date':null}};}};},async rpc(name,args){calls.push({name,args});return {error:null};}});
-  return {c,calls,dialogs};
+  return {c,calls,dialogs,ctx};
 }
 
 test('módulos ativos limitam proprietário e preservam permissões individuais',async()=>{
@@ -51,4 +51,13 @@ test('primeiro acesso do proprietário aguarda escolha; membro não recebe diál
 test('ícone é quadrado e manifesto corresponde ao arquivo real',()=>{
   const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')),b=fs.readFileSync('.'+m.icons[0].src);
   const w=b.readUInt32BE(16),h=b.readUInt32BE(20);assert.equal(w,h);assert.equal(m.icons[0].sizes,`${w}x${h}`);
+});
+test('na página inicial, o primeiro acesso do proprietário abre o assistente em vez da janela de módulos',async()=>{
+  const {c,dialogs,ctx}=setup('owner',false);let recebido=null,liberar;
+  ctx.window.DesignaPrimeiroAcesso=v=>{recebido=v;return new Promise(r=>liberar=r);};
+  let pronto=false;const pending=c.vinculo({id:'u'}).then(v=>{pronto=true;return v;});
+  await new Promise(r=>setImmediate(r));
+  assert.equal(dialogs.length,0);assert.equal(recebido.workspaceId,'w');assert.equal(pronto,false);
+  liberar(true);const v=await pending;assert.equal(v.workspaceId,'w');
+  const membro=setup('editor',false);membro.ctx.window.DesignaPrimeiroAcesso=()=>{throw new Error('não deveria abrir');};await membro.c.vinculo({id:'u'});
 });

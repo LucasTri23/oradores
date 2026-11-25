@@ -6,7 +6,7 @@ window.Conta=(function(){
   const MODULOS={
     oradores:{nome:'Oradores',caminho:'/oradores',icone:'mic',descricao:'Programação de discursos, cadastro de oradores e histórico.'},
     territorios:{nome:'Territórios',caminho:'/territorios',icone:'map',descricao:'Registro de territórios, cartões de mapa, dirigentes e campanhas.'},
-    designacoes:{nome:'Designações',caminho:'/designacoes',icone:'clipboard-list',descricao:'Presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões.'},
+    designacoes:{nome:'Designações',caminho:'/designacoes',icone:'clipboard-list',descricao:'Vida e Ministério, presidente, leitor, indicadores, microfones, áudio e vídeo e saídas de campo.'},
     publicacoes:{nome:'Publicações',caminho:'/publicacoes',icone:'book-open',descricao:'Estoque mensal por PDF e pedidos de pessoas ou da congregação.'},
     quadro:{nome:'Quadro de anúncios',caminho:'/quadro',icone:'megaphone',descricao:'Consultar e baixar programações. Editar permite personalizar modelos, cores e nomes no PDF.'}
   };
@@ -44,7 +44,8 @@ window.Conta=(function(){
 
   async function sair(){
     const sb=await supabase();
-    await sb.auth.signOut();
+    const resultado=await sb.auth.signOut();
+    if(resultado?.error)throw new Error('Não foi possível encerrar a sessão. Tente novamente.');
     try{localStorage.removeItem('oradores_workspace');}catch(e){}
   }
 
@@ -67,7 +68,8 @@ window.Conta=(function(){
     if(wsError||!ws)throw new Error('Não foi possível carregar os módulos da congregação. Confira se o supabase.sql atualizado foi aplicado e tente novamente.');
     try{localStorage.setItem('oradores_workspace',data.workspace_id);}catch(e){}
     const v={workspaceId:data.workspace_id,role:data.role,...acessoDe(data),nome:ws.name||'Minha Congregação',modulosAtivos:ws.enabled_modules,modulosConfigurados:!!ws.modules_configured_at};
-    if(v.role==='owner'&&!v.modulosConfigurados)await escolherModulos(v);
+    // Primeiro acesso do proprietário: na página inicial, o assistente completo; nas outras, a escolha de módulos.
+    if(v.role==='owner'&&!v.modulosConfigurados){if(typeof window.DesignaPrimeiroAcesso==='function')await window.DesignaPrimeiroAcesso(v);else await escolherModulos(v);}
     return v;
   }
 
@@ -163,7 +165,12 @@ window.DesignaUI=(function(){
     item('layout-dashboard','Início','/');
     item('settings','Configurações da congregação','/#configuracoes');
     item('sun-moon','Alternar tema',()=>{alternarTema();pop.classList.remove('open');});
-    item('log-out','Sair',opcoes.sair||(async()=>{await Conta.sair();location.replace('/');}));
+    item('log-out','Sair',async event=>{
+      const b=event.currentTarget;if(b.disabled)return;b.disabled=true;
+      try{if(opcoes.sair)await opcoes.sair();else{await Conta.sair();location.replace('/?saiu=1');}}
+      catch(e){toast('Não foi possível sair da conta. Verifique a conexão e tente novamente.',6000);}
+      finally{b.disabled=false;}
+    });
     btn.onclick=e=>{e.stopPropagation();pop.classList.toggle('open');};
     document.addEventListener('click',e=>{if(!pop.contains(e.target))pop.classList.remove('open');});
     el.append(btn,pop);

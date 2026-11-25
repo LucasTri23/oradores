@@ -139,9 +139,9 @@ async function doSetup(){
 }
 
 async function logout(){
-  if(supabase)await supabase.auth.signOut();
-  currentUser=null;activeWorkspaceId=null;localStorage.removeItem('oradores_workspace');
-  document.getElementById('workspaceWelcome').hidden=true;
-  document.getElementById('setup').style.display='flex';
-  location.replace('/');
+  try{
+    if(supabase){const resultado=await supabase.auth.signOut();if(resultado?.error)throw resultado.error;}
+    currentUser=null;activeWorkspaceId=null;localStorage.removeItem('oradores_workspace');
+    location.replace('/?saiu=1');
+  }catch(e){toast('Não foi possível sair da conta. Verifique a conexão e tente novamente.',6000);}
 }
