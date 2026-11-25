@@ -163,6 +163,7 @@ div.vmc-topo{cursor:default}
       </div>
       <div class="esp"></div>
       <button class="dz-btn so-edicao" onclick="sugerirMes()"><i data-lucide="wand-sparkles"></i> Sugerir vagas vazias</button>
+      <button class="dz-btn danger so-edicao" onclick="abrirApagar('programacao')"><i data-lucide="trash-2"></i> Apagar designações</button>
       <button class="dz-btn" onclick="abrirLembretes()"><i data-lucide="bell-ring"></i> Lembretes</button>
       <button class="dz-btn" onclick="compartilharMes()"><i data-lucide="send"></i> WhatsApp</button>
       <button class="dz-btn pri" onclick="abrirPdf()"><i data-lucide="file-down"></i> Quadro de anúncios</button>
@@ -184,6 +185,7 @@ div.vmc-topo{cursor:default}
       <label class="vmc-hora">Início <input type="time" id="vmcHora" onchange="salvarHoraVmc()" aria-label="Horário de início da reunião do meio de semana"></label>
       <button class="dz-btn so-edicao" id="vmcBuscar" onclick="buscarApostila()"><i data-lucide="cloud-download"></i> Buscar apostila</button>
       <button class="dz-btn so-edicao" onclick="sugerirVmcMes()"><i data-lucide="wand-sparkles"></i> Sugerir vagas vazias</button>
+      <button class="dz-btn danger so-edicao" onclick="abrirApagar('vmc')"><i data-lucide="trash-2"></i> Apagar designações</button>
       <button class="dz-btn pri" onclick="abrirPdfVmc()"><i data-lucide="file-down"></i> PDF da programação</button>
     </div>
     <p class="sub-sec">As partes vêm da apostila Nossa Vida e Ministério Cristão publicada no jw.org. Quem pode fazer cada parte é marcado em Configurações → Funções → Vida e Ministério. O horário de início é usado para calcular os horários do PDF.</p>
@@ -277,6 +279,25 @@ div.vmc-topo{cursor:default}
   </div>
 </div>
 
+<!-- Janela: apagar designações -->
+<div class="fundo" id="janApagar" hidden onclick="if(event.target===this)fecharJanela('janApagar')">
+  <div class="janela" style="max-width:480px">
+    <h2>Apagar designações</h2>
+    <p class="sub">Tira as pessoas designadas para você refazer. Pessoas, funções, configurações, eventos e as partes da apostila continuam salvos.</p>
+    <label class="campo">O que apagar</label>
+    <label class="check"><input type="checkbox" id="apProg" onchange="resumoApagar()"> Programação (indicadores, microfones, áudio e vídeo, Zoom, presidente e leitor)</label>
+    <label class="check"><input type="checkbox" id="apVmc" onchange="resumoApagar()"> Vida e Ministério (partes da reunião do meio de semana)</label>
+    <label class="check"><input type="checkbox" id="apCampo" onchange="resumoApagar()"> Saídas de campo (dirigentes e grupos)</label>
+    <label class="campo" for="apPeriodo">Período</label>
+    <select id="apPeriodo" onchange="resumoApagar()"><option value="futuro">De hoje em diante</option><option value="mes" id="apMesOpcao">Só o mês aberto</option><option value="tudo">Tudo, inclusive reuniões passadas</option></select>
+    <p class="aviso" id="apAvisoHist" hidden>As reuniões passadas mostram há quanto tempo cada pessoa não faz cada parte. Apagando o histórico, essa contagem recomeça do zero.</p>
+    <p class="hint" id="apResumo" role="status"></p>
+    <label class="campo" for="apConfirma">Para confirmar, digite APAGAR</label>
+    <input type="text" id="apConfirma" autocomplete="off" oninput="resumoApagar()">
+    <div class="acoes"><div class="esp"></div><button class="dz-btn" onclick="fecharJanela('janApagar')">Cancelar</button><button class="dz-btn pri" id="apBtn" onclick="apagarDesignacoes()" disabled>Apagar</button></div>
+  </div>
+</div>
+
 <!-- Janela: PDF da programação do meio de semana -->
 <div class="fundo" id="janPdfVmc" hidden onclick="if(event.target===this)fecharJanela('janPdfVmc')">
   <div class="janela" style="max-width:420px">
@@ -363,7 +384,7 @@ div.vmc-topo{cursor:default}
 <script src="/designacoes/pdf.js?v=20261125-v1"></script>
 <script src="/assets/shared/quadro-dados.js?v=20261124-1"></script>
 <script src="/designacoes/campo-quadro.js?v=20261125-4"></script>
-<script src="/designacoes/app.js?v=20261125-v1"></script>
+<script src="/designacoes/app.js?v=20261125-v2"></script>
 <script src="/designacoes/vmc-app.js?v=20261125-v2"></script>
 <script src="/assets/shared/module-flow.js?v=20261110-7"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script>

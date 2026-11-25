@@ -657,6 +657,63 @@ async function renderHistorico(){
   }catch(e){div.innerHTML='';const v=document.createElement('div');v.className='vazio';v.textContent='Não foi possível carregar o histórico: '+e.message;div.appendChild(v);}
 }
 
+// ── Apagar designações (para recomeçar) ──
+// Tira só as pessoas designadas: reuniões, semanas da apostila, eventos e configurações continuam.
+let origemApagar='programacao';
+async function salvarVarios(colecao,itens){
+  exigirEdicao();
+  for(let i=0;i<itens.length;i+=200){
+    const lote=itens.slice(i,i+200).map(({id,dados})=>{const{id:_,...limpo}=dados;return {id:String(id),workspace_id:vinc.workspaceId,collection:colecao,data:limpo,owner_id:user.id};});
+    const{error}=await sb.from('app_records').upsert(lote,{onConflict:'workspace_id,collection,id'});if(error)throw error;
+  }
+}
+function alvosApagar(){
+  const per=$('apPeriodo').value,hoje=hojeISO(),m=origemApagar==='vmc'?mesVmc:mes;
+  const prefixo=m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0');
+  const dentro=d=>!!d&&(per==='tudo'||(per==='futuro'&&d>=hoje)||(per==='mes'&&d.startsWith(prefixo)));
+  return {
+    prog:$('apProg').checked?reunioes.filter(r=>dentro(r.data)&&Object.values(r.pessoas||{}).some(ids=>(ids||[]).some(Boolean))):[],
+    vmc:$('apVmc').checked?(semanasVmc||[]).filter(s=>dentro(s.data)&&Object.values(s.pessoas||{}).some(Boolean)):[],
+    campo:$('apCampo').checked?campo.filter(c=>dentro(c.data)&&(c.dirigente||c.grupoId)):[]
+  };
+}
+function resumoApagar(){
+  const a=alvosApagar(),total=a.prog.length+a.vmc.length+a.campo.length;
+  $('apResumo').textContent=total?'Vai limpar: '+[a.prog.length&&a.prog.length+' reunião(ões) da Programação',a.vmc.length&&a.vmc.length+' semana(s) da Vida e Ministério',a.campo.length&&a.campo.length+' saída(s) de campo'].filter(Boolean).join(', ')+'.':'Nada para apagar com essas opções.';
+  $('apAvisoHist').hidden=$('apPeriodo').value!=='tudo';
+  $('apBtn').disabled=!total||$('apConfirma').value.trim().toUpperCase()!=='APAGAR';
+}
+async function abrirApagar(origem='programacao'){
+  try{exigirEdicao();}catch(e){return;}
+  origemApagar=origem;
+  if(!semanasVmc){try{await carregarVmc();}catch(e){}}
+  $('apConfirma').value='';$('apPeriodo').value='futuro';$('apProg').checked=true;$('apVmc').checked=true;$('apCampo').checked=false;
+  const m=origem==='vmc'?mesVmc:mes;$('apMesOpcao').textContent='Só '+m.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  resumoApagar();abrirJanela('janApagar');
+}
+async function apagarDesignacoes(){
+  const a=alvosApagar(),b=$('apBtn');if($('apConfirma').value.trim().toUpperCase()!=='APAGAR')return;
+  b.disabled=true;b.textContent='Apagando…';
+  try{
+    if(a.prog.length){
+      const itens=a.prog.map(r=>({id:r.data,dados:{...r,pessoas:{}}}));await salvarVarios('desig_reunioes',itens);
+      const ids=new Set(itens.map(i=>i.id));reunioes=reunioes.map(r=>ids.has(r.data)?{...r,pessoas:{}}:r);
+    }
+    if(a.vmc.length){
+      const itens=a.vmc.map(s=>({id:s.semana,dados:dadosVmc({...s,pessoas:{}})}));await salvarVarios('desig_vmc',itens);
+      const ids=new Set(itens.map(i=>i.id));semanasVmc=semanasVmc.map(s=>ids.has(s.semana)?{...s,pessoas:{}}:s);
+    }
+    if(a.campo.length){
+      const limpar=c=>({...dadosCampo(c),dirigente:null,grupoId:null,grupoNome:'',recorrente:false});
+      const itens=a.campo.map(c=>({id:c.id,dados:limpar(c)}));await salvarVarios('desig_campo',itens);
+      const ids=new Set(itens.map(i=>i.id));campo=campo.map(c=>ids.has(c.id)?{...c,...limpar(c)}:c);
+    }
+    fecharJanela('janApagar');irAba();
+    toast('✓ Designações apagadas. Agora é só refazer.',4500);
+  }catch(e){if(e.message!=='Somente leitura')toast('Não foi possível apagar tudo: '+e.message+'. Atualize a página e confira.',7000);}
+  finally{b.textContent='Apagar';resumoApagar();}
+}
+
 // ── Início ──
 async function iniciar(){
   document.querySelectorAll('.nomeApp').forEach(e=>e.textContent=APP_NOME);
