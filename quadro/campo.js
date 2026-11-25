@@ -11,7 +11,7 @@
     });
     const linhas=[...grupos.values()].sort((a,b)=>a.data.localeCompare(b.data)||String(a.hora).localeCompare(String(b.hora)));
     linhas.forEach(c=>{
-      const dia=new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'});
+      const dia=new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'}).toLocaleUpperCase('pt-BR');
       c.quando=(c.datas.length>1?dia+' · dias ':dia+' · ')+c.datas.map(d=>d.slice(8,10)+'/'+d.slice(5,7)).join(', ');
     });
     return {data,linhas};
@@ -44,7 +44,7 @@
         const headers=grupos?['GRUPO / DIA','HORÁRIO','DIRIGENTE','LOCAL']:['DIA','HORÁRIO','LOCAL','DIRIGENTE'];
         const rows=s.linhas.map(c=>{
           const datas=(c.datas||[c.data]).map(d=>d.slice(8,10)+'/'+d.slice(5,7)).join(', ');
-          const dia=s.tipo==='sabado'?datas:new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'});
+          const dia=s.tipo==='sabado'?datas:new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'}).toLocaleUpperCase('pt-BR');
           const primeira=grupos&&c.grupo?c.grupo:dia;
           const vals=grupos?[primeira,c.hora||'A definir',c.nome,c.local]:[primeira,c.hora||'A definir',c.local,c.nome];
           const cells=vals.map((v,i)=>quebra(v,larguras[i]-4,size));

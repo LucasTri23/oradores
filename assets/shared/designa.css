@@ -207,6 +207,19 @@ body.somente-leitura [onclick^="compartilharOradores"],body.somente-leitura #cre
 .pf-tabela thead .pf-nome{z-index:3}
 .pf-tabela tbody .pf-nome strong{display:block;font-weight:600;color:var(--whi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pf-tabela tbody .pf-nome small{display:block;font-size:10px;color:var(--whi3);font-weight:500}
-.pf-tabela input[type=checkbox]{width:20px;height:20px;accent-color:var(--pur);cursor:pointer}
+.pf-tabela input[type=checkbox]{appearance:none;-webkit-appearance:none;width:24px;height:24px;flex:0 0 24px;margin:0;display:grid;place-content:center;border:1.5px solid var(--border2);border-radius:7px;background:var(--surf2);cursor:pointer;transition:background .15s,border-color .15s}
+.pf-tabela input[type=checkbox]:checked{background:var(--pur);border-color:var(--pur)}
+.pf-tabela input[type=checkbox]:checked::after{content:'';width:6px;height:11px;border:solid white;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.pf-tabela input[type=checkbox]:focus-visible{outline:3px solid var(--pur);outline-offset:3px}
+.pf-tabela input[type=checkbox]:disabled{cursor:default;opacity:.65}
+.pf-tabela td{padding:0}.pf-escolha{display:flex!important;align-items:center;justify-content:center;gap:9px;min-height:58px;padding:10px;box-sizing:border-box;cursor:pointer;margin:0!important}
+.pf-funcao{display:none}.pf-tabela tbody .pf-nome strong{font-size:14px;white-space:normal;line-height:1.5}
+.pf-tabela tbody .pf-nome small{font-size:11px;margin-top:3px}
 .pf-tabela tbody tr:hover th,.pf-tabela tbody tr:hover td{background:var(--pur-dim2)}
-@media(max-width:600px){.pf-tabela .pf-nome{min-width:120px;max-width:140px}.pf-tabela th,.pf-tabela td{padding:8px 6px}}
+@media(max-width:600px){
+  .pf-wrap{max-height:none;overflow:visible;border:0;background:none}.pf-tabela,.pf-tabela tbody{display:block}.pf-tabela thead{display:none}
+  .pf-tabela tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px;margin-bottom:12px;background:var(--surf);border:1px solid var(--border);border-radius:14px}
+  .pf-tabela tbody tr[hidden]{display:none}.pf-tabela .pf-nome{position:static;min-width:0;max-width:none;grid-column:1/-1;padding:0 0 10px;border:0}
+  .pf-tabela td{border:0;background:none}.pf-escolha{justify-content:flex-start;min-height:48px;padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--surf2)}
+  .pf-escolha:has(input:checked){border-color:var(--pur);background:var(--pur-dim)}.pf-funcao{display:block;font:600 11px Inter,sans-serif;color:var(--whi2)}
+}

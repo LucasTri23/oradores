@@ -261,7 +261,7 @@ async function gerarPdfCampoQuadro(JsPDF,meses,congregacao,modelo,cores){
   if(!window.quadroAcesso?.designacoes)throw new Error('Sua conta não tem acesso às Designações.');
   if(!window.QuadroCampo){
     if(!bibliotecaCampoPromise)bibliotecaCampoPromise=new Promise((resolve,reject)=>{
-      const script=document.createElement('script');script.src='/quadro/campo.js?v=20261124-3';
+      const script=document.createElement('script');script.src='/quadro/campo.js?v=20261124-4';
       script.onload=()=>window.QuadroCampo?resolve():reject(new Error('Gerador de campo indisponível.'));
       script.onerror=()=>{script.remove();reject(new Error('Não foi possível carregar o modelo de campo. Tente novamente.'));};document.head.appendChild(script);
     }).catch(e=>{bibliotecaCampoPromise=null;throw e;});

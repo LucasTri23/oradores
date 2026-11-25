@@ -10,7 +10,7 @@ test('datas numéricas somente no sábado em todos os modelos',()=>{
   for(const modelo of ['cartoes','editorial','compacto','word','ilustrado']){
     const pdf=Campo.criarPdf(jsPDF,[{data:new Date(2026,11,1),linhas}],'Central',modelo,{}),raw=pdf.output();
     assert(raw.includes('05/12'));assert(!raw.includes('07/12'));assert(!raw.includes('06/12'));
-    assert(raw.includes('segunda-feira'));assert(raw.includes('domingo'));assert.equal(pdf.getNumberOfPages(),1);
+    assert(raw.includes('SEGUNDA-FEIRA'));assert(raw.includes('DOMINGO'));assert.equal(pdf.getNumberOfPages(),1);
   }
 });
 test('recorrência aparece uma vez no mês com todas as datas',()=>{

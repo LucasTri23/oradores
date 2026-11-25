@@ -97,7 +97,7 @@
     const q=Regras.quantidades(d);
     const colunas=[...Object.keys(Regras.FUNCOES).filter(f=>(q.meio[f]||0)+(q.fim[f]||0)>0).map(f=>[f,Regras.FUNCOES[f]]),[Regras.FUNCAO_CAMPO.chave,Regras.FUNCAO_CAMPO]];
     const linhas=[];
-    const f=formulario(pai,'Quem pode fazer cada função',pode,async()=>{
+    const f=formulario(pai,'Funções das pessoas',pode,async()=>{
       const mudaram=linhas.filter(l=>l.caixas.some(([k,cb])=>cb.checked!==!!l.funcoes[k]));
       for(const l of mudaram){
         const funcoes={...l.funcoes};l.caixas.forEach(([k,cb])=>{if(cb.checked)funcoes[k]=true;else delete funcoes[k];});
@@ -105,7 +105,7 @@
         l.funcoes=funcoes;porId.set(l.id,{...(porId.get(l.id)||{}),funcoes});
       }
     });
-    f.body.appendChild(el('p','hint','Marque o que cada pessoa pode fazer. Só aparecem nas listas das Designações (e nas sugestões) as pessoas marcadas. As pessoas vêm de Início → Pessoas; inativas não aparecem aqui.'));
+    f.body.appendChild(el('p','hint','Selecione as funções que cada pessoa pode realizar. Pessoas inativas não aparecem nesta lista. Salve as alterações ao terminar.'));
     if(!pessoas.length){f.body.appendChild(el('p','hint','Nenhuma pessoa cadastrada ainda. Cadastre em Início → Pessoas.'));f.button.hidden=true;return;}
     const busca=el('input','pf-busca');busca.type='search';busca.placeholder='Buscar nome…';busca.setAttribute('aria-label','Buscar pessoa');
     // A busca não conta como alteração do formulário.
@@ -119,7 +119,11 @@
       const tr=el('tr'),th=el('th','pf-nome');th.scope='row';
       th.appendChild(el('strong','',p.nome));th.appendChild(el('small','',C.GRUPOS?.[p.grupo||'']||''));tr.appendChild(th);
       const funcoes={...(porId.get(p.id)?.funcoes||{})},caixas=[];
-      colunas.forEach(([k,info])=>{const td=el('td'),cb=el('input');cb.type='checkbox';cb.checked=!!funcoes[k];cb.setAttribute('aria-label',p.nome+' — '+info.nome);td.appendChild(cb);tr.appendChild(td);caixas.push([k,cb]);});
+      colunas.forEach(([k,info])=>{
+        const td=el('td'),label=el('label','pf-escolha'),cb=el('input'),texto=el('span','pf-funcao',info.curto||info.nome);
+        cb.type='checkbox';cb.disabled=!pode;cb.checked=!!funcoes[k];cb.setAttribute('aria-label',p.nome+' — '+info.nome);
+        label.append(cb,texto);td.appendChild(label);tr.appendChild(td);caixas.push([k,cb]);
+      });
       tbody.appendChild(tr);linhas.push({id:p.id,nome:p.nome,funcoes,caixas,tr});
     });
     busca.oninput=()=>{const t=C.normalizar(busca.value);linhas.forEach(l=>l.tr.hidden=!!t&&!C.normalizar(l.nome).includes(t));};

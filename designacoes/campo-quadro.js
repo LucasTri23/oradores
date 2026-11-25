@@ -1,5 +1,5 @@
 (function(root){
-  const dias=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const dias=['DOMINGO','SEGUNDA-FEIRA','TERÇA-FEIRA','QUARTA-FEIRA','QUINTA-FEIRA','SEXTA-FEIRA','SÁBADO'];
   const ordem=[1,2,3,4,5,6,0];
   const ocultosValidos=valores=>[...new Set((Array.isArray(valores)?valores:[]).filter(d=>Number.isInteger(d)&&d>=0&&d<=6))];
   function agrupar(lista,ocultos=[]){return ordem.filter(d=>!ocultosValidos(ocultos).includes(d)).map(dia=>({dia,itens:lista.filter(c=>new Date(c.data+'T12:00:00').getDay()===dia).sort((a,b)=>a.data.localeCompare(b.data)||String(a.hora).localeCompare(String(b.hora)))}));}
