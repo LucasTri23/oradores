@@ -87,3 +87,20 @@ test('quantidades: padrão e personalizada',()=>{
   assert.equal(R.quantidades({quantidades:{meio:{indicadores:-1}}}).meio.indicadores,2);
   assert.equal(R.quantidades({}).meio.presidente,undefined,'meio de semana não tem presidente');
 });
+test('fim de semana tem oração inicial e o dirigente de A Sentinela fixo não entra em outras funções',()=>{
+  const R2=require('../designacoes/regras.js');
+  assert.ok(R2.FUNCOES_POR_TIPO.fim.includes('oracao'));assert.equal(R2.quantidades({}).fim.oracao,1);assert.ok(!R2.FUNCOES_POR_TIPO.meio.includes('oracao'));
+  const todas={presidente:true,oracao:true,leitor:true,indicadores:true};
+  const ps=[{id:'dir',nome:'Ramon',funcoes:todas},{id:'sub',nome:'Douglas',funcoes:todas},{id:'c',nome:'Carlos',funcoes:todas}];
+  const cfg={dirigenteSentinela:'dir',dirigenteSentinelaSubstituto:'sub'},fim={data:'2026-12-12',tipo:'fim',pessoas:{}},meio={data:'2026-12-09',tipo:'meio',pessoas:{}};
+  const ids=(reuniao,oradores={})=>R2.candidatos({reuniao,funcao:'indicadores',pessoas:ps,reunioes:[],oradores,cfg}).map(c=>c.pessoa.id);
+  assert.deepEqual(ids(fim),['c','sub']);
+  assert.deepEqual(ids(meio).sort(),['c','dir','sub']);
+  // Com discurso fora, o substituto dirige e quem fica livre é o titular (que está fora: aviso de discurso).
+  const oradores={discursantes:[{nome:'Ramon',saidas:[{data:'2026-12-12',destino:'Central'}]}]};
+  assert.deepEqual(R2.dirigenteSentinela('2026-12-12',cfg,ps,oradores),{id:'sub',substituindo:true,titular:'dir'});
+  assert.deepEqual(ids(fim,oradores).sort(),['c','dir']);
+  assert.ok(R2.conflitos({reuniao:fim,pessoa:ps[0],funcao:'indicadores',oradores,cfg,pessoas:ps}).some(a=>a.startsWith('Tem discurso fora')));
+  const [s]=R2.sugerir({reunioesAlvo:[fim],todas:[],pessoas:ps,cfg:{...cfg,quantidades:{fim:{presidente:1,oracao:1,leitor:0,indicadores:0,zoom:0,microfones:0,audio_video:0}}},oradores:{}});
+  assert.ok(!Object.values(s.pessoas).flat().includes('dir'));
+});

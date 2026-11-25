@@ -1,5 +1,5 @@
 (function(root){
-  let montado=null,sequencia=0;
+  let montado=null,montando=null,sequencia=0;
   const el=(tag,classe,texto)=>{const n=document.createElement(tag);if(classe)n.className=classe;if(texto)n.textContent=texto;return n;};
   function campo(pai,titulo,valor,tipo='text',opcoes){
     const box=el('div','native-field'),label=el('label','',titulo),input=el(opcoes?'select':tipo==='textarea'?'textarea':'input');
@@ -13,8 +13,13 @@
     body.disabled=!pode;button.type='submit';button.hidden=!pode;status.setAttribute('role','status');status.setAttribute('aria-live','polite');footer.append(button,status);form.append(heading,body,footer);pai.appendChild(form);
     FormUX.rastrear(form,button,status);form.addEventListener('submit',e=>{e.preventDefault();FormUX.executar(form,button,status,()=>gravar());});return {form,body,button,status};
   }
-  async function montar({container,vinc,user}){
-    if(montado===vinc.workspaceId)return;
+  // Uma montagem por vez: abrir a página já em #configuracoes chama montar duas vezes seguidas.
+  function montar(args){
+    if(montado===args.vinc.workspaceId)return Promise.resolve();
+    if(!montando)montando=montarAgora(args).finally(()=>{montando=null;});
+    return montando;
+  }
+  async function montarAgora({container,vinc,user}){
     container.textContent='Carregando preferências…';
     try{
       const sb=await Conta.supabase(),store=ConfigStore.criar(sb,vinc,user,Conta),ver=m=>Conta.podeVer(vinc,m),editar=m=>Conta.podeEditar(vinc,m);
@@ -23,6 +28,8 @@
       const mensagens=ver('oradores')?await store.ler('config','mensagens'):{};
       const pessoasDirigentes=ver('territorios')&&ver('designacoes')?await Promise.all(['cong_pessoas','desig_pessoas'].map(col=>Congregacao.listar(sb,vinc.workspaceId,col))):null;
       let atualizarDirigentes=null;
+      // Cartões fixos da página são pegos antes de limpar: numa remontagem eles estão dentro dos painéis antigos.
+      const fixos=Object.fromEntries(['configNomeCard','configInstalarCard','configAcessoCard','painelDono','cfgNomeBtn'].map(id=>[id,document.getElementById(id)]));
       container.replaceChildren();container.classList.add('settings-center');const nav=el('nav','config-tabs');nav.setAttribute('aria-label','Seções das configurações');container.appendChild(nav);
       const paineis={},botoes={};
       const descricoes={congregacao:'Identificação da congregação e acesso ao aplicativo.',reunioes:'Defina os dias e horários usados nas programações.',funcoes:'Escolha as funções usadas e quem pode realizá-las.',campo:'Organize os locais e os horários semanais de saída.',equipe:'Gerencie os módulos, os convites e as permissões de acesso.',preferencias:'Prepare mensagens e mantenha os cadastros de territórios organizados.'};
@@ -31,8 +38,8 @@
         const intro=el('header','settings-panel-heading'),titulo=el('h2','',nome);titulo.id=painel.id+'-titulo';intro.append(titulo,el('p','',descricoes[key]));painel.setAttribute('aria-labelledby',titulo.id);painel.appendChild(intro);
       }
       function abrir(key){Object.entries(paineis).forEach(([k,p])=>{p.hidden=k!==key;botoes[k].setAttribute('aria-pressed',String(k===key));});}
-      for(const [id,key] of [['configNomeCard','congregacao'],['configInstalarCard','congregacao'],['configAcessoCard','equipe'],['painelDono','equipe']]){const card=document.getElementById(id);if(card)paineis[key].appendChild(card);}
-      const nomeCard=document.getElementById('configNomeCard'),nomeBtn=document.getElementById('cfgNomeBtn'),nomeStatus=el('p','save-status');nomeStatus.id='cfgNomeStatus';nomeStatus.setAttribute('role','status');nomeStatus.setAttribute('aria-live','polite');
+      for(const [id,key] of [['configNomeCard','congregacao'],['configInstalarCard','congregacao'],['configAcessoCard','equipe'],['painelDono','equipe']]){const card=fixos[id];if(card)paineis[key].appendChild(card);}
+      const nomeCard=fixos.configNomeCard,nomeBtn=fixos.cfgNomeBtn;nomeCard.querySelector(':scope > .save-bar')?.remove();const nomeStatus=el('p','save-status');nomeStatus.id='cfgNomeStatus';nomeStatus.setAttribute('role','status');nomeStatus.setAttribute('aria-live','polite');
       const nomeFooter=el('div','save-bar');nomeBtn.textContent='Salvar alterações';nomeFooter.append(nomeBtn,nomeStatus);nomeCard.appendChild(nomeFooter);FormUX.rastrear(nomeCard,nomeBtn,nomeStatus);
       if(ver('oradores')){
         let endereco,horario,dia,dia2027=null,sentinela;
@@ -76,6 +83,7 @@
           usar.onchange=()=>campos.forEach(i=>{i.disabled=!usar.checked;i.value=usar.checked?(Regras.QTD_PADRAO[i.dataset.tipo][key]||1):0;});tbody.appendChild(tr);
         });zoom=campo(f.body,'Zoom semanal: a mesma pessoa nas duas reuniões',Regras.zoomSemanal(d),'checkbox');
         await funcoesDasPessoas(paineis.funcoes,d,editar('designacoes'),sb,vinc,user,(central,desig)=>atualizarDirigentes?.(central,desig));
+        await dirigenteSentinela(paineis.funcoes,d,editar('designacoes'),store,sb,vinc);
         await gruposDeCampo(paineis.campo,d,editar('designacoes'),store,sb,vinc);
         await saidasCampo(paineis.campo,d,editar('designacoes'),store);
       }else{botoes.funcoes.hidden=true;botoes.campo.hidden=true;}
@@ -150,6 +158,20 @@
       busca.oninput=()=>{const t=C.normalizar(busca.value);linhas.forEach(l=>l.tr.hidden=!!t&&!C.normalizar(l.nome).includes(t));};
       const wrap=el('div','table-scroll pf-wrap');wrap.appendChild(tabela);f.body.appendChild(wrap);
     }
+  }
+  // Dirigente de A Sentinela fixo + substituto fixo (quando o dirigente tem discurso fora).
+  async function dirigenteSentinela(pai,d,pode,store,sb,vinc){
+    const pessoas=(await Congregacao.listar(sb,vinc.workspaceId,'cong_pessoas').catch(()=>[])).filter(p=>p.nome&&p.ativo!==false&&p.sexo!=='F').sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    const opcoes=[['','Ninguém'],...pessoas.map(p=>[p.id,p.nome])];let dir,sub;
+    const f=formulario(pai,'Dirigente de A Sentinela',pode,()=>{
+      if(dir.value&&dir.value===sub.value)throw new Error('Escolha um substituto diferente do dirigente.');
+      if(sub.value&&!dir.value)throw new Error('Escolha primeiro o dirigente.');
+      return store.salvar('desig_config','app',{dirigenteSentinela:dir.value||null,dirigenteSentinelaSubstituto:sub.value||null});
+    });
+    f.body.appendChild(el('p','hint','O dirigente é fixo: no fim de semana ele não entra em nenhuma outra função (no meio de semana pode ser designado normalmente). Quando ele tiver discurso fora, o substituto dirige e também fica livre das outras funções naquele fim de semana.'));
+    dir=campo(f.body,'Dirigente',d.dirigenteSentinela||'','select',opcoes);
+    sub=campo(f.body,'Substituto (quando o dirigente tiver discurso fora)',d.dirigenteSentinelaSubstituto||'','select',opcoes);
+    for(const [sel,id] of [[dir,d.dirigenteSentinela],[sub,d.dirigenteSentinelaSubstituto]])if(id&&!pessoas.some(p=>p.id===id)){sel.add(new Option('Pessoa inativa ou removida',id));sel.value=id;}
   }
   async function gruposDeCampo(pai,d,pode,store,sb,vinc){
     const pessoas=await Congregacao.listar(sb,vinc.workspaceId,'cong_pessoas');

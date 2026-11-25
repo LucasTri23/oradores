@@ -134,7 +134,7 @@ function renderProgramacao(){
         if(!id){chip.className='nome vago';chip.textContent='vago';}
         else{
           const p=pessoas.find(x=>x.id===id);
-          const avisos=p?R.conflitos({reuniao:r,pessoa:p,funcao:f,reunioes,oradores}):[];
+          const avisos=p?R.conflitos({reuniao:r,pessoa:p,funcao:f,reunioes,oradores,cfg:cfgRegras(),pessoas}):[];
           chip.className='nome'+(avisos.length?' alerta':'');chip.textContent=nomePessoa(id);
           if(avisos.length){chip.title=avisos.join('\n');chip.insertAdjacentHTML('beforeend',icone('triangle-alert'));}
         }
@@ -174,7 +174,7 @@ function renderEdicao(){
     const h=document.createElement('h4');h.innerHTML=icone(R.FUNCOES[f].icone);h.appendChild(document.createTextNode(R.FUNCOES[f].nome+(vagas>1?' ('+vagas+' pessoas)':'')));
     bloco.appendChild(h);
     const grade=document.createElement('div');grade.className='ed-vagas';
-    const cands=R.candidatos({reuniao:edicao,funcao:f,pessoas,reunioes:historico,oradores});
+    const cands=R.candidatos({reuniao:edicao,funcao:f,pessoas,reunioes:historico,oradores,cfg:cfgRegras()});
     for(let i=0;i<vagas;i++){
       const sel=document.createElement('select');
       sel.add(new Option('— Vago —',''));
@@ -197,7 +197,7 @@ function renderEdicao(){
     bloco.appendChild(grade);
     atual.filter(Boolean).forEach(id=>{
       const p=pessoas.find(x=>x.id===id);if(!p)return;
-      R.conflitos({reuniao:edicao,pessoa:p,funcao:f,reunioes:historico,oradores}).forEach(a=>{
+      R.conflitos({reuniao:edicao,pessoa:p,funcao:f,reunioes:historico,oradores,cfg:cfgRegras(),pessoas}).forEach(a=>{
         const av=document.createElement('div');av.className='aviso';av.innerHTML=icone('triangle-alert');
         const t=document.createElement('span');t.textContent=p.nome+': '+a;av.appendChild(t);bloco.appendChild(av);
       });

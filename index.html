@@ -96,6 +96,13 @@
 .duas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .acoes-jan{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.acoes-jan .esp{flex:1}
 body.sem-cong .so-cong{display:none!important}
+.card-reuniao{grid-column:1/-1}
+.pr-cab{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;margin-bottom:8px}.pr-cab strong{font-size:15px}.pr-cab span{color:var(--whi3);font-size:13px}
+.pr-lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0 24px}
+.pr-l{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--border);font-size:13px}
+.pr-l span{color:var(--whi2);min-width:0}.pr-l b{font-weight:600;text-align:right}.pr-l b.vago{color:var(--whi3);font-weight:400}
+.pr-secao{grid-column:1/-1;margin:10px 0 2px;padding:4px 8px;border-radius:5px;color:#fff;font:700 10.5px Inter,sans-serif;letter-spacing:.03em}
+.pr-secao.tesouros{background:#575a5d}.pr-secao.ministerio{background:#be8900}.pr-secao.vida{background:#7e0024}
 </style>
 </head>
 <body class="dz-shell">
@@ -157,6 +164,10 @@ body.sem-cong .so-cong{display:none!important}
         <div class="dz-card" id="cardTerritorios" hidden>
           <div class="sec-head"><h2><i data-lucide="map"></i> Territórios</h2><a href="/territorios">Abrir Territórios →</a></div>
           <div id="resumoTerritorios"><div class="vazio">Carregando…</div></div>
+        </div>
+        <div class="dz-card card-reuniao" id="cardReuniao" hidden>
+          <div class="sec-head"><h2><i data-lucide="calendar-check"></i> Próxima reunião</h2><a href="/designacoes" id="linkReuniao">Abrir Designações →</a></div>
+          <div id="programaReuniao"><div class="vazio">Carregando…</div></div>
         </div>
         <div class="dz-card" id="cardDesignacoes" hidden>
           <div class="sec-head"><h2><i data-lucide="clipboard-list"></i> Próximas designações</h2><a href="/designacoes">Abrir Designações →</a></div>
@@ -291,9 +302,9 @@ body.sem-cong .so-cong{display:none!important}
 
 <script src="/assets/js/data.js?v=20261110-7"></script>
 <script src="/assets/shared/conta.js?v=20261125-q1"></script>
-<script src="/designacoes/regras.js?v=20261125-5"></script><script src="/designacoes/vmc.js?v=20261125-v2"></script>
+<script src="/designacoes/regras.js?v=20261125-v3"></script><script src="/designacoes/vmc.js?v=20261125-v2"></script>
 <script src="/assets/shared/congregacao.js?v=20261125-3"></script>
-<script src="/assets/shared/form-ux.js?v=20261110-7"></script><script src="/assets/shared/config-store.js?v=20261110-7"></script><script src="/assets/shared/config-central.js?v=20261125-v2"></script>
+<script src="/assets/shared/form-ux.js?v=20261110-7"></script><script src="/assets/shared/config-store.js?v=20261110-7"></script><script src="/assets/shared/config-central.js?v=20261125-v4"></script>
 <script src="/assets/shared/inicio-congregacao.js?v=20261125-v2"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -399,6 +410,53 @@ function situacaoTerritorio(t){
   const d=diasDesde(uc);return{cls:d>=90?'red':d>=60?'ora':'grn',txt:d+' dias',ordem:d};
 }
 // Próximas reuniões já designadas (módulo Designações).
+// Programação da próxima reunião: até o dia do meio de semana mostra a Vida e Ministério; depois, o fim de semana.
+async function painelReuniao(){
+  $('cardReuniao').hidden=false;const div=$('programaReuniao'),hoje=hojeISO(),R=Regras,V=Vmc;
+  try{
+    const oradoresOk=Conta.podeVer(vinc,'oradores');
+    const[reunioes,cfgs,central,vmc,config,programa,discursantes]=await Promise.all([registros('desig_reunioes'),registros('desig_config'),registros('cong_pessoas').catch(()=>[]),registros('desig_vmc').catch(()=>[]),
+      oradoresOk?registros('config').catch(()=>[]):[],oradoresOk?registros('programa').catch(()=>[]):[],oradoresOk?registros('discursantes').catch(()=>[]):[]]);
+    const cfg=cfgs.find(c=>c.id==='app')||{},app=config.find(c=>c.id==='app'),cfgR={...cfg,oradores:app?{dia:app.dia,dia2027:app.dia2027}:null};
+    const nome=id=>central.find(p=>p.id===id)?.nome||'';
+    const d=new Date(hoje+'T12:00:00'),meses=[0,1].map(k=>new Date(d.getFullYear(),d.getMonth()+k,1));
+    const r=meses.flatMap(m=>R.reunioesDoMes(m.getFullYear(),m.getMonth()+1,cfgR,reunioes)).find(x=>x.data>=hoje);
+    if(!r){vazio(div,cfg.diaMeio==null?'Escolha o dia da reunião do meio de semana em Designações.':'Nenhuma reunião nas próximas semanas.');return;}
+    const dt=new Date(r.data+'T12:00:00'),quando=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
+    div.innerHTML='';const cab=document.createElement('div');cab.className='pr-cab';
+    const tit=document.createElement('strong');tit.textContent=(r.tipo==='fim'?'Fim de semana':'Meio de semana')+' · '+quando.charAt(0).toUpperCase()+quando.slice(1);cab.appendChild(tit);div.appendChild(cab);
+    const lista=document.createElement('div');lista.className='pr-lista';div.appendChild(lista);
+    const item=(rotulo,valor)=>{const l=document.createElement('div');l.className='pr-l';const s=document.createElement('span');s.textContent=rotulo;const b=document.createElement('b');b.textContent=valor||'A definir';if(!valor)b.className='vago';l.append(s,b);lista.appendChild(l);};
+    if(r.semReuniao){lista.remove();const p=document.createElement('p');p.className='hint';p.textContent=r.motivo||'Não haverá reunião.';div.appendChild(p);return;}
+    const nomes=(f)=>(r.pessoas?.[f]||[]).filter(Boolean).map(nome).join(' / ');
+    if(r.tipo==='fim'){
+      $('linkReuniao').href='/designacoes';
+      item('Presidente',nomes('presidente'));item('Oração inicial',nomes('oracao'));
+      if(oradoresOk){
+        const p=programa.find(x=>x.data===r.data)||{};
+        if(p.semDiscurso)item('Discurso público',p.motivo||'Sem discurso');
+        else{item('Orador',p.nome?p.nome+(p.congregacao?' ('+p.congregacao+')':''):'');const tema=p.especial?(p.tema||p.especialTitulo||''):(TEMAS[p.temaNum]||p.tema||'');if(tema)item('Tema',tema);}
+      }
+      const dir=R.dirigenteSentinela(r.data,cfg,central,{discursantes});
+      item('Dirigente de A Sentinela',dir?nome(dir.id)+(dir.substituindo?' (substituindo '+nome(dir.titular)+')':''):'');
+      item('Leitor de A Sentinela',nomes('leitor'));
+      return;
+    }
+    $('linkReuniao').href='/designacoes#vmc';
+    const s=vmc.find(x=>x.id===R.segundaDaSemana(r.data));
+    if(!s||!s.partes?.length){lista.remove();const p=document.createElement('p');p.className='hint';p.textContent='A apostila desta semana ainda não foi importada em Designações → Vida e Ministério.';div.appendChild(p);return;}
+    const sp=document.createElement('span');sp.textContent=s.leitura||'';cab.appendChild(sp);
+    const n=k=>nome(s.pessoas?.[k]);
+    item('Presidente',n('presidente'));item('Oração inicial',n('oracao_inicial'));
+    V.programa(s).forEach(l=>{
+      if(l.secao){const h=document.createElement('div');h.className='pr-secao '+l.secao;h.textContent=l.titulo;lista.appendChild(h);return;}
+      if(!l.parte)return;
+      item(l.texto,l.vagas.map(v=>n(v.chave)).filter(Boolean).join(' / '));
+    });
+    item('Oração final',n('oracao_final'));
+  }catch(e){vazio(div,'Não foi possível carregar a programação.');}
+}
+
 async function painelDesignacoes(){
   $('cardDesignacoes').hidden=false;
   const div=$('listaDesignacoes');
@@ -406,7 +464,7 @@ async function painelDesignacoes(){
     const[reunioes,desig,central]=await Promise.all([registros('desig_reunioes'),registros('desig_pessoas'),registros('cong_pessoas').catch(()=>[])]);
     const pessoas=[...central,...desig.filter(d=>!central.some(c=>c.id===d.id))];
     const nome=id=>pessoas.find(p=>p.id===id)?.nome||'?';
-    const rotulos={presidente:'Presidente',leitor:'Leitor',indicadores:'Indicadores',zoom:'Zoom',microfones:'Microfones',audio_video:'Áudio/vídeo'};
+    const rotulos={presidente:'Presidente',oracao:'Oração',leitor:'Leitor',indicadores:'Indicadores',zoom:'Zoom',microfones:'Microfones',audio_video:'Áudio/vídeo'};
     const prox=reunioes.filter(r=>r.data>=hojeISO()).sort((a,b)=>a.data.localeCompare(b.data)).slice(0,3);
     if(!prox.length){vazio(div,'Nenhuma reunião designada ainda.');return;}
     div.innerHTML='';
@@ -446,7 +504,7 @@ function renderPainel(){
   $('resumoAcesso').textContent='Congregação '+vinc.nome+'.';
   const semAcesso=Object.entries(Conta.MODULOS).filter(([k])=>vinc.modulosAtivos.includes(k)&&!Conta.podeVer(vinc,k));
   if(semAcesso.length){$('cardSemAcesso').hidden=false;$('listaSemAcesso').textContent=semAcesso.map(([,m])=>m.nome).join(' e ')+': sem acesso. Peça ao proprietário da congregação.';}
-  if(Conta.podeVer(vinc,'designacoes'))painelDesignacoes();
+  if(Conta.podeVer(vinc,'designacoes')){painelReuniao();painelDesignacoes();}
   if(Conta.podeVer(vinc,'oradores'))painelOradores();
   if(Conta.podeVer(vinc,'territorios'))painelTerritorios();
   $('cardPublicacoes').hidden=!Conta.podeVer(vinc,'publicacoes');

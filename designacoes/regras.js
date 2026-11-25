@@ -2,6 +2,7 @@
 (function(raiz){
   const FUNCOES={
     presidente:{nome:'Presidente',icone:'user-round'},
+    oracao:{nome:'Oração inicial',curto:'Oração',icone:'hand-heart'},
     leitor:{nome:'Leitor de A Sentinela',curto:'Leitor',icone:'book-open'},
     indicadores:{nome:'Indicadores',icone:'door-open'},
     zoom:{nome:'Indicador do Zoom',curto:'Zoom',icone:'video'},
@@ -10,12 +11,12 @@
   };
   const FUNCOES_POR_TIPO={
     meio:['indicadores','zoom','microfones','audio_video'],
-    fim:['presidente','leitor','indicadores','zoom','microfones','audio_video']
+    fim:['presidente','oracao','leitor','indicadores','zoom','microfones','audio_video']
   };
   const TIPOS={meio:'Meio de semana',fim:'Fim de semana'};
   const QTD_PADRAO={
     meio:{indicadores:2,zoom:1,microfones:2,audio_video:1},
-    fim:{presidente:1,leitor:1,indicadores:2,zoom:1,microfones:2,audio_video:1}
+    fim:{presidente:1,oracao:1,leitor:1,indicadores:2,zoom:1,microfones:2,audio_video:1}
   };
   // Nome de cada vaga (como no quadro de anúncios): Indicadores → Auditório/Entrada, etc.
   const ROTULOS_VAGAS={indicadores:['Auditório','Entrada'],microfones:['Microfone 1','Microfone 2'],audio_video:['Áudio','Vídeo']};
@@ -104,9 +105,28 @@
     return 'há '+m+(m===1?' mês':' meses');
   }
 
+  // Discurso fora numa data (pelo nome, como no módulo Oradores).
+  function discursoFora(nomePessoa,data,oradores={}){
+    const nome=normalizar(nomePessoa);if(!nome)return null;
+    for(const d of oradores.discursantes||[]){
+      if(normalizar(d.nome)!==nome)continue;
+      const saidas=[...(Array.isArray(d.saidas)?d.saidas:[]),...(d.proxSaida?[{data:d.proxSaida,destino:d.destino}]:[])];
+      const s=saidas.find(x=>x&&x.data===data);if(s)return s;
+    }
+    return null;
+  }
+  // Dirigente de A Sentinela é fixo (Configurações). Com discurso fora, entra o substituto fixo.
+  function dirigenteSentinela(data,cfg,pessoas=[],oradores={}){
+    const id=cfg?.dirigenteSentinela,sub=cfg?.dirigenteSentinelaSubstituto;if(!id)return null;
+    const p=pessoas.find(x=>x.id===id);
+    if(p&&discursoFora(p.nome,data,oradores)&&sub)return {id:sub,substituindo:true,titular:id};
+    return {id,substituindo:false,titular:id};
+  }
+
   // Avisos para uma pessoa em uma função de uma reunião. "oradores" = {programa, discursantes} do módulo Oradores.
-  function conflitos({reuniao,pessoa,funcao,reunioes=[],oradores={}}){
+  function conflitos({reuniao,pessoa,funcao,reunioes=[],oradores={},cfg=null,pessoas=[]}){
     const avisos=[];if(!pessoa||!reuniao)return avisos;
+    if(reuniao.tipo==='fim'){const dir=dirigenteSentinela(reuniao.data,cfg,pessoas,oradores);if(dir&&dir.id===pessoa.id)avisos.push(dir.substituindo?'Substitui o dirigente de A Sentinela neste fim de semana':'É o dirigente de A Sentinela neste fim de semana');}
     // Só a mesma reunião (mesma data): designação em outra função de outro dia não gera aviso.
     Object.keys(FUNCOES).forEach(f=>{
       if(f!==funcao&&pessoasDe(reuniao,f).includes(pessoa.id))avisos.push('Já está como '+FUNCOES[f].nome+' nesta reunião');
@@ -130,10 +150,12 @@
   const podeFazer=(p,funcao)=>p&&p.ativo!==false&&!!p.funcoes?.[funcao];
 
   // Ordena quem pode fazer a função: quem está há mais tempo sem fazer vem primeiro.
-  function candidatos({reuniao,funcao,pessoas,reunioes,oradores}){
-    return pessoas.filter(p=>podeFazer(p,funcao)).map(p=>{
+  // No fim de semana, o dirigente de A Sentinela do dia (ou o substituto) não entra em outras funções.
+  function candidatos({reuniao,funcao,pessoas,reunioes,oradores,cfg=null}){
+    const dir=reuniao.tipo==='fim'?dirigenteSentinela(reuniao.data,cfg,pessoas,oradores):null;
+    return pessoas.filter(p=>podeFazer(p,funcao)&&p.id!==dir?.id).map(p=>{
       const ultima=ultimaVez(reunioes,p.id,funcao,reuniao.data);
-      return {pessoa:p,ultima,avisos:conflitos({reuniao,pessoa:p,funcao,reunioes,oradores})};
+      return {pessoa:p,ultima,avisos:conflitos({reuniao,pessoa:p,funcao,reunioes,oradores,cfg,pessoas})};
     }).sort((a,b)=>{
       if(!a.ultima!==!b.ultima)return a.ultima?1:-1;
       if(a.ultima!==b.ultima)return a.ultima.localeCompare(b.ultima);
@@ -163,7 +185,7 @@
             const doPar=par&&!par.semReuniao?pessoasDe(par,'zoom')[i]:null;
             if(doPar&&!Object.values(r.pessoas).some(ids=>(ids||[]).includes(doPar))){atual[i]=doPar;continue;}
           }
-          const lista=candidatos({reuniao:r,funcao,pessoas,reunioes:[...historico.values()],oradores})
+          const lista=candidatos({reuniao:r,funcao,pessoas,reunioes:[...historico.values()],oradores,cfg})
             .filter(c=>!Object.values(r.pessoas).some(ids=>(ids||[]).includes(c.pessoa.id)));
           const escolha=lista.find(c=>!c.avisos.length)||null;
           if(escolha)atual[i]=escolha.pessoa.id;
@@ -233,7 +255,7 @@
       .sort((a,b)=>{if(!a.ultima!==!b.ultima)return a.ultima?1:-1;if(a.ultima!==b.ultima)return a.ultima.localeCompare(b.ultima);return a.pessoa.nome.localeCompare(b.pessoa.nome,'pt-BR');});
   }
 
-  const api={gruposCampo,aplicarGrupoCampo,FUNCAO_CAMPO,MESES_CAMPO,horaValida,locaisCampo,saidasCampo,idCampo,datasDoDia,limiteCampo,dentroDoLimiteCampo,campoDoMes,recorrenciaCampo,ultimaVezCampo,conflitosCampo,candidatosCampo,FUNCOES,FUNCOES_POR_TIPO,TIPOS,QTD_PADRAO,GRUPOS,DIAS,ROTULOS_VAGAS,rotuloVaga,diaMeioDoAno,mostrarPergunta2027,parSemanal,zoomSemanal,segundaDaSemana,iso,normalizar,quantidades,diaFimDoAno,reunioesDoMes,pessoasDe,ultimaVez,tempoSem,conflitos,candidatos,sugerir,podeFazer};
+  const api={gruposCampo,aplicarGrupoCampo,FUNCAO_CAMPO,MESES_CAMPO,horaValida,locaisCampo,saidasCampo,idCampo,datasDoDia,limiteCampo,dentroDoLimiteCampo,campoDoMes,recorrenciaCampo,ultimaVezCampo,conflitosCampo,candidatosCampo,FUNCOES,FUNCOES_POR_TIPO,TIPOS,QTD_PADRAO,GRUPOS,DIAS,ROTULOS_VAGAS,rotuloVaga,diaMeioDoAno,mostrarPergunta2027,parSemanal,zoomSemanal,segundaDaSemana,iso,normalizar,quantidades,diaFimDoAno,reunioesDoMes,pessoasDe,ultimaVez,tempoSem,conflitos,candidatos,sugerir,podeFazer,discursoFora,dirigenteSentinela};
   raiz.Regras=api;
   if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
