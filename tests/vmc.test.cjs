@@ -48,15 +48,17 @@ const semana={semana:'2026-12-07',data:'2026-12-09',canticos:[71,161,7],pessoas:
 test('vagas: cada parte gera as designações certas (estudante/ajudante, dirigente/leitor, orações)',()=>{
   assert.deepEqual(V.vagas(semana).map(v=>v.chave+':'+v.funcao),['presidente:presidente_vmc','oracao_inicial:oracao_vmc','p1:tesouros','p2:joias','p3:leitura_biblia','p4:estudante','p4a:ajudante','p5:estudante','p6:vida_crista','p7:dirigente_ebc','p7l:leitor_ebc','oracao_final:oracao_vmc']);
 });
-test('quem pode: funções marcadas, estudantes por padrão, discurso só irmãos e ajudante do mesmo sexo',()=>{
+test('quem pode: funções marcadas, estudantes por padrão, discurso só irmãos e ajudante de qualquer sexo na escolha manual',()=>{
   const ana=pessoa('Ana',{sexo:'F'}),bia=pessoa('Bia',{sexo:'F'}),caio=pessoa('Caio',{sexo:'M'}),eli=pessoa('Eli',{grupo:'anciao',funcoes:{tesouros:true}}),fora=pessoa('Fora',{sexo:'F',funcoes:{estudante:false}});
   const ps=[ana,bia,caio,eli,fora],vs=V.vagas(semana),v=k=>vs.find(x=>x.chave===k);
   assert.deepEqual(ps.filter(p=>V.podeVaga(p,v('p1'),semana,ps)).map(p=>p.id),['Eli']);
   assert.deepEqual(ps.filter(p=>V.podeVaga(p,v('p4'),semana,ps)).map(p=>p.id),['Ana','Bia','Caio','Eli']);
   assert.deepEqual(ps.filter(p=>V.podeVaga(p,v('p5'),semana,ps)).map(p=>p.id),['Caio','Eli']);
   const comAna={...semana,pessoas:{p4:'Ana'}};
-  assert.deepEqual(ps.filter(p=>V.podeVaga(p,v('p4a'),comAna,ps)).map(p=>p.id),['Ana','Bia']);
-  assert.ok(V.conflitos({semana:{...comAna,pessoas:{p4:'Ana',p4a:'Caio'}},pessoa:caio,vaga:v('p4a'),pessoas:ps}).includes('Estudante e ajudante devem ser do mesmo sexo'));
+  assert.deepEqual(ps.filter(p=>V.podeVaga(p,v('p4a'),comAna,ps)).map(p=>p.id),['Ana','Bia','Caio','Eli']);
+  assert.deepEqual(V.conflitos({semana:{...comAna,pessoas:{p4:'Ana',p4a:'Caio'}},pessoa:caio,vaga:v('p4a'),pessoas:ps}),[]);
+  // A sugestão forma o par do mesmo sexo.
+  const [sug]=V.sugerir({alvo:[{...semana,partes:semana.partes.filter(p=>p.n===4),pessoas:{p4:'Ana'}}],pessoas:ps});assert.equal(sug.pessoas.p4a,'Bia');
 });
 test('sugestão: preenche vagas vazias sem repetir pessoa na reunião e alterna quem fez há mais tempo',()=>{
   const todas={presidente_vmc:true,oracao_vmc:true,tesouros:true,joias:true,leitura_biblia:true,vida_crista:true,dirigente_ebc:true,leitor_ebc:true};

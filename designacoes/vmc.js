@@ -50,12 +50,9 @@
     if(!p||p.ativo===false)return false;
     if(vaga.funcao==='estudante'||vaga.funcao==='ajudante'){
       if(!fazEstudante(p))return false;
-      if(vaga.soIrmao&&sexoDe(p)!=='M')return false;
-      if(vaga.funcao==='ajudante'){
-        const est=pessoas.find(x=>x.id===s?.pessoas?.[vaga.de]);
-        if(est&&sexoDe(est)&&sexoDe(p)&&sexoDe(est)!==sexoDe(p))return false;
-      }
-      return true;
+      // Estudante e ajudante de sexos diferentes é permitido na escolha manual (ex.: casados);
+      // só a sugestão automática forma pares do mesmo sexo.
+      return !(vaga.soIrmao&&sexoDe(p)!=='M');
     }
     return !!p.funcoes?.[vaga.funcao];
   }
@@ -74,12 +71,6 @@
     if(r)Object.entries(r.pessoas||{}).forEach(([f,ids])=>{if((ids||[]).includes(pessoa.id))avisos.push('Está como '+(funcoesReuniao[f]?.nome||f)+' nesta reunião');});
     const anterior=semanas.filter(s=>valida(s)&&s.data<semana.data).sort((a,b)=>b.data.localeCompare(a.data))[0];
     if(anterior&&designacoesDe(anterior).some(d=>d.pessoa===pessoa.id&&d.funcao===vaga.funcao))avisos.push('Fez '+nomeFuncao(vaga.funcao).toLowerCase()+' na semana anterior ('+ddmm(anterior.data)+')');
-    if(vaga.funcao==='estudante'||vaga.funcao==='ajudante'){
-      if(!sexoDe(pessoa))avisos.push('Irmão ou irmã não informado no cadastro');
-      const outro=vaga.funcao==='ajudante'?semana.pessoas?.[vaga.de]:semana.pessoas?.[vaga.chave+'a'];
-      const o=pessoas.find(x=>x.id===outro);
-      if(o&&sexoDe(o)&&sexoDe(pessoa)&&sexoDe(o)!==sexoDe(pessoa))avisos.push('Estudante e ajudante devem ser do mesmo sexo');
-    }
     return [...new Set(avisos)];
   }
 
@@ -89,6 +80,13 @@
       .sort((a,b)=>{if(!a.ultima!==!b.ultima)return a.ultima?1:-1;if(a.ultima!==b.ultima)return a.ultima.localeCompare(b.ultima);return a.pessoa.nome.localeCompare(b.pessoa.nome,'pt-BR');});
   }
 
+  // Na sugestão, estudante e ajudante precisam ter irmão/irmã informado e ser do mesmo sexo.
+  function parValido(s,vaga,p,pessoas){
+    if(vaga.funcao==='estudante'&&!vaga.soIrmao)return !!sexoDe(p);
+    if(vaga.funcao!=='ajudante')return true;
+    const est=pessoas.find(x=>x.id===s.pessoas[vaga.de]);
+    return !!sexoDe(p)&&sexoDe(p)===sexoDe(est);
+  }
   // Preenche só as vagas vazias, sem repetir pessoas na mesma reunião e sem avisos.
   function sugerir({alvo,semanas=[],pessoas,reunioes=[],funcoesReuniao}){
     const historico=new Map(semanas.map(s=>[s.data,s]));
@@ -99,7 +97,7 @@
         if(s.pessoas[v.chave])return;
         if(v.funcao==='ajudante'&&!s.pessoas[v.de])return;
         historico.set(s.data,s);
-        const lista=candidatos({semana:s,vaga:v,pessoas,semanas:[...historico.values()],reunioes,funcoesReuniao}).filter(c=>!idsDe(s).includes(c.pessoa.id));
+        const lista=candidatos({semana:s,vaga:v,pessoas,semanas:[...historico.values()],reunioes,funcoesReuniao}).filter(c=>!idsDe(s).includes(c.pessoa.id)&&parValido(s,v,c.pessoa,pessoas));
         const escolha=lista.find(c=>!c.avisos.length);
         if(escolha)s.pessoas[v.chave]=escolha.pessoa.id;
       });

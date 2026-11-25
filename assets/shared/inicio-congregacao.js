@@ -65,6 +65,7 @@ async function salvarPessoaCong(){
   try{
     await C.salvar(await sbCong(),vinc.workspaceId,user.id,'cong_pessoas',id,dados);
     pessoasCong=[...pessoasCong.filter(p=>p.id!==id),{...dados,id}].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    window.ConfigCentral?.invalidar?.();
     $('janPessoaC').hidden=true;renderPessoasCong();toast('✓ Salvo.');return true;
   }catch(e){toast('Não foi possível salvar: '+e.message,6000);}
 }
@@ -75,7 +76,7 @@ async function excluirPessoaCong(){
     const sb=await sbCong();
     await C.apagar(sb,vinc.workspaceId,'cong_pessoas',p.id);
     if(Conta.podeEditar(vinc,'designacoes'))await C.apagar(sb,vinc.workspaceId,'desig_pessoas',p.id).catch(()=>{});
-    pessoasCong=pessoasCong.filter(x=>x.id!==p.id);$('janPessoaC').hidden=true;renderPessoasCong();toast('Pessoa excluída.');
+    pessoasCong=pessoasCong.filter(x=>x.id!==p.id);window.ConfigCentral?.invalidar?.();$('janPessoaC').hidden=true;renderPessoasCong();toast('Pessoa excluída.');
   }catch(e){toast('Não foi possível excluir: '+e.message,6000);}
 }
 
@@ -98,7 +99,7 @@ async function juntarCadastros(){
     if(!novas.length&&!atualizadas.length)return toast('Nenhum cadastro novo para juntar. Está tudo na lista.',5000);
     if(!confirm('Encontrei '+novas.length+' pessoa(s) nova(s)'+(atualizadas.length?' e '+atualizadas.length+' telefone(s) para completar':'')+' nas Designações, nos dirigentes dos Territórios e nos oradores da sua congregação. Juntar na lista?'))return;
     for(const p of [...novas,...atualizadas])await C.salvar(sb,ws,user.id,'cong_pessoas',p.id,p);
-    pessoasCong=null;await renderPessoasCong();
+    pessoasCong=null;window.ConfigCentral?.invalidar?.();await renderPessoasCong();
     toast('✓ Lista atualizada. Confira o grupo de cada pessoa.',5000);
   }catch(e){toast('Não foi possível juntar: '+e.message,6000);}
 }

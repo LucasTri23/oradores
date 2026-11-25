@@ -145,8 +145,8 @@ function renderEdVmc(){
       if(atual&&!cands.some(c=>c.pessoa.id===atual))sel.add(new Option(nomePessoa(atual)+' (não marcada para esta parte)',atual));
       sel.value=atual;
       sel.onchange=()=>{if(sel.value)edVmc.pessoas[vaga.chave]=sel.value;else delete edVmc.pessoas[vaga.chave];
-        // Trocar o estudante limpa o ajudante de outro sexo.
-        if(vaga.funcao==='estudante'&&edVmc.pessoas[vaga.chave+'a']){const a=pessoas.find(p=>p.id===edVmc.pessoas[vaga.chave+'a']),e=pessoas.find(p=>p.id===sel.value);if(!e||(V.sexoDe(a)&&V.sexoDe(e)&&V.sexoDe(a)!==V.sexoDe(e)))delete edVmc.pessoas[vaga.chave+'a'];}
+        // Sem estudante não há ajudante.
+        if(vaga.funcao==='estudante'&&!sel.value)delete edVmc.pessoas[vaga.chave+'a'];
         renderEdVmc();};
       caixa.appendChild(sel);sels.appendChild(caixa);
       if(!cands.length&&vaga.funcao!=='ajudante'){const h=document.createElement('small');h.className='hint';h.textContent=vaga.funcao==='estudante'?(vaga.soIrmao?'Nenhum irmão disponível. Informe "Irmão" no cadastro das pessoas.':'Ninguém disponível.'):'Ninguém marcado para '+V.nomeFuncao(vaga.funcao)+'. Marque em Configurações → Funções.';caixa.appendChild(h);}

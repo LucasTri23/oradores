@@ -286,5 +286,7 @@
     const marcar=()=>FormUX.rastrear(f.form,f.button,f.status).marcar();
     return {form:f.form,valores,marcar,substituir(lista){if(JSON.stringify(lista)===JSON.stringify(valores()))return;box.replaceChildren();linhas=[];lista.forEach(item=>adicionar(item));atualizar();if(pode)marcar();}};
   }
-  root.ConfigCentral={montar};
+  // Pessoas mudaram (cadastro, exclusão, juntar cadastros): a próxima abertura monta tudo de novo.
+  function invalidar(){montado=null;}
+  root.ConfigCentral={montar,invalidar};
 })(window);
