@@ -23,7 +23,7 @@
       const mensagens=ver('oradores')?await store.ler('config','mensagens'):{};
       container.replaceChildren();const nav=el('nav','config-tabs');nav.setAttribute('aria-label','Seções das configurações');container.appendChild(nav);
       const paineis={},botoes={};
-      for(const [key,nome] of [['congregacao','Congregação'],['reunioes','Reuniões'],['funcoes','Funções'],['equipe','Equipe'],['preferencias','Mensagens e territórios']]){
+      for(const [key,nome] of [['congregacao','Congregação'],['reunioes','Reuniões'],['funcoes','Funções'],['campo','Campo'],['equipe','Equipe'],['preferencias','Mensagens e territórios']]){
         const painel=el('section','config-panel'),b=el('button','dz-btn',nome);painel.id='preferencias-'+key;b.type='button';b.setAttribute('aria-controls',painel.id);b.onclick=()=>abrir(key);botoes[key]=b;paineis[key]=painel;nav.appendChild(b);container.appendChild(painel);
       }
       function abrir(key){Object.entries(paineis).forEach(([k,p])=>{p.hidden=k!==key;botoes[k].setAttribute('aria-pressed',String(k===key));});}
@@ -54,7 +54,8 @@
           ['meio','fim'].forEach(tipo=>{const c=el('td');if(Regras.FUNCOES_POR_TIPO[tipo].includes(key)){const i=el('input');i.type='number';i.min=0;i.max=6;i.value=q[tipo][key];i.dataset.tipo=tipo;i.dataset.funcao=key;i.disabled=!usar.checked;i.setAttribute('aria-label',funcao.nome+' — '+(tipo==='meio'?'meio de semana':'fim de semana'));campos.push(i);inputs.push(i);c.appendChild(i);}else c.textContent='—';tr.appendChild(c);});
           usar.onchange=()=>campos.forEach(i=>{i.disabled=!usar.checked;i.value=usar.checked?(Regras.QTD_PADRAO[i.dataset.tipo][key]||1):0;});tbody.appendChild(tr);
         });zoom=campo(f.body,'Zoom semanal: a mesma pessoa nas duas reuniões',Regras.zoomSemanal(d),'checkbox');
-      }else{botoes.funcoes.hidden=true;}
+        saidasCampo(paineis.campo,d,editar('designacoes'),store);
+      }else{botoes.funcoes.hidden=true;botoes.campo.hidden=true;}
       if(ver('territorios')){
         listaEditavel(paineis.preferencias,'Dirigentes — Territórios',extras[0].lista||[],[['nome','Nome'],['num','WhatsApp com país e DDD']],editar('territorios'),lista=>store.salvar('terr_tj_config','contatos',{lista,updatedAt:new Date().toISOString()}));
         listaEditavel(paineis.preferencias,'Mensagens — Territórios',extras[1].lista||[],[['label','Título'],['texto','Mensagem','textarea']],editar('territorios'),lista=>store.salvar('terr_tj_config','mensagens',{lista,updatedAt:new Date().toISOString()}));
@@ -66,6 +67,54 @@
       if(!ver('oradores')&&!ver('designacoes'))botoes.reunioes.hidden=true;
       abrir('congregacao');montado=vinc.workspaceId;
     }catch(error){container.replaceChildren(el('p','save-status',error.message));const retry=el('button','dz-btn','Tentar novamente');retry.onclick=()=>montar({container,vinc,user});container.appendChild(retry);}
+  }
+  // Locais e dias da semana das saídas de campo (desig_config → campo:{locais,saidas}).
+  function saidasCampo(pai,d,pode,store){
+    const novoId=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    let locais=[],saidas=[];
+    const f=formulario(pai,'Saídas de campo',pode,()=>{
+      const ls=locais.map(l=>({id:l.id,nome:l.nome.value.trim(),endereco:l.endereco.value.trim()}));
+      if(ls.some(l=>!l.nome))throw new Error('Dê um nome para cada local ou remova os locais vazios.');
+      const ss=saidas.map(x=>({id:x.id,dia:Number(x.dia.value),hora:x.hora.value,localId:x.local.value}));
+      if(ss.some(x=>!Regras.horaValida(x.hora)))throw new Error('Informe o horário de cada saída.');
+      if(ls.length&&ss.some(x=>!x.localId))throw new Error('Escolha o local de cada saída.');
+      return store.salvar('desig_config','app',{campo:{locais:ls,saidas:ss}});
+    });
+    f.body.appendChild(el('p','hint','Cadastre os locais e depois os dias da semana em que a congregação sai para o campo. Um mesmo dia pode ter várias saídas (horários ou locais diferentes). As designações dos dirigentes são feitas em Designações → Campo.'));
+    const tituloL=el('h3','sub-titulo','Locais'),boxL=el('div'),addL=el('button','dz-btn','Adicionar local');addL.type='button';
+    const tituloS=el('h3','sub-titulo','Dias e horários'),boxS=el('div'),addS=el('button','dz-btn','Adicionar saída');addS.type='button';
+    f.body.append(tituloL,boxL,addL,tituloS,boxS,addS);
+    const marcar=()=>FormUX.rastrear(f.form,f.button,f.status).marcar();
+    function atualizarLocais(){
+      const opcoes=locais.map(l=>[l.id,l.nome.value.trim()||'(sem nome)']);
+      saidas.forEach(x=>{const v=x.local.value;x.local.replaceChildren(new Option(opcoes.length?'Escolha o local…':'Cadastre um local acima',''));opcoes.forEach(([id,n])=>x.local.add(new Option(n,id)));x.local.value=opcoes.some(([id])=>id===v)?v:'';});
+    }
+    function addLocal(l={}){
+      const row=el('fieldset','settings-item');row.appendChild(el('legend','','Local'));
+      const item={id:l.id||novoId('l'),row};
+      item.nome=campo(row,'Nome do local',l.nome||'');item.nome.placeholder='Ex.: Salão do Reino, casa da família Souza';
+      item.endereco=campo(row,'Endereço (opcional)',l.endereco||'');
+      item.nome.addEventListener('input',atualizarLocais);
+      const rm=el('button','dz-btn danger','Remover local');rm.type='button';
+      rm.onclick=()=>{if(!confirm('Remover este local? As saídas que usam este local vão pedir outro local.'))return;row.remove();locais=locais.filter(x=>x!==item);atualizarLocais();marcar();};
+      row.appendChild(rm);boxL.appendChild(row);locais.push(item);
+    }
+    function addSaida(x={}){
+      const row=el('fieldset','settings-item');row.appendChild(el('legend','','Saída'));
+      const item={id:x.id||novoId('s'),row};
+      item.dia=campo(row,'Dia da semana',x.dia??6,'select',Regras.DIAS.map((n,i)=>[i,n]));
+      item.hora=campo(row,'Horário',x.hora||'09:00','time');
+      item.local=campo(row,'Local',x.localId||'','select',[['','']]);
+      const rm=el('button','dz-btn danger','Remover saída');rm.type='button';
+      rm.onclick=()=>{if(!confirm('Remover esta saída? As designações já feitas continuam no histórico.'))return;row.remove();saidas=saidas.filter(s=>s!==item);marcar();};
+      row.appendChild(rm);boxS.appendChild(row);saidas.push(item);
+      atualizarLocais();item.local.value=x.localId||'';
+    }
+    Regras.locaisCampo(d).forEach(addLocal);
+    Regras.saidasCampo(d).forEach(addSaida);
+    addL.onclick=()=>{addLocal();atualizarLocais();marcar();};
+    addS.onclick=()=>{addSaida();marcar();};
+    if(!pode){addL.hidden=true;addS.hidden=true;}
   }
   function listaEditavel(pai,titulo,lista,campos,pode,salvar){
     let linhas=[];const f=formulario(pai,titulo,pode,()=>{

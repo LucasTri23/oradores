@@ -8,7 +8,8 @@ Sistema da congregação com módulos integrados, preparado para Supabase e Verc
 
 - **Oradores** (`/oradores`): programação e histórico de discursos.
 - **Territórios** (`/territorios`): registro de territórios, cartões de mapa, dirigentes e campanhas.
-- **Designações** (`/designacoes`): presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões do meio de semana e do fim de semana, com avisos de conflito, tempo sem fazer cada função, sugestão automática e PDF do quadro de anúncios.
+- **Designações** (`/designacoes`): presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões do meio de semana e do fim de semana, com avisos de conflito, tempo sem fazer cada função, sugestão automática e PDF do quadro de anúncios. A aba **Campo** designa o dirigente de cada saída de campo (locais e dias em Início → Configurações → Campo; quem pode dirigir é marcado em Pessoas, coluna Campo), com opção de designação recorrente no mês e limite de 4 meses à frente (coleção `desig_campo`).
+- **Ajuda** (`assets/shared/ajuda.js`): botão "Ajuda" com dúvidas frequentes em todas as páginas e passo a passo na primeira visita a cada aba (a pessoa escolhe ver ou pular; fica salvo no navegador).
 - **Quadro de anúncios** (`/quadro`): página independente para preparar, conferir e compartilhar os PDFs de Oradores, Designações e programação completa. Usa os acessos existentes às fontes de dados.
 
 A tela inicial (`/`) faz o login com Google e mostra os módulos liberados para a conta. O proprietário da congregação escolhe, na própria tela inicial, quem pode editar Oradores, Territórios ou os dois. O nome do sistema fica em `assets/shared/conta.js` (`APP_NOME`).

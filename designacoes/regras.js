@@ -95,8 +95,9 @@
   // Avisos para uma pessoa em uma função de uma reunião. "oradores" = {programa, discursantes} do módulo Oradores.
   function conflitos({reuniao,pessoa,funcao,reunioes=[],oradores={}}){
     const avisos=[];if(!pessoa||!reuniao)return avisos;
+    // Só a mesma reunião (mesma data): designação em outra função de outro dia não gera aviso.
     Object.keys(FUNCOES).forEach(f=>{
-      if(f!==funcao&&pessoasDe(reuniao,f).includes(pessoa.id))avisos.push('Também está em '+FUNCOES[f].nome+' nesta reunião');
+      if(f!==funcao&&pessoasDe(reuniao,f).includes(pessoa.id))avisos.push('Já está como '+FUNCOES[f].nome+' nesta reunião');
     });
     const nome=normalizar(pessoa.nome);
     (oradores.programa||[]).forEach(p=>{
@@ -109,7 +110,8 @@
       if(fora)avisos.push('Tem discurso fora neste dia'+(fora.destino?' ('+fora.destino+')':''));
     });
     const anterior=reunioes.filter(r=>valida(r)&&r.tipo===reuniao.tipo&&r.data<reuniao.data).sort((a,b)=>b.data.localeCompare(a.data))[0];
-    if(anterior&&pessoasDe(anterior,funcao).includes(pessoa.id))avisos.push('Fez esta função na reunião anterior ('+anterior.data.slice(8,10)+'/'+anterior.data.slice(5,7)+')');
+    // Compara somente a MESMA função: ter feito outra função na reunião anterior não conta.
+    if(anterior&&pessoasDe(anterior,funcao).includes(pessoa.id))avisos.push('Fez '+FUNCOES[funcao].nome+' na reunião anterior ('+anterior.data.slice(8,10)+'/'+anterior.data.slice(5,7)+')');
     return [...new Set(avisos)];
   }
 
@@ -161,7 +163,59 @@
     return resultado;
   }
 
-  const api={FUNCOES,FUNCOES_POR_TIPO,TIPOS,QTD_PADRAO,GRUPOS,DIAS,ROTULOS_VAGAS,rotuloVaga,parSemanal,zoomSemanal,segundaDaSemana,iso,normalizar,quantidades,diaFimDoAno,reunioesDoMes,pessoasDe,ultimaVez,tempoSem,conflitos,candidatos,sugerir,podeFazer};
+  // ── Saídas de campo ──
+  const FUNCAO_CAMPO={chave:'dirigente_campo',nome:'Dirigente de campo',curto:'Campo',icone:'map-pinned'};
+  const MESES_CAMPO=4; // até quantos meses à frente dá para designar
+  const horaValida=h=>/^([01]\d|2[0-3]):[0-5]\d$/.test(String(h||''));
+  function locaisCampo(cfg){return (Array.isArray(cfg?.campo?.locais)?cfg.campo.locais:[]).filter(l=>l&&l.id&&String(l.nome||'').trim());}
+  function saidasCampo(cfg){
+    return (Array.isArray(cfg?.campo?.saidas)?cfg.campo.saidas:[])
+      .filter(s=>s&&s.id&&Number.isInteger(Number(s.dia))&&Number(s.dia)>=0&&Number(s.dia)<=6)
+      .map(s=>({id:String(s.id),dia:Number(s.dia),hora:horaValida(s.hora)?s.hora:'',localId:s.localId||''}))
+      .sort((a,b)=>a.dia-b.dia||a.hora.localeCompare(b.hora));
+  }
+  const idCampo=(data,saidaId)=>data+'_'+saidaId;
+  function datasDoDia(ano,mes,dia){
+    const r=[],ultimo=new Date(ano,mes,0).getDate();
+    for(let d=1;d<=ultimo;d++){const dt=new Date(ano,mes-1,d);if(dt.getDay()===dia)r.push(iso(dt));}
+    return r;
+  }
+  // Último dia liberado: fim do mês atual + 4 meses.
+  function limiteCampo(hoje){const d=new Date(hoje+'T12:00:00');return iso(new Date(d.getFullYear(),d.getMonth()+MESES_CAMPO+1,0));}
+  const dentroDoLimiteCampo=(data,hoje)=>data<=limiteCampo(hoje);
+  // Todas as saídas do mês (pelas saídas configuradas) + designações salvas de saídas que foram removidas.
+  function campoDoMes(ano,mes,cfg,salvas=[]){
+    const prefixo=ano+'-'+String(mes).padStart(2,'0'),mapa=new Map();
+    saidasCampo(cfg).forEach(s=>datasDoDia(ano,mes,s.dia).forEach(data=>mapa.set(idCampo(data,s.id),{id:idCampo(data,s.id),data,saidaId:s.id,hora:s.hora,localId:s.localId,dirigente:null})));
+    salvas.filter(c=>c&&c.data?.startsWith(prefixo)&&c.saidaId).forEach(c=>{
+      const id=idCampo(c.data,c.saidaId),base=mapa.get(id);
+      if(!base&&!c.dirigente&&!c.semSaida)return;
+      mapa.set(id,{...(base||{id,data:c.data,saidaId:c.saidaId,hora:c.hora||'',localId:c.localId||''}),...c,id,removida:!base});
+    });
+    return [...mapa.values()].sort((a,b)=>a.data.localeCompare(b.data)||String(a.hora).localeCompare(String(b.hora)));
+  }
+  // Designação recorrente: a mesma pessoa em todas as datas daquela saída no mês (a partir de "aPartirDe").
+  function recorrenciaCampo({saida,ano,mes,dirigente,aPartirDe,hoje,localId}){
+    return datasDoDia(ano,mes,saida.dia).filter(d=>d>=aPartirDe&&dentroDoLimiteCampo(d,hoje))
+      .map(data=>({id:idCampo(data,saida.id),data,saidaId:saida.id,hora:saida.hora,localId:localId??saida.localId,dirigente,recorrente:true}));
+  }
+  function ultimaVezCampo(campo,pessoaId,antesDe){
+    let u=null;campo.forEach(c=>{if(c.dirigente===pessoaId&&!c.semSaida&&c.data<antesDe&&(!u||c.data>u))u=c.data;});return u;
+  }
+  function conflitosCampo({item,pessoaId,campo=[],reunioes=[]}){
+    const avisos=[];if(!pessoaId||!item)return avisos;
+    campo.filter(c=>c.data===item.data&&c.id!==item.id&&c.dirigente===pessoaId&&!c.semSaida)
+      .forEach(c=>avisos.push('Já dirige outra saída neste dia'+(c.hora?' ('+c.hora+')':'')));
+    const r=reunioes.find(x=>valida(x)&&x.data===item.data);
+    if(r)Object.keys(FUNCOES).forEach(f=>{if(pessoasDe(r,f).includes(pessoaId))avisos.push('Está como '+FUNCOES[f].nome+' na reunião deste dia');});
+    return avisos;
+  }
+  function candidatosCampo({item,pessoas,campo,reunioes}){
+    return pessoas.filter(p=>p&&p.ativo!==false&&p.funcoes?.[FUNCAO_CAMPO.chave]).map(p=>({pessoa:p,ultima:ultimaVezCampo(campo,p.id,item.data),avisos:conflitosCampo({item,pessoaId:p.id,campo,reunioes})}))
+      .sort((a,b)=>{if(!a.ultima!==!b.ultima)return a.ultima?1:-1;if(a.ultima!==b.ultima)return a.ultima.localeCompare(b.ultima);return a.pessoa.nome.localeCompare(b.pessoa.nome,'pt-BR');});
+  }
+
+  const api={FUNCAO_CAMPO,MESES_CAMPO,horaValida,locaisCampo,saidasCampo,idCampo,datasDoDia,limiteCampo,dentroDoLimiteCampo,campoDoMes,recorrenciaCampo,ultimaVezCampo,conflitosCampo,candidatosCampo,FUNCOES,FUNCOES_POR_TIPO,TIPOS,QTD_PADRAO,GRUPOS,DIAS,ROTULOS_VAGAS,rotuloVaga,parSemanal,zoomSemanal,segundaDaSemana,iso,normalizar,quantidades,diaFimDoAno,reunioesDoMes,pessoasDe,ultimaVez,tempoSem,conflitos,candidatos,sugerir,podeFazer};
   raiz.Regras=api;
   if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

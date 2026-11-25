@@ -7,10 +7,11 @@ const MESES_CURTOS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out',
 const maiuscula=s=>s.charAt(0).toUpperCase()+s.slice(1);
 
 let sb=null,vinc=null,user=null,pode=false;
-let pessoas=[],reunioes=[],cfg={},cfgOradores=null;
+let pessoas=[],reunioes=[],cfg={},cfgOradores=null,campo=[];
 let oradores={programa:[],discursantes:[]};
 let mes=new Date();mes.setDate(1);
-let edicao=null,pessoaEditando=null;
+let edicao=null,pessoaEditando=null,edCampo=null;
+let mesCampo=new Date();mesCampo.setDate(1);
 
 // ── Banco ──
 async function lista(colecao){
@@ -33,7 +34,7 @@ async function apagar(colecao,id){
 const novoId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 async function carregar(){
-  const[ps,rs,cs,central]=await Promise.all([lista('desig_pessoas'),lista('desig_reunioes'),lista('desig_config'),lista('cong_pessoas').catch(()=>[])]);
+  const[ps,rs,cs,central,cp]=await Promise.all([lista('desig_pessoas'),lista('desig_reunioes'),lista('desig_config'),lista('cong_pessoas').catch(()=>[]),lista('desig_campo').catch(()=>[])]);
   // Nome, grupo e telefone vêm da lista única da congregação; aqui ficam só as funções de cada pessoa.
   const funcoesPorId=new Map(ps.map(p=>[p.id,p.funcoes||{}]));
   const antigas=ps.filter(p=>p.nome&&!central.some(c=>c.id===p.id||Congregacao.normalizar(c.nome)===Congregacao.normalizar(p.nome)));
@@ -45,6 +46,7 @@ async function carregar(){
   pessoas=lista_.map(p=>({id:p.id,nome:p.nome,grupo:p.grupo||'',telefone:p.telefone||'',obs:p.obs||'',ativo:p.ativo!==false,funcoes:funcoesPorId.get(p.id)||{}}))
     .sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
   reunioes=rs.filter(r=>r.data);
+  campo=cp.filter(c=>c.data&&c.saidaId);
   cfg=cs.find(c=>c.id==='app')||{};
   // Dados do Oradores (para avisos e para o dia do fim de semana), se a pessoa tiver acesso.
   if(Conta.podeVer(vinc,'oradores')){
@@ -62,18 +64,24 @@ function funcoesEmUso(){
   const q=R.quantidades(cfg);
   return Object.keys(R.FUNCOES).filter(f=>(q.meio[f]||0)>0||(q.fim[f]||0)>0);
 }
+// Colunas da aba Pessoas: funções das reuniões + Dirigente de campo.
+const CAMPO=R.FUNCAO_CAMPO.chave;
+const colunasPessoas=()=>[...funcoesEmUso(),CAMPO];
+const infoFuncao=f=>f===CAMPO?R.FUNCAO_CAMPO:R.FUNCOES[f];
+const ultimaDe=(p,f,ref)=>f===CAMPO?R.ultimaVezCampo(campo,p.id,ref):R.ultimaVez(reunioes,p.id,f,ref);
 const hojeISO=()=>R.iso(new Date());
 const nomePessoa=id=>pessoas.find(p=>p.id===id)?.nome||'(pessoa removida)';
 const reuniaoSalva=data=>reunioes.find(r=>r.data===data);
 
 // ── Navegação ──
 function irAba(){
-  const aba=['#pessoas','#config','#historico'].includes(location.hash)?location.hash.slice(1):'programacao';
+  const aba=['#pessoas','#config','#historico','#campo'].includes(location.hash)?location.hash.slice(1):'programacao';
   if(aba==='config'){location.href='/#configuracoes';return;}
   document.querySelectorAll('.secao').forEach(s=>s.hidden=s.id!=='sec-'+aba);
   document.querySelectorAll('[data-aba]').forEach(a=>a.classList.toggle('active',a.dataset.aba===aba));
   if(aba==='programacao')renderProgramacao();
   if(aba==='pessoas')renderPessoas();
+  if(aba==='campo')renderCampo();
   if(aba==='config')renderConfig();
   if(aba==='historico')renderHistorico();
 }
@@ -171,7 +179,8 @@ function renderEdicao(){
       sel.add(new Option('— Vago —',''));
       cands.forEach(c=>{
         const outroSlot=atual.some((id,j)=>j!==i&&id===c.pessoa.id);if(outroSlot)return;
-        const txt=c.pessoa.nome+' · '+R.tempoSem(c.ultima,edicao.data)+(c.avisos.length?' ⚠':'');
+        // Sempre diz de qual função é o tempo (ex.: "Microfones: nunca fez"), para não confundir com outra função.
+        const txt=c.pessoa.nome+' · '+(R.FUNCOES[f].curto||R.FUNCOES[f].nome)+': '+R.tempoSem(c.ultima,edicao.data)+(c.avisos.length?' ⚠':'');
         sel.add(new Option(txt,c.pessoa.id));
       });
       // Pessoa já designada que não pode mais fazer a função continua visível.
@@ -315,7 +324,7 @@ function renderPessoas(){
   const lista=pessoas.filter(p=>!busca||R.normalizar(p.nome).includes(busca));
   if(!pessoas.length){div.innerHTML='<div class="vazio">Nenhuma pessoa cadastrada ainda. Use <strong>Nova pessoa</strong>'+(Conta.podeVer(vinc,'oradores')?' ou <strong>Trazer do Oradores</strong>':'')+'.</div>';return;}
   const hoje=hojeISO();
-  const funcoes=funcoesEmUso();
+  const funcoes=colunasPessoas();
   div.style.setProperty('--n',Math.max(funcoes.length,1));
   const grupos=[...Object.keys(R.GRUPOS).map(g=>[g,R.GRUPOS[g],lista.filter(p=>p.ativo!==false&&(p.grupo||'')===g)]),['inativos','Inativos',lista.filter(p=>p.ativo===false)]];
   grupos.forEach(([chave,titulo,ps])=>{
@@ -323,7 +332,7 @@ function renderPessoas(){
     const sec=document.createElement('div');sec.className='grupo';
     const h=document.createElement('h3');h.textContent=titulo+' ';const c=document.createElement('small');c.textContent=ps.length;h.appendChild(c);sec.appendChild(h);
     const cab=document.createElement('div');cab.className='cabec-funcoes';cab.innerHTML='<span>Nome</span>'+funcoes.map(f=>'<span></span>').join('');
-    funcoes.forEach((f,i)=>cab.children[i+1].textContent=R.FUNCOES[f].curto||R.FUNCOES[f].nome);sec.appendChild(cab);
+    funcoes.forEach((f,i)=>cab.children[i+1].textContent=infoFuncao(f).curto||infoFuncao(f).nome);sec.appendChild(cab);
     ps.forEach(p=>{
       const row=document.createElement('div');row.className='pessoa'+(p.ativo===false?' inativa':'');
       const nome=document.createElement('button');nome.type='button';nome.className='pessoa-nome';nome.onclick=()=>abrirPessoa(p.id);
@@ -335,13 +344,13 @@ function renderPessoas(){
         const chip=document.createElement('button');chip.type='button';
         const on=!!p.funcoes?.[f];
         chip.className='chip'+(on?' on':'');chip.disabled=!pode;
-        const lbl=document.createElement('span');lbl.className='lbl';lbl.textContent=R.FUNCOES[f].curto||R.FUNCOES[f].nome;
+        const lbl=document.createElement('span');lbl.className='lbl';lbl.textContent=infoFuncao(f).curto||infoFuncao(f).nome;
         const estado=document.createElement('span');
-        const ult=R.ultimaVez(reunioes,p.id,f,hoje);
+        const ult=ultimaDe(p,f,hoje);
         estado.textContent=on?'✓ pode':'—';
         const quando=document.createElement('small');quando.textContent=on?R.tempoSem(ult,hoje):(ult?'fez '+R.tempoSem(ult,hoje):'não faz');
         chip.append(lbl,estado,quando);
-        chip.title=(on?'Clique para tirar ':'Clique para liberar ')+R.FUNCOES[f].nome;
+        chip.title=(on?'Clique para tirar ':'Clique para liberar ')+infoFuncao(f).nome;
         chip.onclick=()=>alternarFuncao(p,f);
         row.appendChild(chip);
       });
@@ -365,10 +374,10 @@ function abrirPessoa(id){
   $('pNome').value=p.nome||'';$('pGrupo').value=p.grupo||'';$('pTel').value=p.telefone||'';$('pObs').value=p.obs||'';$('pAtivo').checked=p.ativo!==false;
   $('pExcluir').hidden=!pessoaEditando||!pode;
   const box=$('pFuncoes');box.innerHTML='';
-  funcoesEmUso().forEach(f=>{
+  colunasPessoas().forEach(f=>{
     const l=document.createElement('label');l.className='check';l.style.margin='4px 12px 4px 0';
     const cb=document.createElement('input');cb.type='checkbox';cb.dataset.f=f;cb.checked=!!p.funcoes?.[f];cb.disabled=!pode;
-    l.append(cb,document.createTextNode(R.FUNCOES[f].nome));box.appendChild(l);
+    l.append(cb,document.createTextNode(infoFuncao(f).nome));box.appendChild(l);
   });
   ['pNome','pGrupo','pTel','pObs','pAtivo'].forEach(i=>$(i).disabled=!pode);
   abrirJanela('janPessoa');setTimeout(()=>pode&&$('pNome').focus(),50);
@@ -378,7 +387,7 @@ async function salvarPessoa(){
   const repetido=pessoas.find(p=>R.normalizar(p.nome)===R.normalizar(nome)&&p.id!==pessoaEditando?.id);
   if(repetido)return toast('Já existe uma pessoa com esse nome.');
   // Mantém as marcações de funções que estão desligadas no momento (se forem religadas, voltam como estavam).
-  const funcoes={};Object.keys(R.FUNCOES).forEach(f=>{if(pessoaEditando?.funcoes?.[f])funcoes[f]=true;});
+  const funcoes={};[...Object.keys(R.FUNCOES),CAMPO].forEach(f=>{if(pessoaEditando?.funcoes?.[f])funcoes[f]=true;});
   $('pFuncoes').querySelectorAll('input').forEach(cb=>{if(cb.checked)funcoes[cb.dataset.f]=true;else delete funcoes[cb.dataset.f];});
   const id=pessoaEditando?.id||novoId();
   const cadastro={nome,grupo:$('pGrupo').value,telefone:$('pTel').value.trim(),obs:$('pObs').value.trim(),ativo:$('pAtivo').checked};
@@ -460,6 +469,148 @@ function mostrarNotaEvento(){
   nota.innerHTML=icone('calendar-range')+'<span></span>';
   nota.querySelector('span').textContent='Marcada pelo evento "'+(edicao.motivo||'evento')+'". Para mudar as datas, edite o evento em Início → Eventos.';
   $('rSub').after(nota);DesignaUI.desenharIcones();
+}
+
+// ── Saídas de campo ──
+const nomeLocal=id=>R.locaisCampo(cfg).find(l=>l.id===id)?.nome||(id?'(local removido)':'—');
+const limiteCampoISO=()=>R.limiteCampo(hojeISO());
+const mesLimiteCampo=()=>{const l=limiteCampoISO();return new Date(Number(l.slice(0,4)),Number(l.slice(5,7))-1,1);};
+const campoDoMesAtual=()=>R.campoDoMes(mesCampo.getFullYear(),mesCampo.getMonth()+1,cfg,campo);
+function mudarMesCampo(n){
+  const novo=new Date(mesCampo.getFullYear(),mesCampo.getMonth()+n,1);
+  if(novo>mesLimiteCampo())return toast('Dá para designar as saídas de campo até '+R.MESES_CAMPO+' meses para frente.');
+  mesCampo=novo;renderCampo();
+}
+function irHojeCampo(){mesCampo=new Date();mesCampo.setDate(1);renderCampo();}
+function renderCampo(){
+  $('campoMesTitulo').textContent=maiuscula(mesCampo.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}));
+  $('campoProx').disabled=new Date(mesCampo.getFullYear(),mesCampo.getMonth()+1,1)>mesLimiteCampo();
+  const div=$('listaCampo');div.innerHTML='';
+  const saidas=R.saidasCampo(cfg);
+  if(!saidas.length){
+    div.innerHTML='<div class="vazio">Nenhum dia de saída cadastrado ainda. Cadastre os locais e os dias em <a href="/#configuracoes">Início → Configurações → Campo</a>.</div>';
+    return;
+  }
+  if(!pessoas.some(p=>p.ativo!==false&&p.funcoes?.[CAMPO])){
+    const v=document.createElement('div');v.className='aviso';v.style.marginBottom='12px';v.innerHTML=icone('triangle-alert')+'<span>Ninguém está marcado como dirigente de campo. Marque na aba <a href="#pessoas">Pessoas</a>, coluna "Campo".</span>';div.appendChild(v);
+  }
+  const lista=campoDoMesAtual(),hoje=hojeISO();
+  const porData=new Map();lista.forEach(c=>{if(!porData.has(c.data))porData.set(c.data,[]);porData.get(c.data).push(c);});
+  const grade=document.createElement('div');grade.className='reunioes';
+  porData.forEach((itens,data)=>{
+    const dt=new Date(data+'T12:00:00');
+    const card=document.createElement('article');card.className='reuniao leitura'+(data<hoje?' passada':'');
+    const topo=document.createElement('div');topo.className='reuniao-topo';
+    topo.innerHTML='<div class="dia"><b></b><small></small></div><div class="tx"><strong></strong><span></span></div>';
+    topo.querySelector('.dia b').textContent=data.slice(8,10);
+    topo.querySelector('.dia small').textContent=MESES_CURTOS[dt.getMonth()];
+    topo.querySelector('.tx strong').textContent=maiuscula(dt.toLocaleDateString('pt-BR',{weekday:'long'}));
+    topo.querySelector('.tx span').textContent=itens.length+(itens.length===1?' saída':' saídas');
+    card.appendChild(topo);
+    itens.forEach(c=>{
+      const linha=document.createElement(pode?'button':'div');linha.className='campo-linha';
+      if(pode){linha.type='button';linha.onclick=()=>abrirCampo(c.id);linha.setAttribute('aria-label','Designar dirigente da saída de '+data.slice(8,10)+'/'+data.slice(5,7)+(c.hora?' às '+c.hora:''));}
+      const info=document.createElement('span');info.className='campo-info';
+      const h=document.createElement('b');h.textContent=c.hora||'--:--';
+      const l=document.createElement('small');l.textContent=nomeLocal(c.localId)+(c.removida?' · saída removida':'');
+      info.append(h,l);
+      const chip=document.createElement('span');
+      if(c.semSaida){chip.className='nome vago';chip.textContent='Sem saída';}
+      else if(!c.dirigente){chip.className='nome vago';chip.textContent='vago';}
+      else{
+        const avisos=R.conflitosCampo({item:c,pessoaId:c.dirigente,campo:lista,reunioes});
+        chip.className='nome'+(avisos.length?' alerta':'');chip.textContent=nomePessoa(c.dirigente);
+        if(c.recorrente)chip.insertAdjacentHTML('beforeend',icone('repeat'));
+        if(avisos.length){chip.title=avisos.join('\n');chip.insertAdjacentHTML('beforeend',icone('triangle-alert'));}
+      }
+      linha.append(info,chip);card.appendChild(linha);
+    });
+    grade.appendChild(card);
+  });
+  div.appendChild(grade);
+  if(!lista.length){const v=document.createElement('div');v.className='vazio';v.textContent='Nenhuma saída neste mês.';div.appendChild(v);}
+  DesignaUI.desenharIcones();
+}
+function abrirCampo(id){
+  const c=campoDoMesAtual().find(x=>x.id===id);if(!c)return;
+  if(!R.dentroDoLimiteCampo(c.data,hojeISO()))return toast('Dá para designar até '+R.MESES_CAMPO+' meses para frente.');
+  edCampo={...c};
+  const dt=new Date(c.data+'T12:00:00');
+  $('cTitulo').textContent=maiuscula(dt.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}))+(c.hora?' · '+c.hora:'');
+  $('cSub').textContent='Saída de campo · '+nomeLocal(c.localId);
+  const loc=$('cLocal');loc.innerHTML='';
+  R.locaisCampo(cfg).forEach(l=>loc.add(new Option(l.nome+(l.endereco?' — '+l.endereco:''),l.id)));
+  if(c.localId&&![...loc.options].some(o=>o.value===c.localId))loc.add(new Option(nomeLocal(c.localId),c.localId));
+  if(!loc.options.length)loc.add(new Option('Sem local cadastrado',''));
+  loc.value=c.localId||loc.options[0].value;
+  $('cSem').checked=!!c.semSaida;
+  const nomeMes=dt.toLocaleDateString('pt-BR',{month:'long'});
+  $('cRecorrenteTxt').textContent='Gostaria de deixar essa designação recorrente pelo mês?';
+  const plural=['todos os domingos','todas as segundas-feiras','todas as terças-feiras','todas as quartas-feiras','todas as quintas-feiras','todas as sextas-feiras','todos os sábados'][dt.getDay()];
+  $('cRecorrenteHint').textContent='Coloca a mesma pessoa em '+plural+(c.hora?' às '+c.hora:'')+' de '+nomeMes+' (a partir de hoje), nesta mesma saída.';
+  $('cRecorrente').checked=false;
+  $('cRecorrenteBox').hidden=!!c.removida;
+  renderEdCampo();abrirJanela('janCampo');
+}
+function renderEdCampo(){
+  const sem=$('cSem').checked;
+  $('cDirigenteBox').hidden=sem;
+  const sel=$('cDirigente');sel.innerHTML='';sel.add(new Option('— Vago —',''));
+  const cands=R.candidatosCampo({item:edCampo,pessoas,campo:campoDoMesAtual().concat(campo.filter(c=>!c.data.startsWith(edCampo.data.slice(0,7)))),reunioes});
+  cands.forEach(c=>sel.add(new Option(c.pessoa.nome+' · dirigiu: '+R.tempoSem(c.ultima,edCampo.data)+(c.avisos.length?' ⚠':''),c.pessoa.id)));
+  if(edCampo.dirigente&&!cands.some(c=>c.pessoa.id===edCampo.dirigente))sel.add(new Option(nomePessoa(edCampo.dirigente)+' (não marcado como dirigente)',edCampo.dirigente));
+  sel.value=edCampo.dirigente||'';
+  const av=$('cAvisos');av.innerHTML='';
+  if(!sem&&edCampo.dirigente)R.conflitosCampo({item:edCampo,pessoaId:edCampo.dirigente,campo:campoDoMesAtual(),reunioes}).forEach(a=>{
+    const d=document.createElement('div');d.className='aviso';d.innerHTML=icone('triangle-alert');const t=document.createElement('span');t.textContent=a;d.appendChild(t);av.appendChild(d);
+  });
+  if(!cands.length){const v=document.createElement('div');v.className='hint';v.style.margin='6px 0 0';v.textContent='Ninguém marcado como dirigente de campo. Marque em Pessoas, coluna "Campo".';av.appendChild(v);}
+  DesignaUI.desenharIcones();
+}
+function escolherDirigente(){edCampo.dirigente=$('cDirigente').value||null;renderEdCampo();}
+const dadosCampo=c=>({data:c.data,saidaId:c.saidaId,hora:c.hora||'',localId:c.localId||'',dirigente:c.semSaida?null:(c.dirigente||null),semSaida:!!c.semSaida,recorrente:!!c.recorrente});
+async function salvarCampo(){
+  const b=$('cSalvar');b.disabled=true;
+  try{
+    exigirEdicao();
+    const hoje=hojeISO();
+    const base={...edCampo,localId:$('cLocal').value||'',semSaida:$('cSem').checked,dirigente:$('cSem').checked?null:($('cDirigente').value||null),recorrente:false};
+    let registros=[base];
+    if($('cRecorrente').checked&&!base.semSaida){
+      if(!base.dirigente)throw new Error('Escolha o dirigente antes de deixar recorrente.');
+      const saida=R.saidasCampo(cfg).find(s=>s.id===base.saidaId);
+      const ano=Number(base.data.slice(0,4)),m=Number(base.data.slice(5,7));
+      const mesmo=R.recorrenciaCampo({saida:{...saida,hora:base.hora},ano,mes:m,dirigente:base.dirigente,aPartirDe:hoje<base.data?hoje:base.data,hoje,localId:base.localId});
+      const atuais=new Map(campoDoMesAtual().map(c=>[c.id,c]));
+      const outros=mesmo.filter(r=>r.id!==base.id&&atuais.get(r.id)?.dirigente&&atuais.get(r.id).dirigente!==base.dirigente);
+      const semSaida=mesmo.filter(r=>atuais.get(r.id)?.semSaida);
+      let substituir=true;
+      if(outros.length)substituir=confirm(outros.length+' data(s) deste mês já têm outro dirigente ('+outros.map(r=>r.data.slice(8,10)+'/'+r.data.slice(5,7)).join(', ')+').\n\nOK = trocar por '+nomePessoa(base.dirigente)+'\nCancelar = manter quem já está e preencher só as datas vagas');
+      registros=mesmo.filter(r=>r.id===base.id||(!semSaida.includes(r)&&(substituir||!outros.includes(r))))
+        .map(r=>r.id===base.id?{...base,recorrente:true}:r);
+    }
+    for(const r of registros){
+      if(!R.dentroDoLimiteCampo(r.data,hoje))continue;
+      const dados=dadosCampo(r);
+      await salvar('desig_campo',r.id,dados);
+      campo=[...campo.filter(c=>R.idCampo(c.data,c.saidaId)!==r.id),{...dados,id:r.id}];
+    }
+    fecharJanela('janCampo');renderCampo();
+    toast(registros.length>1?'✓ '+nomePessoa(base.dirigente)+' designado em '+registros.length+' saídas deste mês.':'✓ Saída salva.',4500);
+  }catch(e){if(e.message!=='Somente leitura')toast(e.message.startsWith('Escolha')?e.message:'Não foi possível salvar: '+e.message,6000);}
+  finally{b.disabled=false;}
+}
+function compartilharCampo(){
+  const lista=campoDoMesAtual();
+  if(!lista.length)return toast('Nenhuma saída neste mês.');
+  const linhas=['*Saídas de campo — '+mesCampo.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})+'*'];
+  if(vinc.nome)linhas.push(vinc.nome);
+  let dataAnterior='';
+  lista.forEach(c=>{
+    if(c.data!==dataAnterior){const dt=new Date(c.data+'T12:00:00');linhas.push('','*'+dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'})+'*');dataAnterior=c.data;}
+    linhas.push((c.hora||'')+' · '+nomeLocal(c.localId)+' — '+(c.semSaida?'sem saída':c.dirigente?nomePessoa(c.dirigente):'a definir'));
+  });
+  window.open('https://wa.me/?text='+encodeURIComponent(linhas.join('\n')),'_blank','noopener');
 }
 
 // ── Lembretes no WhatsApp (cada designado recebe as suas designações) ──
@@ -546,12 +697,23 @@ function descreverAlteracao(a){
     const nome=nomePessoa(a.record_id);
     if(a.action==='DELETE')return{titulo:'Tirou '+nome+' das Designações',detalhes:[]};
     const x=antes.funcoes||{},y=depois.funcoes||{};
-    const det=Object.keys(R.FUNCOES).filter(f=>!!x[f]!==!!y[f]).map(f=>(y[f]?'Liberou ':'Tirou ')+R.FUNCOES[f].nome);
+    const det=[...Object.keys(R.FUNCOES),CAMPO].filter(f=>!!x[f]!==!!y[f]).map(f=>(y[f]?'Liberou ':'Tirou ')+infoFuncao(f).nome);
     return det.length?{titulo:'Funções de '+nome,detalhes:det}:null;
   }
   if(a.collection==='cong_pessoas'){
     const nome=depois.nome||antes.nome||'pessoa';
     return{titulo:a.action==='INSERT'?'Cadastrou '+nome:a.action==='DELETE'?'Excluiu '+nome+' da lista':'Atualizou o cadastro de '+nome,detalhes:[]};
+  }
+  if(a.collection==='desig_campo'){
+    const c=a.action==='DELETE'?antes:depois,data=c.data||String(a.record_id).slice(0,10);
+    const titulo='saída de campo de '+data.slice(8,10)+'/'+data.slice(5,7)+(c.hora?' às '+c.hora:'');
+    if(a.action==='DELETE')return{titulo:'Apagou a '+titulo,detalhes:[]};
+    const det=[];
+    if((antes.dirigente||null)!==(depois.dirigente||null))det.push('Dirigente: '+(antes.dirigente?nomePessoa(antes.dirigente):'—')+' → '+(depois.dirigente?nomePessoa(depois.dirigente):'—'));
+    if(!!antes.semSaida!==!!depois.semSaida)det.push(depois.semSaida?'Marcou "sem saída"':'Desmarcou "sem saída"');
+    if((antes.localId||'')!==(depois.localId||''))det.push('Local: '+nomeLocal(antes.localId)+' → '+nomeLocal(depois.localId));
+    if(!det.length)return null;
+    return{titulo:'Alterou a '+titulo+(depois.recorrente?' (recorrente no mês)':''),detalhes:det};
   }
   if(a.collection==='desig_config')return{titulo:'Alterou as configurações das Designações',detalhes:[]};
   return null;
@@ -561,7 +723,7 @@ async function renderHistorico(){
   try{
     const[{data,error},membros]=await Promise.all([
       sb.from('app_record_audit').select('record_id,collection,action,old_data,new_data,changed_by,changed_at').eq('workspace_id',vinc.workspaceId)
-        .in('collection',['desig_reunioes','desig_pessoas','desig_config','cong_pessoas']).order('changed_at',{ascending:false}).limit(80),
+        .in('collection',['desig_reunioes','desig_pessoas','desig_config','cong_pessoas','desig_campo']).order('changed_at',{ascending:false}).limit(80),
       sb.rpc('list_workspace_access',{target_workspace:vinc.workspaceId})
     ]);
     if(error)throw error;

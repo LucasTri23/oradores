@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/shared/designa.css?v=20261110-9">
+<link rel="stylesheet" href="/assets/shared/designa.css?v=20261124-1">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('bj_theme')||'light';}catch(e){}</script>
 <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 <style>
@@ -50,6 +50,12 @@ input,select,textarea{font-family:Inter,sans-serif}
 .nome.alerta{background:color-mix(in srgb,var(--amber) 14%,transparent);color:var(--whi)}
 .nome svg{width:13px;height:13px;color:var(--amber)}
 .sem-reuniao{font-size:13px;color:var(--whi3);padding:8px 0;border-top:1px solid var(--border)}
+.campo-linha{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;padding:9px 4px;border:0;border-top:1px solid var(--border);background:none;color:inherit;font:inherit;text-align:left}
+button.campo-linha{cursor:pointer;border-radius:8px}
+button.campo-linha:hover{background:var(--pur-dim2)}
+.campo-info{display:flex;flex-direction:column;min-width:0}
+.campo-info b{font:700 13px Inter,sans-serif}
+.campo-info small{font-size:11px;color:var(--whi3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .legenda{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--whi3);margin:-6px 0 14px}
 .legenda span{display:inline-flex;align-items:center;gap:5px}.legenda svg{width:13px;height:13px;color:var(--amber)}
 
@@ -138,6 +144,7 @@ input,select,textarea{font-family:Inter,sans-serif}
 <nav class="dz-nav">
   <a class="dz-brand" href="/"><img src="/assets/images/designa-icon-v1.png" alt=""><span><span class="nomeApp">Designa</span><small class="nomeCong"></small></span></a>
   <a class="dz-tab active" data-aba="programacao" href="#programacao"><i data-lucide="calendar-days"></i><span>Programação</span></a>
+  <a class="dz-tab" data-aba="campo" href="#campo"><i data-lucide="map-pinned"></i><span>Campo</span></a>
   <a class="dz-tab" data-aba="pessoas" href="#pessoas"><i data-lucide="users"></i><span>Pessoas</span></a>
   <a class="dz-tab" data-aba="historico" href="#historico"><i data-lucide="history"></i><span>Histórico</span></a>
 </nav>
@@ -160,8 +167,25 @@ input,select,textarea{font-family:Inter,sans-serif}
       <button class="dz-btn" onclick="compartilharMes()"><i data-lucide="send"></i> WhatsApp</button>
       <button class="dz-btn pri" onclick="abrirPdf()"><i data-lucide="file-down"></i> Quadro de anúncios</button>
     </div>
-    <div class="legenda"><span><i data-lucide="triangle-alert"></i> aviso: a pessoa está em outra função, faz discurso ou fez na reunião anterior</span></div>
+    <div class="legenda"><span><i data-lucide="triangle-alert"></i> aviso: a pessoa já está em outra função nesta mesma reunião, faz discurso no dia ou fez esta mesma função na reunião anterior</span></div>
     <div class="reunioes" id="listaReunioes"></div>
+  </section>
+
+  <!-- SAÍDAS DE CAMPO -->
+  <section class="secao" id="sec-campo" hidden>
+    <div class="barra">
+      <div class="mes-nav" id="campoMesNav">
+        <button class="dz-icon-btn" onclick="mudarMesCampo(-1)" title="Mês anterior" aria-label="Mês anterior"><i data-lucide="chevron-left"></i></button>
+        <strong id="campoMesTitulo"></strong>
+        <button class="dz-icon-btn" id="campoProx" onclick="mudarMesCampo(1)" title="Próximo mês (até 4 meses para frente)" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button>
+        <button class="dz-btn" onclick="irHojeCampo()">Hoje</button>
+      </div>
+      <div class="esp"></div>
+      <a class="dz-btn so-edicao" href="/#configuracoes"><i data-lucide="map-pin"></i> Locais e dias</a>
+      <button class="dz-btn" onclick="compartilharCampo()"><i data-lucide="send"></i> WhatsApp</button>
+    </div>
+    <p class="sub-sec">Toque numa saída para escolher o dirigente. Dá para designar até 4 meses para frente. <i data-lucide="repeat" style="width:12px;height:12px;vertical-align:-2px"></i> = designação recorrente no mês.</p>
+    <div id="listaCampo"></div>
   </section>
 
   <!-- PESSOAS -->
@@ -230,6 +254,31 @@ input,select,textarea{font-family:Inter,sans-serif}
   </div>
 </div>
 
+<!-- Janela: dirigente da saída de campo -->
+<div class="fundo" id="janCampo" hidden onclick="if(event.target===this)fecharJanela('janCampo')">
+  <div class="janela" style="max-width:480px">
+    <h2 id="cTitulo"></h2>
+    <p class="sub" id="cSub"></p>
+    <label class="check"><input type="checkbox" id="cSem" onchange="renderEdCampo()"> Não haverá saída neste dia</label>
+    <div id="cDirigenteBox">
+      <label class="campo" for="cDirigente">Dirigente de campo</label>
+      <select id="cDirigente" onchange="escolherDirigente()"></select>
+      <label class="campo" for="cLocal">Local</label>
+      <select id="cLocal"></select>
+      <div id="cAvisos"></div>
+      <div id="cRecorrenteBox">
+        <label class="check"><input type="checkbox" id="cRecorrente"> <span id="cRecorrenteTxt">Gostaria de deixar essa designação recorrente pelo mês?</span></label>
+        <p class="hint" id="cRecorrenteHint" style="margin:4px 0 0 24px"></p>
+      </div>
+    </div>
+    <div class="acoes">
+      <div class="esp"></div>
+      <button class="dz-btn" onclick="fecharJanela('janCampo')">Cancelar</button>
+      <button class="dz-btn pri" id="cSalvar" onclick="salvarCampo()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Janela: pessoa -->
 <div class="fundo" id="janPessoa" hidden onclick="if(event.target===this)fecharJanela('janPessoa')">
   <div class="janela">
@@ -293,12 +342,13 @@ input,select,textarea{font-family:Inter,sans-serif}
 <script src="/assets/js/data.js?v=20261110-7"></script>
 <script src="/assets/shared/conta.js?v=20261110-9"></script>
 <script src="/assets/shared/congregacao.js?v=20261110-7"></script>
-<script src="/designacoes/regras.js?v=20261110-7"></script>
+<script src="/designacoes/regras.js?v=20261124-1"></script>
 <script src="/assets/shared/pdf-paleta.js?v=20261110-7"></script>
 <script src="/designacoes/pdf.js?v=20261110-7"></script>
-<script src="/assets/shared/quadro-dados.js?v=20261110-7"></script>
-<script src="/designacoes/app.js?v=20261110-7"></script>
+<script src="/assets/shared/quadro-dados.js?v=20261124-1"></script>
+<script src="/designacoes/app.js?v=20261124-1"></script>
 <script src="/assets/shared/module-flow.js?v=20261110-7"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script>
+<script src="/assets/shared/ajuda.js?v=20261124-1" data-modulo="designacoes"></script>
 </body>
 </html>
