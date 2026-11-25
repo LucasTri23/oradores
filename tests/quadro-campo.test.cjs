@@ -5,6 +5,14 @@ const {jsPDF}=require('../assets/js/vendor/jspdf.umd.min.js');
 const cfg={campo:{locais:[{id:'l',nome:'Salão do Reino'},{id:'c',nome:'Casa da família Silva'}],saidas:[{id:'s',dia:6,hora:'09:00',localId:'l'}]}};
 const pessoas=[{id:'a',nome:'Carlos Teste'},{id:'b',nome:'Bruno Exceção'}];
 const salvas=R.recorrenciaCampo({saida:R.saidasCampo(cfg)[0],ano:2026,mes:12,dirigente:'a',aPartirDe:'2026-12-01',hoje:'2026-11-24'});
+test('datas numéricas somente no sábado em todos os modelos',()=>{
+  const linhas=['2026-12-07','2026-12-05','2026-12-06'].map(data=>({data,datas:[data],hora:'09:00',local:'Local',nome:'Dirigente'}));
+  for(const modelo of ['cartoes','editorial','compacto','word','ilustrado']){
+    const pdf=Campo.criarPdf(jsPDF,[{data:new Date(2026,11,1),linhas}],'Central',modelo,{}),raw=pdf.output();
+    assert(raw.includes('05/12'));assert(!raw.includes('07/12'));assert(!raw.includes('06/12'));
+    assert(raw.includes('segunda-feira'));assert(raw.includes('domingo'));assert.equal(pdf.getNumberOfPages(),1);
+  }
+});
 test('recorrência aparece uma vez no mês com todas as datas',()=>{
   const m=Campo.montarMes(new Date(2026,11,1),R,cfg,salvas,pessoas);
   assert.equal(m.linhas.length,1);assert.deepEqual(m.linhas[0].datas,['2026-12-05','2026-12-12','2026-12-19','2026-12-26']);
@@ -29,6 +37,9 @@ for(const modelo of ['cartoes','editorial','compacto','word','ilustrado'])test('
   assert(raw.includes('Carlos Teste'));assert(raw.includes('05/12'));assert(raw.includes('26/12'));assert.equal(pdf.getNumberOfPages(),1);
   assert.equal((raw.match(/Carlos Teste/g)||[]).length,1);
   const muitos={...m,linhas:Array.from({length:40},()=>({...m.linhas[0]}))};
-  assert(Campo.criarPdf(jsPDF,[muitos],'Central',modelo,{}).getNumberOfPages()>1);
+  const cheio=Campo.criarPdf(jsPDF,[muitos],'Central',modelo,{});
+  assert.equal(cheio.getNumberOfPages(),1);
+  assert.equal((cheio.output().match(/Carlos Teste/g)||[]).length,40);
+  assert.equal(Campo.criarPdf(jsPDF,[m,m,m],'Central',modelo,{}).getNumberOfPages(),3);
   assert(Campo.criarPdf(jsPDF,[{...m,linhas:[]}],'Central',modelo,{}).output().includes('Nenhuma'));
 });

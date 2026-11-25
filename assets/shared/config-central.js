@@ -30,18 +30,34 @@
       for(const [id,key] of [['configNomeCard','congregacao'],['configInstalarCard','congregacao'],['configAcessoCard','equipe'],['painelDono','equipe']]){const card=document.getElementById(id);if(card)paineis[key].appendChild(card);}
       const nomeCard=document.getElementById('configNomeCard'),nomeBtn=document.getElementById('cfgNomeBtn'),nomeStatus=el('p','save-status');nomeStatus.id='cfgNomeStatus';nomeStatus.setAttribute('role','status');nomeCard.appendChild(nomeStatus);FormUX.rastrear(nomeCard,nomeBtn,nomeStatus);
       if(ver('oradores')){
-        let endereco,horario,dia,dia2027,sentinela;
-        const f=formulario(paineis.reunioes,'Discursos públicos',editar('oradores'),()=>store.salvar('config','app',{end:endereco.value.trim(),hor:horario.value,dia:Number(dia.value),dia2027:dia2027.value===''?null:Number(dia2027.value),sugerirSentinela:sentinela.checked}));
-        endereco=campo(f.body,'Endereço da reunião',o.end||'');horario=campo(f.body,'Horário',o.hor||'19:00','time');dia=campo(f.body,'Dia do fim de semana',o.dia??6,'select',[[6,'Sábado'],[0,'Domingo']]);dia2027=campo(f.body,'Dia do fim de semana em 2027',o.dia2027??'','select',[['','Usar o padrão'],[6,'Sábado'],[0,'Domingo']]);sentinela=campo(f.body,'Sugerir discursos relacionados à Sentinela',o.sugerirSentinela,'checkbox');
+        let endereco,horario,dia,dia2027=null,sentinela;
+        // Antes de 2027: campo extra para o dia de 2027. Depois: o dia de 2027 vira o padrão (e o campo some).
+        const fimValido=v=>v===0||v===6,ver2027=Regras.mostrarPergunta2027();
+        const f=formulario(paineis.reunioes,'Discursos públicos',editar('oradores'),()=>store.salvar('config','app',{end:endereco.value.trim(),hor:horario.value,dia:Number(dia.value),dia2027:dia2027&&dia2027.value!==''?Number(dia2027.value):null,sugerirSentinela:sentinela.checked}));
+        endereco=campo(f.body,'Endereço da reunião',o.end||'');horario=campo(f.body,'Horário',o.hor||'19:00','time');
+        dia=campo(f.body,'Dia do fim de semana',!ver2027&&fimValido(o.dia2027)?o.dia2027:(o.dia??6),'select',[[6,'Sábado'],[0,'Domingo']]);
+        if(ver2027)dia2027=campo(f.body,'Dia do fim de semana em 2027',o.dia2027??'','select',[['','Igual ao de cima'],[6,'Sábado'],[0,'Domingo']]);
+        sentinela=campo(f.body,'Sugerir discursos relacionados à Sentinela',o.sugerirSentinela,'checkbox');
         let grupo;const g=formulario(paineis.preferencias,'Mensagem do grupo — Oradores',editar('oradores'),()=>store.salvar('config','app',{groupMsg:grupo.value.trim()}));grupo=campo(g.body,'Modelo da mensagem (variáveis como {orador}, {tema} e {data})',o.groupMsg||'','textarea');
         listaEditavel(paineis.preferencias,'Mensagens para oradores',mensagens.lista||[],[['titulo','Título'],['tipo','Tipo (convite ou geral)'],['texto','Mensagem','textarea']],editar('oradores'),lista=>store.salvar('config','mensagens',{lista}));
       }
       if(ver('designacoes')){
-        let meio,fim;
-        const r=formulario(paineis.reunioes,'Datas das Designações',editar('designacoes'),()=>store.salvar('desig_config','app',{diaMeio:meio.value===''?null:Number(meio.value),...(!ver('oradores')?{diaFim:Number(fim.value)}:{})}));
-        meio=campo(r.body,'Reunião do meio de semana',d.diaMeio??'','select',[['','Ainda não definido'],...[1,2,3,4,5].map(n=>[n,Regras.DIAS[n]])]);
-        if(!ver('oradores'))fim=campo(r.body,'Reunião do fim de semana',d.diaFim??6,'select',[[6,'Sábado'],[0,'Domingo']]);
+        let meio,fim,meio2027=null,fim2027=null;
+        const ver2027=Regras.mostrarPergunta2027(),num=v=>v===''||v==null?null:Number(v);
+        const meioValido=v=>Number.isInteger(v)&&v>=1&&v<=5,fimValido=v=>v===0||v===6;
+        const r=formulario(paineis.reunioes,'Datas das Designações',editar('designacoes'),()=>store.salvar('desig_config','app',{
+          diaMeio:num(meio.value),diaMeio2027:meio2027?num(meio2027.value):null,
+          ...(!ver('oradores')?{diaFim:Number(fim.value),diaFim2027:fim2027?num(fim2027.value):null}:{})
+        }));
+        const diasMeio=[1,2,3,4,5].map(n=>[n,Regras.DIAS[n]]);
+        meio=campo(r.body,'Reunião do meio de semana',!ver2027&&meioValido(d.diaMeio2027)&&d.diaMeio!=null?d.diaMeio2027:(d.diaMeio??''),'select',[['','Ainda não definido'],...diasMeio]);
+        if(ver2027)meio2027=campo(r.body,'Reunião do meio de semana em 2027',d.diaMeio2027??'','select',[['','Igual ao de cima'],...diasMeio]);
+        if(!ver('oradores')){
+          fim=campo(r.body,'Reunião do fim de semana',!ver2027&&fimValido(d.diaFim2027)?d.diaFim2027:(d.diaFim??6),'select',[[6,'Sábado'],[0,'Domingo']]);
+          if(ver2027)fim2027=campo(r.body,'Reunião do fim de semana em 2027',d.diaFim2027??'','select',[['','Igual ao de cima'],[6,'Sábado'],[0,'Domingo']]);
+        }
         else r.body.appendChild(el('p','hint','O fim de semana segue os dias definidos em Discursos públicos, acima.'));
+        if(ver2027)r.body.appendChild(el('p','hint','Os campos "em 2027" mudam só as datas de 2027 e somem quando o ano virar; a partir daí, o dia escolhido para 2027 passa a ser o padrão.'));
         const inputs=[];let zoom;
         const f=formulario(paineis.funcoes,'Pessoas por função',editar('designacoes'),()=>{
           const quantidades={meio:{},fim:{}};inputs.forEach(i=>{const v=Number(i.value);if(!Number.isInteger(v)||v<0||v>6)throw new Error('Use números inteiros de 0 a 6.');quantidades[i.dataset.tipo][i.dataset.funcao]=v;});
@@ -75,8 +91,9 @@
     const [central,desig]=await Promise.all([C.listar(sb,ws,'cong_pessoas').catch(()=>[]),C.listar(sb,ws,'desig_pessoas')]);
     const porId=new Map(desig.map(p=>[p.id,p]));
     // Lista da congregação + quem só existe nas Designações (cadastros antigos).
+    const ordemGrupo={anciao:0,servo:1,publicador:2};
     const pessoas=[...central,...desig.filter(p=>p.nome&&!central.some(c=>c.id===p.id||C.normalizar(c.nome)===C.normalizar(p.nome)))]
-      .filter(p=>p.nome&&p.ativo!==false).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+      .filter(p=>p.nome&&p.ativo!==false).sort((a,b)=>(ordemGrupo[a.grupo]??3)-(ordemGrupo[b.grupo]??3)||a.nome.localeCompare(b.nome,'pt-BR'));
     const q=Regras.quantidades(d);
     const colunas=[...Object.keys(Regras.FUNCOES).filter(f=>(q.meio[f]||0)+(q.fim[f]||0)>0).map(f=>[f,Regras.FUNCOES[f]]),[Regras.FUNCAO_CAMPO.chave,Regras.FUNCAO_CAMPO]];
     const linhas=[];

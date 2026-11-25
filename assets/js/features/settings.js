@@ -45,12 +45,16 @@ async function loadConfig(){
   updateBranding();
   document.getElementById('cfgNome').value=cfg.cong;document.getElementById('cfgEnd').value=cfg.end;document.getElementById('cfgHor').value=cfg.hor;document.getElementById('cfgDia').value=String(cfg.dia);
   document.getElementById('cfgDia2027').value=cfg.dia2027===0||cfg.dia2027===6?String(cfg.dia2027):'';
+  // A partir de 2027 o campo "em 2027" some e o dia escolhido para 2027 aparece como padrão.
+  const passou2026=new Date().getFullYear()>2026;
+  document.getElementById('cfgDia2027').closest('.field').hidden=passou2026;
+  if(passou2026&&(cfg.dia2027===0||cfg.dia2027===6))document.getElementById('cfgDia').value=String(cfg.dia2027);
   document.getElementById('cfgGroupMsg').value=cfg.groupMsg||'';
   document.getElementById('cfgSugerirSentinela').checked=!!cfg.sugerirSentinela;
 }
 
 function salvarConfigTemas(){
-  if(!db)return;
+  if(!db||window.SOMENTE_LEITURA)return;
   const overrides={};
   Object.keys(TL).forEach(k=>{if(TL[k]!==TEMAS[k])overrides[k]=TL[k];});
   FF.set(FF.doc(db,'config','temas'),{overrides,bloqueados:[...bloqueados]});
@@ -61,7 +65,7 @@ async function saveConfig(){
   cfg.end=document.getElementById('cfgEnd').value;
   cfg.hor=document.getElementById('cfgHor').value;
   cfg.dia=Number(document.getElementById('cfgDia').value);
-  const dia2027=document.getElementById('cfgDia2027').value;cfg.dia2027=dia2027===''?null:Number(dia2027);
+  const dia2027=document.getElementById('cfgDia2027').value;cfg.dia2027=dia2027===''||new Date().getFullYear()>2026?null:Number(dia2027);
   cfg.sugerirSentinela=document.getElementById('cfgSugerirSentinela').checked;
   cfg.groupMsg=document.getElementById('cfgGroupMsg').value.trim();
   if(db)await FF.set(FF.doc(db,'config','app'),cfg);
@@ -70,7 +74,8 @@ async function saveConfig(){
 }
 
 function perguntarDiaReuniao2027(){
-  if(!db||window.SOMENTE_LEITURA||cfg.dia2027===0||cfg.dia2027===6||document.getElementById('perguntaDia2027'))return;
+  // A pergunta só existe antes de 2027.
+  if(!db||window.SOMENTE_LEITURA||new Date().getFullYear()>2026||cfg.dia2027===0||cfg.dia2027===6||document.getElementById('perguntaDia2027'))return;
   const overlay=document.createElement('div');overlay.id='perguntaDia2027';overlay.className='choice-overlay';
   const modal=document.createElement('div');modal.className='choice-modal';
   modal.innerHTML='<div class="choice-title">Programação de 2027</div><p class="choice-hint">Em qual dia será a reunião no próximo ano? Esta escolha muda somente as datas de 2027; a programação de 2026 continua como está.</p>';

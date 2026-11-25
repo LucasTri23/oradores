@@ -41,16 +41,28 @@
   function diaFimDoAno(ano,cfg){
     const o=cfg?.oradores;
     if(o){if(ano===2027&&(o.dia2027===0||o.dia2027===6))return o.dia2027;if(o.dia===0||o.dia===6)return o.dia;}
+    if(ano===2027&&(cfg?.diaFim2027===0||cfg?.diaFim2027===6))return cfg.diaFim2027;
     return cfg?.diaFim===0?0:6;
   }
+  // Dia do meio de semana: em 2027 pode ser outro (diaMeio2027). null = ainda não definido.
+  const diaMeioValido=d=>Number.isInteger(d)&&d>=1&&d<=5;
+  function diaMeioDoAno(ano,cfg){
+    if(cfg?.diaMeio==null)return null;
+    if(ano===2027&&diaMeioValido(cfg.diaMeio2027))return cfg.diaMeio2027;
+    return Number(cfg.diaMeio);
+  }
+  // Os campos "em 2027" só fazem sentido antes de 2027; depois disso o dia de 2027 vira o padrão.
+  const PERGUNTA_2027_ATE=2026;
+  const mostrarPergunta2027=(ano=new Date().getFullYear())=>ano<=PERGUNTA_2027_ATE;
 
   // Reuniões de um mês: datas pelos dias configurados + reuniões salvas em outros dias (remarcadas).
   function reunioesDoMes(ano,mes,cfg,salvas=[]){
     const lista=new Map();
     const ultimo=new Date(ano,mes,0).getDate();
+    const meio=diaMeioDoAno(ano,cfg);
     for(let d=1;d<=ultimo;d++){
       const dt=new Date(ano,mes-1,d),dia=dt.getDay();
-      if(cfg?.diaMeio!=null&&dia===Number(cfg.diaMeio))lista.set(iso(dt),{data:iso(dt),tipo:'meio'});
+      if(meio!=null&&dia===meio)lista.set(iso(dt),{data:iso(dt),tipo:'meio'});
       if(dia===diaFimDoAno(ano,cfg))lista.set(iso(dt),{data:iso(dt),tipo:'fim'});
     }
     const prefixo=ano+'-'+String(mes).padStart(2,'0');
@@ -64,7 +76,7 @@
     const base=new Date(data+'T12:00:00');
     for(let k=1;k<=6;k++){
       const d=new Date(base);d.setDate(base.getDate()+(tipo==='meio'?k:-k));
-      const alvo=tipo==='meio'?diaFimDoAno(d.getFullYear(),cfg):Number(cfg.diaMeio);
+      const alvo=tipo==='meio'?diaFimDoAno(d.getFullYear(),cfg):diaMeioDoAno(d.getFullYear(),cfg);
       if(d.getDay()===alvo)return iso(d);
     }
     return null;
@@ -215,7 +227,7 @@
       .sort((a,b)=>{if(!a.ultima!==!b.ultima)return a.ultima?1:-1;if(a.ultima!==b.ultima)return a.ultima.localeCompare(b.ultima);return a.pessoa.nome.localeCompare(b.pessoa.nome,'pt-BR');});
   }
 
-  const api={FUNCAO_CAMPO,MESES_CAMPO,horaValida,locaisCampo,saidasCampo,idCampo,datasDoDia,limiteCampo,dentroDoLimiteCampo,campoDoMes,recorrenciaCampo,ultimaVezCampo,conflitosCampo,candidatosCampo,FUNCOES,FUNCOES_POR_TIPO,TIPOS,QTD_PADRAO,GRUPOS,DIAS,ROTULOS_VAGAS,rotuloVaga,parSemanal,zoomSemanal,segundaDaSemana,iso,normalizar,quantidades,diaFimDoAno,reunioesDoMes,pessoasDe,ultimaVez,tempoSem,conflitos,candidatos,sugerir,podeFazer};
+  const api={FUNCAO_CAMPO,MESES_CAMPO,horaValida,locaisCampo,saidasCampo,idCampo,datasDoDia,limiteCampo,dentroDoLimiteCampo,campoDoMes,recorrenciaCampo,ultimaVezCampo,conflitosCampo,candidatosCampo,FUNCOES,FUNCOES_POR_TIPO,TIPOS,QTD_PADRAO,GRUPOS,DIAS,ROTULOS_VAGAS,rotuloVaga,diaMeioDoAno,mostrarPergunta2027,parSemanal,zoomSemanal,segundaDaSemana,iso,normalizar,quantidades,diaFimDoAno,reunioesDoMes,pessoasDe,ultimaVez,tempoSem,conflitos,candidatos,sugerir,podeFazer};
   raiz.Regras=api;
   if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

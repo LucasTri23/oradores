@@ -65,3 +65,20 @@ test('candidatos a dirigente: só quem está marcado, quem dirigiu há mais temp
   assert.deepEqual(c.find(c=>c.pessoa.id==='x').avisos,['Está como Microfones na reunião deste dia']);
   assert.equal(R.ultimaVezCampo(campo,'x','2026-11-28'),'2026-11-07');
 });
+
+test('meio de semana de 2027 pode ser outro dia; 2026 continua como estava',()=>{
+  const cfg={diaMeio:3,diaMeio2027:4,diaFim:6};
+  assert.ok(R.reunioesDoMes(2026,12,cfg).filter(r=>r.tipo==='meio').every(r=>new Date(r.data+'T12:00:00').getDay()===3));
+  assert.ok(R.reunioesDoMes(2027,1,cfg).filter(r=>r.tipo==='meio').every(r=>new Date(r.data+'T12:00:00').getDay()===4));
+  assert.equal(R.reunioesDoMes(2027,1,{diaMeio:3,diaMeio2027:null}).find(r=>r.tipo==='meio').data,'2027-01-06','sem dia de 2027 usa o padrão');
+  assert.equal(R.reunioesDoMes(2027,1,{diaMeio:null,diaMeio2027:4}).filter(r=>r.tipo==='meio').length,0,'sem dia definido não inventa reuniões');
+  // Fim de semana de 2027 para quem não usa o Oradores.
+  assert.equal(R.reunioesDoMes(2027,1,{diaMeio:3,diaFim:6,diaFim2027:0}).find(r=>r.tipo==='fim').data,'2027-01-03');
+  // Zoom semanal acha o par certo em 2027 (quinta ↔ sábado).
+  assert.equal(R.parSemanal('2027-01-09','fim',cfg),'2027-01-07');
+});
+test('campos "em 2027" só aparecem antes de 2027',()=>{
+  assert.equal(R.mostrarPergunta2027(2026),true);
+  assert.equal(R.mostrarPergunta2027(2027),false);
+  assert.equal(R.mostrarPergunta2027(2028),false);
+});

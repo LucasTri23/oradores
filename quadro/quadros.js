@@ -261,7 +261,7 @@ async function gerarPdfCampoQuadro(JsPDF,meses,congregacao,modelo,cores){
   if(!window.quadroAcesso?.designacoes)throw new Error('Sua conta não tem acesso às Designações.');
   if(!window.QuadroCampo){
     if(!bibliotecaCampoPromise)bibliotecaCampoPromise=new Promise((resolve,reject)=>{
-      const script=document.createElement('script');script.src='/quadro/campo.js?v=20261124-1';
+      const script=document.createElement('script');script.src='/quadro/campo.js?v=20261124-3';
       script.onload=()=>window.QuadroCampo?resolve():reject(new Error('Gerador de campo indisponível.'));
       script.onerror=()=>{script.remove();reject(new Error('Não foi possível carregar o modelo de campo. Tente novamente.'));};document.head.appendChild(script);
     }).catch(e=>{bibliotecaCampoPromise=null;throw e;});
@@ -271,7 +271,7 @@ async function gerarPdfCampoQuadro(JsPDF,meses,congregacao,modelo,cores){
   const {data,error}=await supabase.from('app_records').select('id,data').eq('workspace_id',activeWorkspaceId).eq('collection','desig_campo');
   if(error)throw new Error('Não foi possível carregar o serviço de campo. Tente novamente.');
   const salvas=(data||[]).map(r=>({...r.data,id:r.id}));
-  const grupos=meses.map(m=>window.QuadroCampo.montarMes(m.data,Regras,dados.cfg,salvas,dados.pessoas));
+  const grupos=meses.map(m=>({...window.QuadroCampo.montarMes(m.data,Regras,dados.cfg,salvas,dados.pessoas),endereco:cfg.end||''}));
   return window.QuadroCampo.criarPdf(JsPDF,grupos,congregacao,modelo,cores);
 }
 async function gerarPdfQuadroTela(JsPDF,meses,congregacao,incluir){

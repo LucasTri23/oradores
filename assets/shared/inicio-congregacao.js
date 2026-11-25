@@ -157,7 +157,7 @@ async function datasDeReuniao(inicio,fim){
   let oradoresCfg=null,desigCfg={};
   if(Conta.podeVer(vinc,'oradores')){const c=(await C.listar(sb,ws,'config')).find(x=>x.id==='app');if(c)oradoresCfg={dia:c.dia,dia2027:c.dia2027};}
   if(Conta.podeVer(vinc,'designacoes')){desigCfg=(await C.listar(sb,ws,'desig_config')).find(x=>x.id==='app')||{};}
-  const cfg={diaMeio:desigCfg.diaMeio,diaFim:desigCfg.diaFim,oradores:oradoresCfg};
+  const cfg={diaMeio:desigCfg.diaMeio,diaMeio2027:desigCfg.diaMeio2027,diaFim:desigCfg.diaFim,diaFim2027:desigCfg.diaFim2027,oradores:oradoresCfg};
   const datas={fim:[],meio:[]};
   const d=new Date(inicio.slice(0,7)+'-01T12:00:00'),ate=fim.slice(0,7);
   while(Regras.iso(d).slice(0,7)<=ate){

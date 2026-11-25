@@ -11,6 +11,7 @@ let pessoas=[],reunioes=[],cfg={},cfgOradores=null,campo=[];
 let oradores={programa:[],discursantes:[]};
 let mes=new Date();mes.setDate(1);
 let edicao=null,edCampo=null;
+let campoQuadroPrefs={};
 let mesCampo=new Date();mesCampo.setDate(1);
 
 // ── Banco ──
@@ -48,6 +49,7 @@ async function carregar(){
   reunioes=rs.filter(r=>r.data);
   campo=cp.filter(c=>c.data&&c.saidaId);
   cfg=cs.find(c=>c.id==='app')||{};
+  campoQuadroPrefs=cs.find(c=>c.id==='campo_quadro')||{};
   // Dados do Oradores (para avisos e para o dia do fim de semana), se a pessoa tiver acesso.
   if(Conta.podeVer(vinc,'oradores')){
     try{
@@ -325,7 +327,7 @@ function renderConfig(){
   const doOradores=cfgOradores&&(cfgOradores.dia===0||cfgOradores.dia===6);
   $('lblDiaFim').hidden=!!doOradores;
   $('avisoDiaFim').hidden=!doOradores;
-  if(doOradores)$('avisoDiaFim').textContent='Fim de semana: '+R.DIAS[cfgOradores.dia]+(cfgOradores.dia2027===0||cfgOradores.dia2027===6?' (em 2027: '+R.DIAS[cfgOradores.dia2027]+')':'')+' — definido nas configurações do Oradores.';
+  if(doOradores)$('avisoDiaFim').textContent='Fim de semana: '+R.DIAS[cfgOradores.dia]+(R.mostrarPergunta2027()&&(cfgOradores.dia2027===0||cfgOradores.dia2027===6)?' (em 2027: '+R.DIAS[cfgOradores.dia2027]+')':'')+' — definido nas configurações do Oradores.';
   const qtd=R.quantidades(cfg);const tb=$('tabelaQtd');tb.innerHTML='';
   Object.keys(R.FUNCOES).forEach(f=>{
     const tr=document.createElement('tr');
@@ -397,55 +399,39 @@ function mudarMesCampo(n){
   mesCampo=novo;renderCampo();
 }
 function irHojeCampo(){mesCampo=new Date();mesCampo.setDate(1);renderCampo();}
+async function salvarDiaCampoQuadro(dia,ocultar){
+  exigirEdicao();
+  const atual=(await lista('desig_config')).find(c=>c.id==='campo_quadro')||{};
+  const dias=new Set(CampoQuadro.ocultosValidos(atual.diasOcultos));
+  if(ocultar)dias.add(dia);else dias.delete(dia);
+  const proximo={...atual,diasOcultos:[...dias]};
+  await salvar('desig_config','campo_quadro',proximo);campoQuadroPrefs=proximo;
+}
+async function adicionarSaidaCampoQuadro({dia,hora,localId,novoLocal}){
+  exigirEdicao();
+  if(!Number.isInteger(dia)||dia<0||dia>6||!R.horaValida(hora))throw new Error('Informe um dia e horário válidos.');
+  const atual=(await lista('desig_config')).find(c=>c.id==='app')||{};
+  const locais=[...(atual.campo?.locais||[])],saidas=[...(atual.campo?.saidas||[])];
+  if(!localId){
+    if(!String(novoLocal||'').trim())throw new Error('Informe o nome do novo local.');
+    const existente=locais.find(l=>R.normalizar(l.nome)===R.normalizar(novoLocal));
+    localId=existente?.id||novoId();
+    if(!existente)locais.push({id:localId,nome:novoLocal.trim(),endereco:''});
+  }else if(!locais.some(l=>l.id===localId))throw new Error('Este local foi removido. Atualize a página e escolha outro.');
+  if(saidas.some(s=>Number(s.dia)===dia&&s.hora===hora&&s.localId===localId))throw new Error('Já existe uma saída neste dia, horário e local.');
+  saidas.push({id:novoId(),dia,hora,localId});
+  const proximo={...atual,campo:{...atual.campo,locais,saidas}};
+  await salvar('desig_config','app',proximo);cfg=proximo;
+}
 function renderCampo(){
   $('campoMesTitulo').textContent=maiuscula(mesCampo.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}));
   $('campoProx').disabled=new Date(mesCampo.getFullYear(),mesCampo.getMonth()+1,1)>mesLimiteCampo();
-  const div=$('listaCampo');div.innerHTML='';
-  const saidas=R.saidasCampo(cfg);
-  if(!saidas.length){
-    div.innerHTML='<div class="vazio">Nenhum dia de saída cadastrado ainda. Cadastre os locais e os dias em <a href="/#configuracoes">Início → Configurações → Campo</a>.</div>';
-    return;
-  }
-  if(!pessoas.some(p=>p.ativo!==false&&p.funcoes?.[CAMPO])){
-    const v=document.createElement('div');v.className='aviso';v.style.marginBottom='12px';v.innerHTML=icone('triangle-alert')+'<span>Ninguém está marcado como dirigente de campo. Marque em <a href="/#configuracoes">Configurações → Funções</a>, coluna "Campo".</span>';div.appendChild(v);
-  }
-  const lista=campoDoMesAtual(),hoje=hojeISO();
-  const porData=new Map();lista.forEach(c=>{if(!porData.has(c.data))porData.set(c.data,[]);porData.get(c.data).push(c);});
-  const grade=document.createElement('div');grade.className='reunioes';
-  porData.forEach((itens,data)=>{
-    const dt=new Date(data+'T12:00:00');
-    const card=document.createElement('article');card.className='reuniao leitura'+(data<hoje?' passada':'');
-    const topo=document.createElement('div');topo.className='reuniao-topo';
-    topo.innerHTML='<div class="dia"><b></b><small></small></div><div class="tx"><strong></strong><span></span></div>';
-    topo.querySelector('.dia b').textContent=data.slice(8,10);
-    topo.querySelector('.dia small').textContent=MESES_CURTOS[dt.getMonth()];
-    topo.querySelector('.tx strong').textContent=maiuscula(dt.toLocaleDateString('pt-BR',{weekday:'long'}));
-    topo.querySelector('.tx span').textContent=itens.length+(itens.length===1?' saída':' saídas');
-    card.appendChild(topo);
-    itens.forEach(c=>{
-      const linha=document.createElement(pode?'button':'div');linha.className='campo-linha';
-      if(pode){linha.type='button';linha.onclick=()=>abrirCampo(c.id);linha.setAttribute('aria-label','Designar dirigente da saída de '+data.slice(8,10)+'/'+data.slice(5,7)+(c.hora?' às '+c.hora:''));}
-      const info=document.createElement('span');info.className='campo-info';
-      const h=document.createElement('b');h.textContent=c.hora||'--:--';
-      const l=document.createElement('small');l.textContent=nomeLocal(c.localId)+(c.removida?' · saída removida':'');
-      info.append(h,l);
-      const chip=document.createElement('span');
-      if(c.semSaida){chip.className='nome vago';chip.textContent='Sem saída';}
-      else if(!c.dirigente){chip.className='nome vago';chip.textContent='vago';}
-      else{
-        const avisos=R.conflitosCampo({item:c,pessoaId:c.dirigente,campo:lista,reunioes});
-        chip.className='nome'+(avisos.length?' alerta':'');chip.textContent=nomePessoa(c.dirigente);
-        if(c.recorrente)chip.insertAdjacentHTML('beforeend',icone('repeat'));
-        if(avisos.length){chip.title=avisos.join('\n');chip.insertAdjacentHTML('beforeend',icone('triangle-alert'));}
-      }
-      linha.append(info,chip);card.appendChild(linha);
-    });
-    grade.appendChild(card);
-  });
-  div.appendChild(grade);
-  if(!lista.length){const v=document.createElement('div');v.className='vazio';v.textContent='Nenhuma saída neste mês.';div.appendChild(v);}
-  DesignaUI.desenharIcones();
+  const lista=campoDoMesAtual();
+  CampoQuadro.render($('listaCampo'),{lista,ocultos:campoQuadroPrefs.diasOcultos,pode,hoje:hojeISO(),locais:R.locaisCampo(cfg),
+    abrir:abrirCampo,nome:nomePessoa,local:nomeLocal,toast,render:renderCampo,salvarDia:salvarDiaCampoQuadro,adicionar:adicionarSaidaCampoQuadro,
+    conflitos:c=>R.conflitosCampo({item:c,pessoaId:c.dirigente,campo:lista,reunioes})});
 }
+
 function abrirCampo(id){
   const c=campoDoMesAtual().find(x=>x.id===id);if(!c)return;
   if(!R.dentroDoLimiteCampo(c.data,hojeISO()))return toast('Dá para designar até '+R.MESES_CAMPO+' meses para frente.');
