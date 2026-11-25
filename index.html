@@ -162,6 +162,11 @@ body.sem-cong .so-cong{display:none!important}
           <div class="sec-head"><h2><i data-lucide="clipboard-list"></i> Próximas designações</h2><a href="/designacoes">Abrir Designações →</a></div>
           <div id="listaDesignacoes"><div class="vazio">Carregando…</div></div>
         </div>
+        <div class="dz-card" id="cardPublicacoes" hidden>
+          <div class="sec-head"><h2><i data-lucide="book-open"></i> Publicações</h2><a href="/publicacoes">Abrir módulo →</a></div>
+          <p class="hint">Consulte a última contagem mensal e acompanhe os pedidos até o recebimento e a entrega.</p>
+          <a class="dz-btn" href="/publicacoes#estoque">Estoque mensal</a> <a class="dz-btn" href="/publicacoes#pedidos">Pedidos</a>
+        </div>
         <div class="dz-card modulo-off" id="cardSemAcesso" hidden>
           <div class="sec-head"><h2><i data-lucide="lock"></i> Outros módulos</h2></div>
           <div id="listaSemAcesso" class="vazio"></div>
@@ -217,6 +222,7 @@ body.sem-cong .so-cong{display:none!important}
             <label class="acesso">Oradores<select id="convOradores"><option value="editar">Editar</option><option value="ver">Só ver</option><option value="">Sem acesso</option></select></label>
             <label class="acesso">Territórios<select id="convTerritorios"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
             <label class="acesso">Designações<select id="convDesignacoes"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
+            <label class="acesso">Publicações<select id="convPublicacoes"><option value="">Sem acesso</option><option value="ver">Só ver</option><option value="editar">Editar</option></select></label>
             <button class="dz-btn pri" id="convBtn" onclick="convidar()"><i data-lucide="user-plus"></i> Criar link de convite</button>
           </div>
           <p class="hint" style="margin:10px 0 0">O link vale por 24 horas e pode ser usado uma vez.</p>
@@ -281,7 +287,7 @@ body.sem-cong .so-cong{display:none!important}
 </div>
 
 <script src="/assets/js/data.js?v=20261110-7"></script>
-<script src="/assets/shared/conta.js?v=20261110-9"></script>
+<script src="/assets/shared/conta.js?v=20261125-p1"></script>
 <script src="/designacoes/regras.js?v=20261125-5"></script>
 <script src="/assets/shared/congregacao.js?v=20261125-3"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script><script src="/assets/shared/config-store.js?v=20261110-7"></script><script src="/assets/shared/config-central.js?v=20261125-6"></script>
@@ -438,6 +444,7 @@ function renderPainel(){
   if(Conta.podeVer(vinc,'designacoes'))painelDesignacoes();
   if(Conta.podeVer(vinc,'oradores'))painelOradores();
   if(Conta.podeVer(vinc,'territorios'))painelTerritorios();
+  $('cardPublicacoes').hidden=!Conta.podeVer(vinc,'publicacoes');
 }
 
 // ── Configurações ──
@@ -524,7 +531,7 @@ async function removerMembro(userId,email){
 }
 
 async function convidar(){
-  const niveis={oradores:$('convOradores').value,territorios:$('convTerritorios').value,designacoes:$('convDesignacoes').value};
+  const niveis={oradores:$('convOradores').value,territorios:$('convTerritorios').value,designacoes:$('convDesignacoes').value,publicacoes:$('convPublicacoes').value};
   const mods=Object.keys(niveis).filter(k=>niveis[k]);
   const ro=mods.filter(k=>niveis[k]==='ver');
   if(!mods.length)return toast('Escolha acesso a pelo menos um módulo.');

@@ -6,7 +6,8 @@ window.Conta=(function(){
   const MODULOS={
     oradores:{nome:'Oradores',caminho:'/oradores',icone:'mic',descricao:'Programação de discursos, cadastro de oradores e histórico.'},
     territorios:{nome:'Territórios',caminho:'/territorios',icone:'map',descricao:'Registro de territórios, cartões de mapa, dirigentes e campanhas.'},
-    designacoes:{nome:'Designações',caminho:'/designacoes',icone:'clipboard-list',descricao:'Presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões.'}
+    designacoes:{nome:'Designações',caminho:'/designacoes',icone:'clipboard-list',descricao:'Presidente, leitor, indicadores, microfones e áudio e vídeo das reuniões.'},
+    publicacoes:{nome:'Publicações',caminho:'/publicacoes',icone:'book-open',descricao:'Estoque mensal por PDF e pedidos de pessoas ou da congregação.'}
   };
   let cliente=null;
 
