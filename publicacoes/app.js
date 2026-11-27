@@ -38,8 +38,21 @@
     const lista=pedidos.filter(p=>{const s=R.situacao(p);return (!tipo||p.solicitanteTipo===tipo)&&R.normalizar([p.nome,p.id,...p.itens.map(i=>i.codigo+' '+i.titulo)].join(' ')).includes(busca)&&(filtro==='todos'||(filtro==='abertos'?!['Entregue','Recebido','Cancelado'].includes(s):s===filtro));});
     $('pedidosResumo').textContent=lista.length+' pedido(s) nesta consulta.';
     if(!lista.length)return vazio($('pedidosLista'),pedidos.length?'Nenhum pedido corresponde aos filtros.':'Nenhum pedido cadastrado. Registre o que foi solicitado por uma pessoa ou pela congregação.');
-    const body=tabela(['Data / pedido','Solicitante','Publicações','Situação','Ação'],$('pedidosLista'));
-    lista.forEach(p=>{const tr=el('tr');cel(tr,dataBr(p.data),'#'+p.id.slice(0,8));cel(tr,p.nome,p.solicitanteTipo==='congregacao'?'Congregação':'Pessoa');cel(tr,p.itens.map(i=>i.quantidade+' × '+i.titulo).join('; '),p.itens.map(i=>i.codigo).join(' · '));const t=R.totais(p);cel(tr,'').append(el('span','pub-badge',R.situacao(p)),el('small','',t.enviado+' enviados · '+t.recebido+' recebidos'+(p.solicitanteTipo==='pessoa'?' · '+t.entregue+' entregues':'')));cel(tr,'').appendChild(btn('Abrir',()=>abrirPedido(p.id)));linhaTabela(body,tr);});
+    const board=el('div','pub-kanban');$('pedidosLista').replaceChildren(board);
+    const etapas=[['A enviar',['A enviar','Enviado parcialmente']],['Aguardando chegada',['Aguardando chegada','Recebido parcialmente']],['Para retirar',['Pronto para retirar']],['Concluídos',['Recebido','Entregue']],['Cancelados',['Cancelado']]];
+    etapas.forEach(([titulo,status])=>{
+      const itens=lista.filter(p=>status.includes(R.situacao(p)));
+      if(titulo==='Cancelados'&&!itens.length)return;
+      const coluna=el('section','pub-kanban-column'),cab=el('h3','',titulo+' · '+itens.length);coluna.appendChild(cab);
+      if(!itens.length)coluna.appendChild(el('p','pub-kanban-empty','Nenhum pedido nesta etapa.'));
+      itens.forEach(p=>{
+        const card=el('article','pub-order-card'),t=R.totais(p);
+        card.append(el('small','',dataBr(p.data)+' · #'+p.id.slice(0,8)),el('h4','',p.nome),el('span','pub-badge',R.situacao(p)));
+        const listaItens=el('ul');p.itens.forEach(i=>listaItens.appendChild(el('li','',i.quantidade+' × '+i.titulo)));card.appendChild(listaItens);
+        card.append(el('p','pub-order-progress',t.enviado+' enviados · '+t.recebido+' recebidos'+(p.solicitanteTipo==='pessoa'?' · '+t.entregue+' entregues':'')),btn(pode?'Abrir e atualizar':'Ver pedido',()=>abrirPedido(p.id)));
+        coluna.appendChild(card);
+      });board.appendChild(coluna);
+    });
   }
   function renderRelatorios(){
     if(!estoques.length)return vazio($('relatoriosLista'),'Nenhum relatório mensal anexado.');

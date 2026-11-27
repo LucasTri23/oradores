@@ -479,6 +479,32 @@ function alterarGrupoCampo(){
 }
 function escolherDirigente(){edCampo.dirigente=$('cDirigente').value||null;renderEdCampo();}
 const dadosCampo=c=>({grupoId:c.grupoId||null,grupoNome:c.grupoNome||'',data:c.data,saidaId:c.saidaId,hora:c.hora||'',localId:c.localId||'',dirigente:c.semSaida?null:(c.dirigente||null),semSaida:!!c.semSaida,recorrente:!!c.recorrente});
+let sugerindoCampo=false;
+async function sugerirCampoMes(){
+  if(sugerindoCampo)return;
+  try{
+    exigirEdicao();
+    const vagas=campoDoMesAtual().filter(c=>c.data>=hojeISO()&&!c.semSaida&&!c.dirigente&&!c.grupoId&&!c.removida);
+    if(!vagas.length)return toast('Nenhuma vaga aberta nas saídas futuras deste mês.');
+    if(!confirm('Sugerir dirigentes para '+vagas.length+' saídas vagas? As designações existentes serão mantidas.'))return;
+    sugerindoCampo=true;let total=0;
+    for(const c of vagas){
+      const candidato=R.candidatosCampo({item:c,pessoas,campo,reunioes}).find(x=>!x.avisos.length);
+      if(!candidato)continue;
+      const dados=dadosCampo({...c,dirigente:candidato.pessoa.id,recorrente:false});
+      await salvar('desig_campo',c.id,dados);
+      campo=[...campo.filter(x=>x.id!==c.id),{...dados,id:c.id}];total++;
+    }
+    toast(total+' vagas preenchidas; '+(vagas.length-total)+' sem candidato disponível.');
+  }catch(e){if(e.message!=='Somente leitura')toast('Não foi possível concluir: '+e.message);}
+  finally{sugerindoCampo=false;renderCampo();}
+}
+function sugerirSaidaCampo(){
+  if(!pode||!edCampo||$('cSem').checked||$('cDeGrupo').checked||$('cDirigente').value)return;
+  const candidato=R.candidatosCampo({item:edCampo,pessoas,campo,reunioes}).find(x=>!x.avisos.length);
+  if(!candidato)return toast('Nenhum dirigente disponível sem conflitos.');
+  $('cDirigente').value=candidato.pessoa.id;escolherDirigente();
+}
 async function salvarCampo(){
   const b=$('cSalvar');b.disabled=true;
   try{
@@ -668,7 +694,7 @@ async function salvarVarios(colecao,itens){
   }
 }
 function alvosApagar(){
-  const per=$('apPeriodo').value,hoje=hojeISO(),m=origemApagar==='vmc'?mesVmc:mes;
+  const per=$('apPeriodo').value,hoje=hojeISO(),m=origemApagar==='vmc'?mesVmc:origemApagar==='campo'?mesCampo:mes;
   const prefixo=m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0');
   const dentro=d=>!!d&&(per==='tudo'||(per==='futuro'&&d>=hoje)||(per==='mes'&&d.startsWith(prefixo)));
   return {
@@ -687,8 +713,8 @@ async function abrirApagar(origem='programacao'){
   try{exigirEdicao();}catch(e){return;}
   origemApagar=origem;
   if(!semanasVmc){try{await carregarVmc();}catch(e){}}
-  $('apConfirma').value='';$('apPeriodo').value='futuro';$('apProg').checked=true;$('apVmc').checked=true;$('apCampo').checked=false;
-  const m=origem==='vmc'?mesVmc:mes;$('apMesOpcao').textContent='Só '+m.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  $('apConfirma').value='';$('apPeriodo').value='mes';$('apProg').checked=origem==='programacao';$('apVmc').checked=origem==='vmc';$('apCampo').checked=origem==='campo';
+  const m=origem==='vmc'?mesVmc:origem==='campo'?mesCampo:mes;$('apMesOpcao').textContent='Só '+m.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   resumoApagar();abrirJanela('janApagar');
 }
 async function apagarDesignacoes(){
@@ -696,8 +722,8 @@ async function apagarDesignacoes(){
   b.disabled=true;b.textContent='Apagando…';
   try{
     if(a.prog.length){
-      const itens=a.prog.map(r=>({id:r.data,dados:{...r,pessoas:{}}}));await salvarVarios('desig_reunioes',itens);
-      const ids=new Set(itens.map(i=>i.id));reunioes=reunioes.map(r=>ids.has(r.data)?{...r,pessoas:{}}:r);
+      const itens=a.prog.map(r=>({id:r.id||r.data,dados:{...r,pessoas:{}}}));await salvarVarios('desig_reunioes',itens);
+      const ids=new Set(itens.map(i=>i.id));reunioes=reunioes.map(r=>ids.has(r.id||r.data)?{...r,pessoas:{}}:r);
     }
     if(a.vmc.length){
       const itens=a.vmc.map(s=>({id:s.semana,dados:dadosVmc({...s,pessoas:{}})}));await salvarVarios('desig_vmc',itens);

@@ -162,7 +162,7 @@ div.vmc-topo{cursor:default}
         <button class="dz-btn" onclick="irHoje()">Hoje</button>
       </div>
       <div class="esp"></div>
-      <button class="dz-btn so-edicao" onclick="sugerirMes()"><i data-lucide="wand-sparkles"></i> Sugerir vagas vazias</button>
+      <button class="dz-btn so-edicao" onclick="sugerirMes()"><i data-lucide="wand-sparkles"></i> Sugerir vagas abertas</button>
       <button class="dz-btn danger so-edicao" onclick="abrirApagar('programacao')"><i data-lucide="trash-2"></i> Apagar designações</button>
       <button class="dz-btn" onclick="abrirLembretes()"><i data-lucide="bell-ring"></i> Lembretes</button>
       <button class="dz-btn" onclick="compartilharMes()"><i data-lucide="send"></i> WhatsApp</button>
@@ -184,7 +184,7 @@ div.vmc-topo{cursor:default}
       <div class="esp"></div>
       <label class="vmc-hora">Início <input type="time" id="vmcHora" onchange="salvarHoraVmc()" aria-label="Horário de início da reunião do meio de semana"></label>
       <button class="dz-btn so-edicao" id="vmcBuscar" onclick="buscarApostila()"><i data-lucide="cloud-download"></i> Buscar apostila</button>
-      <button class="dz-btn so-edicao" onclick="sugerirVmcMes()"><i data-lucide="wand-sparkles"></i> Sugerir vagas vazias</button>
+      <button class="dz-btn so-edicao" onclick="sugerirVmcMes()"><i data-lucide="wand-sparkles"></i> Sugerir vagas abertas</button>
       <button class="dz-btn danger so-edicao" onclick="abrirApagar('vmc')"><i data-lucide="trash-2"></i> Apagar designações</button>
       <button class="dz-btn pri" onclick="abrirPdfVmc()"><i data-lucide="file-down"></i> PDF da programação</button>
     </div>
@@ -203,6 +203,8 @@ div.vmc-topo{cursor:default}
       </div>
       <div class="esp"></div>
       <a class="dz-btn so-edicao" href="/#configuracoes"><i data-lucide="map-pin"></i> Locais e dias</a>
+      <button class="dz-btn so-edicao" onclick="sugerirCampoMes()">Sugerir vagas abertas</button>
+      <button class="dz-btn so-edicao" onclick="abrirApagar('campo')">Apagar designações</button>
       <button class="dz-btn" onclick="compartilharCampo()"><i data-lucide="send"></i> WhatsApp</button>
     </div>
     <p class="sub-sec">Saídas em colunas por dia da semana. Toque no horário para escolher o dirigente ou o grupo no fim de semana. Cadastre grupos e horários em Locais e dias.</p>
@@ -320,6 +322,7 @@ div.vmc-topo{cursor:default}
       <div id="cGrupoOpcao"><label class="check"><input type="checkbox" id="cDeGrupo" onchange="alterarGrupoCampo()"> Campo de grupo</label><div id="cGrupoBox" hidden><label class="campo" for="cGrupo">Grupo</label><select id="cGrupo" onchange="alterarGrupoCampo()"></select><p class="hint">O superintendente cadastrado será o dirigente. Cadastre os grupos em Configurações → Campo.</p></div></div>
       <label class="campo" for="cDirigente">Dirigente de campo</label>
       <select id="cDirigente" onchange="escolherDirigente()"></select>
+      <button type="button" class="dz-btn so-edicao" onclick="sugerirSaidaCampo()">Sugerir vaga aberta</button>
       <label class="campo" for="cLocal">Local</label>
       <select id="cLocal"></select>
       <div id="cAvisos"></div>
@@ -384,8 +387,8 @@ div.vmc-topo{cursor:default}
 <script src="/designacoes/pdf.js?v=20261125-v1"></script>
 <script src="/assets/shared/quadro-dados.js?v=20261124-1"></script>
 <script src="/designacoes/campo-quadro.js?v=20261125-4"></script>
-<script src="/designacoes/app.js?v=20261125-v3"></script>
-<script src="/designacoes/vmc-app.js?v=20261125-v2"></script>
+<script src="/designacoes/app.js?v=20261126-1"></script>
+<script src="/designacoes/vmc-app.js?v=20261126-1"></script>
 <script src="/assets/shared/module-flow.js?v=20261110-7"></script>
 <script src="/assets/shared/form-ux.js?v=20261110-7"></script>
 <script src="/assets/shared/ajuda.js?v=20261124-5" data-modulo="designacoes"></script>
